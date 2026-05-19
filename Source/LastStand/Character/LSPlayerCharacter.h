@@ -31,7 +31,6 @@ protected:
 
 	void Jump();
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> JumpAction;
 
@@ -48,5 +47,13 @@ protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPCRun();
 
+	// Character State flag
+	UPROPERTY(ReplicatedUsing = OnRepIsRun)
+	bool IsRun = false;
+
+	UFUNCTION()
+	void OnRepIsRun();
 };

@@ -66,6 +66,9 @@ void ALSCharacterBase::SetCharacterControlData(ECharacterControlType ControlType
 	SpringArm->bInheritYaw = CharacterControlData->bInheritYaw;
 	SpringArm->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
 
+	// AnimInstance
+	GetMesh()->SetAnimInstanceClass(CharacterControlData->AnimBlueprintClass);
+
 	// Input System mapping
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	if (PlayerController)

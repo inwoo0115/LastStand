@@ -22,6 +22,10 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	auto EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 
 	// Bind Action
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Jump);
+	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Move);
+	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Look);
+	EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Walk);
 }
 
 void ALSPlayerCharacter::Move(const FInputActionValue& Value)
@@ -49,11 +53,38 @@ void ALSPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ALSPlayerCharacter::Walk(const FInputActionValue& Value)
 {
+	ServerRPCRun();
 }
 
 void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+void ALSPlayerCharacter::OnRepIsRun()
+{
+	if (IsRun)
+	{
+		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
+	}
+}
+
+void ALSPlayerCharacter::ServerRPCRun_Implementation()
+{
+	if (IsRun)
+	{
+		IsRun = false;
+		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
+	}
+	else
+	{
+		IsRun = true;
+		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
+	}
 }
 
 void ALSPlayerCharacter::Jump()
