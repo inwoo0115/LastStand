@@ -11,7 +11,7 @@ public class LastStand : ModuleRules
 		// 프로젝트 경로 추가
 		PublicIncludePaths.Add("LastStand");
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "GameplayTags" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "GameplayTags", "NetCore" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
