@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Item/LSItemArray.h"
 #include "LSInventoryComponent.generated.h"
 
 
@@ -16,16 +17,21 @@ public:
 	// Sets default values for this component's properties
 	ULSInventoryComponent();
 
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void AddItemToInventory(const FName ItemInfoID, const int32 Quantity);
+
+	void RemoveItemFromInventory(const FName ItemInfoID);
+
+	void UpdateItemInInventory(const FName ItemInfoID, const int32 NewQuantity);
+
+	void AddDeltaToItem(const FName ItemInfoID, const int32 Delta);
+
 
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
+	// RPC
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-
-	
-
-		
+	// Fast Array Sericalizer 아이템 배열
+	UPROPERTY(Replicated)
+	FInventoryItemInfoArray InventoryItems;
 	
 };

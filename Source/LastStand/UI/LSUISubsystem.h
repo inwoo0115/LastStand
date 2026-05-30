@@ -62,7 +62,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI|Slot")
 	void RemoveWidgetFromSlot(FSlotHandle Handle);
 
-private:
+protected:
 	UPROPERTY()
 	TObjectPtr<ULSRootLayoutWidget> RootLayout;
 

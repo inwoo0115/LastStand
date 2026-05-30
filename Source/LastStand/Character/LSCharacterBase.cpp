@@ -9,7 +9,8 @@
 #include "Data/LSCharacterControlData.h"
 #include "EnhancedInputSubsystems.h"
 #include "Net/UnrealNetwork.h"
-#include "LSCharacterBase.h"
+#include "Components/LSEquipmentComponent.h"
+#include "Components/LSInventoryComponent.h"
 
 
 // Sets default values
@@ -32,6 +33,12 @@ ALSCharacterBase::ALSCharacterBase()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
+
+	// Inventory
+	Inventory = CreateDefaultSubobject<ULSInventoryComponent>(TEXT("Inventory"));
+	
+	//  Equipments
+	Equipments = CreateDefaultSubobject<ULSEquipmentComponent>(TEXT("Equipments"));
 }
 
 // Called when the game starts or when spawned

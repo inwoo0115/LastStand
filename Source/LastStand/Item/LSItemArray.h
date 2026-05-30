@@ -11,9 +11,14 @@ struct FInventoryItemInfo : public FFastArraySerializerItem
 
 	FInventoryItemInfo() {};
 
+	FInventoryItemInfo(FName NewID, int32 NewQuantity) : ItemID(NewID), Quantity(NewQuantity) {};
+
 	// Array에 저장할 요소
 	UPROPERTY()
-	int32 ItemID;
+	FName ItemID;
+
+	UPROPERTY()
+	int32 Quantity = 0;
 };
 
 USTRUCT()
@@ -31,12 +36,58 @@ struct FInventoryItemInfoArray : public FFastArraySerializer
 
 	void AddInventoryItem(const FInventoryItemInfo& NewItemInfo) 
 	{
-		int32 Index = Items.Add(NewItemInfo);
+		// 이미 같은 ItemID가 있으면 수량만 합산
+		for (FInventoryItemInfo& Item : Items)
+		{
+			if (Item.ItemID == NewItemInfo.ItemID)
+			{
+				Item.Quantity += NewItemInfo.Quantity;
+				MarkItemDirty(Item);
+				return;
+			}
+		}
+
+		// 없으면 새 엔트리 추가
+		const int32 Index = Items.Add(NewItemInfo);
 		MarkItemDirty(Items[Index]);
-		Items[Index].PostReplicatedAdd(*this);
 	};
 
-	void RemoveInventoryItem(const int32 ItemInfoID)
+	bool UpdateItemQuantity(const FName ItemID, int32 NewQuantity)
+	{
+		for (FInventoryItemInfo& Item : Items)
+		{
+			if (Item.ItemID == ItemID)
+			{
+				Item.Quantity = NewQuantity;
+				MarkItemDirty(Item);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool AddItemQuantity(const FName ItemID, int32 Delta)
+	{
+		for (FInventoryItemInfo& Item : Items)
+		{
+			if (Item.ItemID == ItemID)
+			{
+				Item.Quantity += Delta;
+				if (Item.Quantity <= 0)
+				{
+					RemoveInventoryItem(ItemID);
+				}
+				else
+				{
+					MarkItemDirty(Item);
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void RemoveInventoryItem(const FName ItemInfoID)
 	{
 		for (int32 Index = 0; Index < Items.Num(); ++Index)
 		{

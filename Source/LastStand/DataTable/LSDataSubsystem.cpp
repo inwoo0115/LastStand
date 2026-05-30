@@ -1,0 +1,27 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "DataTable/LSDataSubsystem.h"
+#include "Settings/LSGameDataSettings.h"
+#include "LSItemData.h"
+
+#include "LSDataSubsystem.h"
+
+void ULSDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	// 세션 시작하면 로드 하기
+	const ULSGameDataSettings* Settings = GetDefault<ULSGameDataSettings>();
+	ItemTable = Settings->ItemTable.LoadSynchronous();
+}
+
+const FItemData* ULSDataSubsystem::FindItem(FName ItemID) const
+{
+	if (!ItemTable)
+	{
+		return nullptr;
+	}
+
+	return ItemTable->FindRow<FItemData>(ItemID, TEXT("UDataSubsystem::FindItem"));
+}

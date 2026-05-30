@@ -1,35 +1,53 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/Components/LSInventoryComponent.h"
+#include "Net/UnrealNetwork.h" 
+#include "Item/LSItemArray.h"
 
 
-// Sets default values for this component's properties
 ULSInventoryComponent::ULSInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
-
-// Called when the game starts
-void ULSInventoryComponent::BeginPlay()
+void ULSInventoryComponent::AddItemToInventory(const FName ItemInfoID, const int32 Quantity)
 {
-	Super::BeginPlay();
+	FInventoryItemInfo NewInfo(ItemInfoID, Quantity);
 
-	// ...
-	
+	InventoryItems.AddInventoryItem(NewInfo);
 }
 
-
-// Called every frame
-void ULSInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void ULSInventoryComponent::RemoveItemFromInventory(const FName ItemInfoID)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
+	InventoryItems.RemoveInventoryItem(ItemInfoID);
 }
+
+void ULSInventoryComponent::UpdateItemInInventory(const FName ItemInfoID, const int32 NewQuantity)
+{
+	if (!InventoryItems.UpdateItemQuantity(ItemInfoID, NewQuantity))
+	{
+		UE_LOG(LogTemp, Log, TEXT("No available Item in Inventory"));
+	}
+}
+
+void ULSInventoryComponent::AddDeltaToItem(const FName ItemInfoID, const int32 Delta)
+{
+	if (InventoryItems.AddItemQuantity(ItemInfoID, Delta))
+	{
+		UE_LOG(LogTemp, Log, TEXT("No available Item in Inventory"));
+	}
+}
+
+
+void ULSInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ULSInventoryComponent, InventoryItems);
+}
+
+
 
