@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Interface/LSInteractComponentInterface.h"
+#include "Interface/LSInventoryComponentInterface.h"
 #include "LSCharacterBase.generated.h"
 
 
@@ -15,13 +17,17 @@ enum class ECharacterControlType : uint8
 
 
 UCLASS()
-class LASTSTAND_API ALSCharacterBase : public ACharacter
+class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComponentInterface, public ILSInventoryComponentInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
 	ALSCharacterBase();
+
+	virtual ULSInteractionComponent* GetInteractionComponent();
+
+	virtual ULSInventoryComponent* GetInventoryComponent();
 
 protected:
 	// Called when the game starts or when spawned
@@ -54,4 +60,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSEquipmentComponent> Equipments;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSInteractionComponent> Interaction;
 };

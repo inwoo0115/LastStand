@@ -41,4 +41,10 @@ struct FItemData : public FTableRowBase
     // 아이콘 에셋은 소프트 레퍼런스로 — 하드 레퍼런스 금지
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     TSoftObjectPtr<UTexture2D> Icon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    TSoftClassPtr<AActor> ItemClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    TSoftClassPtr<AActor> DropItemClass;
 };

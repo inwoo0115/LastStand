@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Item/LSItemBase.h"
+#include "Props/LSPropBase.h"
 
 
 // Sets default values
-ALSItemBase::ALSItemBase()
+ALSPropBase::ALSPropBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -13,14 +13,14 @@ ALSItemBase::ALSItemBase()
 }
 
 // Called when the game starts or when spawned
-void ALSItemBase::BeginPlay()
+void ALSPropBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void ALSItemBase::Tick(float DeltaTime)
+void ALSPropBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 

@@ -62,6 +62,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI|Slot")
 	void RemoveWidgetFromSlot(FSlotHandle Handle);
 
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
 protected:
 	UPROPERTY()
 	TObjectPtr<ULSRootLayoutWidget> RootLayout;

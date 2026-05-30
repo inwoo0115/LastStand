@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/LSEquipmentComponent.h"
 #include "Components/LSInventoryComponent.h"
+#include "Components/LSInteractionComponent.h"
 
 
 // Sets default values
@@ -39,6 +40,19 @@ ALSCharacterBase::ALSCharacterBase()
 	
 	//  Equipments
 	Equipments = CreateDefaultSubobject<ULSEquipmentComponent>(TEXT("Equipments"));
+
+	// Interaction
+	Interaction = CreateDefaultSubobject<ULSInteractionComponent>(TEXT("Interaction"));
+}
+
+ULSInteractionComponent* ALSCharacterBase::GetInteractionComponent()
+{
+	return Interaction;
+}
+
+ULSInventoryComponent* ALSCharacterBase::GetInventoryComponent()
+{
+	return Inventory;
 }
 
 // Called when the game starts or when spawned

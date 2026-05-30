@@ -13,7 +13,7 @@ void ULSUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void ULSUISubsystem::InitializeRootLayout(APlayerController* PC, TSubclassOf<class ULSRootLayoutWidget> LayoutClass)
 {
-	if (!PC || !LayoutClass) return;
+	if (!PC || !LayoutClass || !PC->IsLocalController()) return;
 
 	RootLayout = CreateWidget<ULSRootLayoutWidget>(PC, LayoutClass);
 
@@ -123,4 +123,11 @@ void ULSUISubsystem::RemoveWidgetFromSlot(FSlotHandle Handle)
 	{
 		Pending->RemoveAll([&](const FSlotEntry& E) { return E.HandleId == Handle.HandleId; });
 	}
+}
+
+bool ULSUISubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) return false;
+	// 데디케이티드 서버에서는 UI 서브시스템 불필요
+	return !IsRunningDedicatedServer();
 }

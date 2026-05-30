@@ -26,13 +26,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI Slot")
     FGameplayTag SlotTag;
 
-private:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<class UVerticalBox> Container;
 
-
     UPROPERTY()
     TMap<int32, TObjectPtr<UUserWidget>> InjectedWidgets;
-	
-	
 };
