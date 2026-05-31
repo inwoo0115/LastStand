@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Item/LSItemBase.h"
@@ -12,17 +12,15 @@ ALSItemBase::ALSItemBase()
 
 }
 
+const FName ALSItemBase::GetItemName()
+{
+	return ItemName;
+}
+
 // Called when the game starts or when spawned
 void ALSItemBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
-
-// Called every frame
-void ALSItemBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 

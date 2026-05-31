@@ -21,6 +21,8 @@ public:
 
 	void Interact();
 
+	void InteractCertainCandidate(AActor* Candidate);
+
 	void AddCandidate(AActor* NewCandidate);
 
 	void RemoveCandidate(AActor* DeleteCandidate);

@@ -4,16 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "DataTable/LSItemData.h"
 #include "LSEquipmentComponent.generated.h"
 
-UENUM()
-enum class EEquipmentType : uint8
-{
-	Main,
-	Sub,
-	Throwable,
-	Melee
-};
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LASTSTAND_API ULSEquipmentComponent : public UActorComponent
@@ -23,6 +17,10 @@ class LASTSTAND_API ULSEquipmentComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	ULSEquipmentComponent();
+
+	void EquipItemFromInventory(FName ItemName);
+
+	void UnEquipItemFromInventory(EEquipmentType EquipType);
 
 protected:
 	// Called when the game starts

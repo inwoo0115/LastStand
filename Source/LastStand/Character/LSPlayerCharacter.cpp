@@ -4,6 +4,7 @@
 #include "Character/LSPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/LSInteractionComponent.h"
 #include "Net/UnrealNetwork.h"
 
 ALSPlayerCharacter::ALSPlayerCharacter()
@@ -26,6 +27,7 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Look);
 	EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Walk);
+	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Interact);
 }
 
 void ALSPlayerCharacter::Move(const FInputActionValue& Value)
@@ -56,9 +58,19 @@ void ALSPlayerCharacter::Walk(const FInputActionValue& Value)
 	ServerRPCRun();
 }
 
+void ALSPlayerCharacter::Interact(const FInputActionValue& Value)
+{
+	ServerRPCInteract();
+}
+
 void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+void ALSPlayerCharacter::ServerRPCInteract_Implementation()
+{
+	Interaction->Interact();
 }
 
 void ALSPlayerCharacter::OnRepIsRun()

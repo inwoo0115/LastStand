@@ -29,6 +29,8 @@ protected:
 
 	void Walk(const FInputActionValue& Value);
 
+	void Interact(const FInputActionValue& Value);
+
 	void Jump();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -43,12 +45,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> WalkAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InteractAction;
+
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCRun();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCInteract();
 
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsRun)

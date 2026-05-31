@@ -15,19 +15,32 @@ enum class EItemType : uint8
     Quest
 };
 
+UENUM()
+enum class EEquipmentType : uint8
+{
+    None,
+    Main,
+    Sub,
+    Throwable,
+    Melee
+};
+
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-    FText ItemName;
+    FName ItemName;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     FText Description;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     EItemType ItemType = EItemType::Consumable;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    EEquipmentType EquipmentType = EEquipmentType::None;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     int32 MaxStackSize = 1;

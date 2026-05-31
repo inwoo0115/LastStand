@@ -54,6 +54,11 @@ void ULSInteractionComponent::Interact()
 	}
 }
 
+void ULSInteractionComponent::InteractCertainCandidate(AActor* Candidate)
+{
+	// 정해진 액터에 상호작용 하는 함수
+}
+
 void ULSInteractionComponent::AddCandidate(AActor* NewCandidate)
 {
 	if (NewCandidate->Implements<ULSInteractableInterface>())
