@@ -4,6 +4,8 @@
 #include "Character/Components/LSInventoryComponent.h"
 #include "Net/UnrealNetwork.h" 
 #include "Item/LSItemArray.h"
+#include "DataTable/LSDataSubsystem.h"
+#include "Props/LSDropItem.h"
 
 
 ULSInventoryComponent::ULSInventoryComponent()
@@ -41,12 +43,54 @@ void ULSInventoryComponent::AddDeltaToItem(const FName ItemInfoID, const int32 D
 	}
 }
 
+const FInventoryItemInfoArray& ULSInventoryComponent::GetInventoryItems() const
+{
+	return InventoryItems;
+}
+
+void ULSInventoryComponent::DropItemToWorld(FName ItemID, int32 Quantity)
+{
+	// UI에서 호출 될 함수
+	if (GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	ServerRPCDropItemToWorld(ItemID, Quantity);
+}
+
 
 void ULSInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ULSInventoryComponent, InventoryItems);
+}
+
+void ULSInventoryComponent::OnInventoryItemChange()
+{
+	// UI 변경
+	OnInventoryUpdated.Broadcast();
+}
+
+void ULSInventoryComponent::ServerRPCDropItemToWorld_Implementation(FName ItemID, int32 Quantity)
+{
+	// Data 검색
+	const ULSDataSubsystem* Data = GetWorld()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	const FItemData* Row = Data ? Data->FindItem(ItemID) : nullptr;
+	if (!Row)
+	{
+		return;
+	}
+
+	if (UClass* DropClass = Row->DropItemClass.LoadSynchronous())
+	{
+		const FVector Loc = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 150.f;
+		ALSDropItem* Drop = GetWorld()->SpawnActor<ALSDropItem>(DropClass, Loc, FRotator::ZeroRotator);
+		Drop->InitItem(ItemID, Quantity);
+	}
+
+	AddDeltaToItem(ItemID, -Quantity);
 }
 
 

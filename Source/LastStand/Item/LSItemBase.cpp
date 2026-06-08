@@ -3,7 +3,6 @@
 
 #include "Item/LSItemBase.h"
 
-
 // Sets default values
 ALSItemBase::ALSItemBase()
 {
@@ -16,6 +15,7 @@ const FName ALSItemBase::GetItemName()
 {
 	return ItemName;
 }
+
 
 // Called when the game starts or when spawned
 void ALSItemBase::BeginPlay()

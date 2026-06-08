@@ -8,7 +8,7 @@
 #include "LSInteractionComponent.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnInteractionUpdate, FName);
-
+DECLARE_MULTICAST_DELEGATE(FOnInteractionArrayUpdated);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LASTSTAND_API ULSInteractionComponent : public UActorComponent
@@ -33,9 +33,12 @@ public:
 
 	void SetClosestCandidate();
 
+	const TArray<TObjectPtr<AActor>> GetCandidates();
+
 	// UI Broadcast
 	FOnInteractionUpdate OnInteractionUpdate;
-
+	
+	FOnInteractionArrayUpdated OnInteractionArrayUpdate;
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -43,10 +46,14 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	// OnRep
 	UFUNCTION()
 	void OnClosestCandidateRep();
 
-	UPROPERTY()
+	UFUNCTION()
+	void OnInteractionArrayChange();
+
+	UPROPERTY(ReplicatedUsing = OnInteractionArrayChange)
 	TArray<TObjectPtr<AActor>> Candidates;
 
 	UPROPERTY(ReplicatedUsing=OnClosestCandidateRep)

@@ -8,8 +8,6 @@
 #include "UI/LSUISubsystem.h"
 #include "Net/UnrealNetwork.h" 
 
-
-// Sets default values for this component's properties
 ULSInteractionComponent::ULSInteractionComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -57,6 +55,14 @@ void ULSInteractionComponent::Interact()
 void ULSInteractionComponent::InteractCertainCandidate(AActor* Candidate)
 {
 	// 정해진 액터에 상호작용 하는 함수
+	if (Candidate && Candidate->Implements<ULSInteractableInterface>())
+	{
+		ILSInteractableInterface* InteractActor = Cast<ILSInteractableInterface>(Candidate);
+		if (InteractActor && GetOwner())
+		{
+			InteractActor->Interact(GetOwner());
+		}
+	}
 }
 
 void ULSInteractionComponent::AddCandidate(AActor* NewCandidate)
@@ -69,12 +75,10 @@ void ULSInteractionComponent::AddCandidate(AActor* NewCandidate)
 
 void ULSInteractionComponent::RemoveCandidate(AActor* DeleteCandidate)
 {
-	if (!DeleteCandidate->Implements<ULSInteractableInterface>())
+	if (DeleteCandidate->Implements<ULSInteractableInterface>())
 	{
-		return;
+		Candidates.Remove(DeleteCandidate);
 	}
-
-	Candidates.Remove(DeleteCandidate);
 }
 
 bool ULSInteractionComponent::CanInteract()
@@ -122,6 +126,11 @@ void ULSInteractionComponent::SetClosestCandidate()
 	ClosestCandidate = Closest;
 }
 
+const TArray<TObjectPtr<AActor>> ULSInteractionComponent::GetCandidates()
+{
+	return Candidates;
+}
+
 void ULSInteractionComponent::OnClosestCandidateRep()
 {
 	APawn* Pn = Cast<APawn>(GetOwner());
@@ -133,7 +142,7 @@ void ULSInteractionComponent::OnClosestCandidateRep()
 			ILSInteractableInterface* II = Cast<ILSInteractableInterface>(ClosestCandidate);
 			if (II)
 			{
-				OnInteractionUpdate.Broadcast(II->GetName());
+				OnInteractionUpdate.Broadcast(II->GetItemName());
 			}
 		}
 		else
@@ -143,13 +152,17 @@ void ULSInteractionComponent::OnClosestCandidateRep()
 	}
 }
 
-
+void ULSInteractionComponent::OnInteractionArrayChange()
+{
+	OnInteractionArrayUpdate.Broadcast();
+}
 
 void ULSInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ULSInteractionComponent, ClosestCandidate);
+	DOREPLIFETIME(ULSInteractionComponent, Candidates);
 }
 
 void ULSInteractionComponent::BeginPlay()

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,7 +14,10 @@ class LASTSTAND_API ULSInventoryWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
-	
-	
-	
+protected:
+    UPROPERTY(meta = (BindWidget)) 
+    TObjectPtr<class ULSInventorySlotWidget> InventoryContainer;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<class ULSInteractionSlotWidget> DropItemContainer;
 };

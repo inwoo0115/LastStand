@@ -27,6 +27,12 @@ ALSDropItem::ALSDropItem()
 	SetReplicateMovement(true);
 }
 
+void ALSDropItem::InitItem(FName Name, int32 NewQuantity)
+{
+	ItemName = Name;
+	Quantity = NewQuantity;
+}
+
 void ALSDropItem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -49,9 +55,14 @@ void ALSDropItem::Interact(AActor* InteractActor)
 	Destroy();
 }
 
-const FName ALSDropItem::GetName()
+const FName ALSDropItem::GetItemName()
 {
 	return ItemName;
+}
+
+const int32 ALSDropItem::GetQuantity()
+{
+	return Quantity;
 }
 
 void ALSDropItem::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

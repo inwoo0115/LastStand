@@ -7,6 +7,7 @@
 #include "Item/LSItemArray.h"
 #include "LSInventoryComponent.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LASTSTAND_API ULSInventoryComponent : public UActorComponent
@@ -25,13 +26,24 @@ public:
 
 	void AddDeltaToItem(const FName ItemInfoID, const int32 Delta);
 
+	const FInventoryItemInfoArray& GetInventoryItems() const;
 
+	void DropItemToWorld(FName ItemID, int32 Quantity);
+
+	// UI Delegate
+	FOnInventoryUpdated OnInventoryUpdated;
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Fast Array Sericalizer 아이템 배열
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing=OnInventoryItemChange)
 	FInventoryItemInfoArray InventoryItems;
+
+	UFUNCTION()
+	void OnInventoryItemChange();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCDropItemToWorld(FName ItemID, int32 Quantity);
 	
 };

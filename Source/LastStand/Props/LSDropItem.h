@@ -18,11 +18,15 @@ class LASTSTAND_API ALSDropItem : public ALSPropBase, public ILSInteractableInte
 public:
 	ALSDropItem();
 
+	void InitItem(FName Name, int32 NewQuantity);
+
 	virtual void BeginPlay() override;
 
 	virtual void Interact(AActor* InteractActor) override;
 
-	virtual const FName GetName() override;
+	virtual const FName GetItemName() override;
+
+	const int32 GetQuantity();
 
 	
 	UFUNCTION()
@@ -41,10 +45,10 @@ protected:
 	TObjectPtr<class UBoxComponent> InteractionBox;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
-	FName ItemName;
+	FName ItemName = "Default";
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
-	int32 Quantity;
+	int32 Quantity = 0;
 
 	UPROPERTY(Replicated)
 	bool bCanInteract = false;

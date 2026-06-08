@@ -23,5 +23,4 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	FName ItemName;
 	
-	
 };
