@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
+#include "LSUISubsystem.h"
 #include "LSLayerWidget.generated.h"
 
 /**
@@ -21,14 +22,28 @@ public:
 
 	bool ContainsWidget(UUserWidget* Widget) const;
 
+	void ActivateLayer();
+
+	void DeactivateLayer();
+
+	bool GetIsActivated();
+
+	EInputType GetInputType();
+	
 protected:
 	virtual void NativeConstruct() override;
 
 private:
+	UPROPERTY()
+	bool bIsActivated = false;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UOverlay> WidgetContainer;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UUserWidget>> WidgetStack;
+
+	UPROPERTY(EditAnywhere, Category = "Input Type")
+	EInputType InputType = EInputType::Game;
 	
 };

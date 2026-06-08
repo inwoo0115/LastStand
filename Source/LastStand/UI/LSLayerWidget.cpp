@@ -4,6 +4,7 @@
 #include "UI/LSLayerWidget.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "LSUISubsystem.h"
 
 UUserWidget* ULSLayerWidget::PushWidget(TSubclassOf<UUserWidget> WidgetClass)
 {
@@ -38,6 +39,46 @@ bool ULSLayerWidget::ContainsWidget(UUserWidget* Widget) const
 {
     return WidgetStack.Contains(Widget);
 
+}
+
+void ULSLayerWidget::ActivateLayer()
+{
+    SetVisibility(ESlateVisibility::Visible);
+
+    bIsActivated = true;
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (ULSUISubsystem* Subsystem = GI->GetSubsystem<ULSUISubsystem>())
+        {
+            Subsystem->UpdateInputType();
+        }
+    }
+}
+
+void ULSLayerWidget::DeactivateLayer()
+{
+    SetVisibility(ESlateVisibility::Collapsed);
+
+    bIsActivated = false;
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (ULSUISubsystem* Subsystem = GI->GetSubsystem<ULSUISubsystem>())
+        {
+            Subsystem->UpdateInputType();
+        }
+    }
+}
+
+bool ULSLayerWidget::GetIsActivated()
+{
+    return bIsActivated;
+}
+
+EInputType ULSLayerWidget::GetInputType()
+{
+    return InputType;
 }
 
 void ULSLayerWidget::NativeConstruct()

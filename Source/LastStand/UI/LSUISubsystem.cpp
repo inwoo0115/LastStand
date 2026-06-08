@@ -5,6 +5,7 @@
 #include "LSSlotWidget.h"
 #include "LSRootLayoutWidget.h"
 #include "LSLayerWidget.h"
+#include "Tags/LSGameplayTags.h"
 
 void ULSUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -130,4 +131,84 @@ bool ULSUISubsystem::ShouldCreateSubsystem(UObject* Outer) const
 	if (!Super::ShouldCreateSubsystem(Outer)) return false;
 	// 데디케이티드 서버에서는 UI 서브시스템 불필요
 	return !IsRunningDedicatedServer();
+}
+
+void ULSUISubsystem::UpdateInputType()
+{
+	// UI 우선순위 대로 입력 처리 설정
+	if (SetInputTypeByTag(LSUITags::Layer_Menu))
+	{
+		return;
+	}
+	else if (SetInputTypeByTag(LSUITags::Layer_Modal))
+	{
+		return;
+	}
+	else if (SetInputTypeByTag(LSUITags::Layer_Game))
+	{
+		return;
+	}
+}
+
+bool ULSUISubsystem::SetInputTypeByTag(FGameplayTag LayerTag)
+{
+	if (TObjectPtr<ULSLayerWidget>* LayerPtr = LayerMap.Find(LayerTag))
+	{
+		ULSLayerWidget* Layer = *LayerPtr;
+		if (Layer->GetIsActivated())
+		{
+			EInputType NewInputType = Layer->GetInputType();
+			UpdateInputMode(NewInputType);
+			return true;
+		}
+	}
+	return false;
+}
+
+void ULSUISubsystem::UpdateInputMode(EInputType NewType)
+{
+	if (InputType == NewType)
+	{
+		return;
+	}
+
+	const UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	const ULocalPlayer* LocalPlayer = GI->GetFirstGamePlayer();
+	if (!LocalPlayer) return;
+
+	APlayerController* PC = LocalPlayer->GetPlayerController(GetWorld());
+	if (!PC) return;
+
+	InputType = NewType;
+
+	switch (InputType)
+	{
+	case EInputType::Game:
+	{
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
+	}
+	break;
+
+	case EInputType::GameAndUI:
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+	}
+	break;
+
+	case EInputType::UIOnly:
+	{
+		FInputModeUIOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+	}
+	break;
+	}
 }

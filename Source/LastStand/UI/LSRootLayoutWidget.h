@@ -23,12 +23,9 @@ protected:
     TObjectPtr<class ULSLayerWidget> LayerGame;
 
     UPROPERTY(meta = (BindWidget))
-    TObjectPtr <ULSLayerWidget> LayerMenu;
+    TObjectPtr<ULSLayerWidget> LayerMenu;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<ULSLayerWidget> LayerModal;
-	
-	
-	
 	
 };

@@ -28,6 +28,14 @@ struct FSlotEntry
 };
 
 
+UENUM(BlueprintType)
+enum class EInputType : uint8
+{
+	Game,
+	GameAndUI,
+	UIOnly
+};
+
 /**
  * 
  */
@@ -64,6 +72,11 @@ public:
 
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
+	void UpdateInputType();
+	
+	bool SetInputTypeByTag(FGameplayTag LayerTag);
+
+	void UpdateInputMode(EInputType NewType);
 protected:
 	UPROPERTY()
 	TObjectPtr<ULSRootLayoutWidget> RootLayout;
@@ -80,5 +93,5 @@ protected:
 
 	int32 NextHandleId = 0;
 	
-	
+	EInputType InputType = EInputType::UIOnly;
 };
