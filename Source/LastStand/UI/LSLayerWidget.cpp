@@ -84,4 +84,13 @@ EInputType ULSLayerWidget::GetInputType()
 void ULSLayerWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
+    if (bIsActivated)
+    {
+        ActivateLayer();
+    }
+    else
+    {
+        DeactivateLayer();
+    }
 }

@@ -62,6 +62,10 @@ bool ULSInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDr
 	
 	// 받은 데이터 기반으로 드랍 이벤트 처리
 
+	// 페이로드로 받은 데이터로 아이템을 인벤토리 추가
+
+	// 필드에 있는 오브젝트 제거
+
 	return true;
 }
 

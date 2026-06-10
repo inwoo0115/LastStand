@@ -67,6 +67,12 @@ bool ULSInteractionSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const F
 
 	// 받은 데이터 기반으로 드랍 이벤트 처리
 
+	// 페이로드로 받은 데이터로 아이템을 스폰
+
+	// 인벤토리에서 제거 
+	
+
+
 	return true;
 }
 

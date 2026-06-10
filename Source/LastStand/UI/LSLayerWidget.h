@@ -34,7 +34,7 @@ protected:
 	virtual void NativeConstruct() override;
 
 private:
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 	bool bIsActivated = false;
 
 	UPROPERTY(meta = (BindWidget))

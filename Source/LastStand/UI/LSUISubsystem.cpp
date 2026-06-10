@@ -21,6 +21,8 @@ void ULSUISubsystem::InitializeRootLayout(APlayerController* PC, TSubclassOf<cla
 	if (!RootLayout) return;
 
 	RootLayout->AddToPlayerScreen(1000);
+
+	
 }
 
 void ULSUISubsystem::RegisterLayer(FGameplayTag LayerTag, ULSLayerWidget* LayerWidget)

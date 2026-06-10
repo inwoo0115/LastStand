@@ -125,7 +125,7 @@ void ULSEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ULSEquipmentComponent, Equipments);
-
+	//DOREPLIFETIME(ULSEquipmentComponent, Equipments);
+	// Map 리플리케이션이 안되서 고민좀
 }
 
