@@ -26,14 +26,24 @@ public:
 
 	void DeactivateLayer();
 
+	void DeactivateLayerIfEmpty();
+
 	bool GetIsActivated();
 
 	EInputType GetInputType();
+
+	void PushWidgetToWidgetStack(UUserWidget* Widget);
+
+	void PopWidgetFromWidgetStack(UUserWidget* Widget);
+
+	void FocusOnTopWidget();
 	
 protected:
 	virtual void NativeConstruct() override;
 
-private:
+	UPROPERTY()
+	TObjectPtr<class ULSUISubsystem> CachedUISubsystem;
+
 	UPROPERTY(EditDefaultsOnly)
 	bool bIsActivated = false;
 

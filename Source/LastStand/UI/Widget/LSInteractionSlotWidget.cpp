@@ -13,24 +13,42 @@ void ULSInteractionSlotWidget::RefreshSlot()
 {
 	if (!InteractionComp.IsValid() || !Container)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Can Not Refresh slot"));
+
+		return;
+	}
+
+	if (!EntryWidgetClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RefreshSlot: EntryWidgetClass is not set"));
 		return;
 	}
 
 	Container->ClearChildren();
 
-	// InteractionContainer 초기화
-	const TArray<TObjectPtr<AActor>> InfoArray = InteractionComp->GetCandidates();
-
-	for (const TObjectPtr<AActor> Info : InfoArray)
+	if (!InteractionComp->CanInteract())
 	{
-		const TObjectPtr<ALSDropItem> DI = Cast<ALSDropItem>(Info);
+		return;
+	}
+
+	// InteractionContainer 초기화
+	const TArray<TObjectPtr<AActor>>& InfoArray = InteractionComp->GetCandidates();
+
+	UE_LOG(LogTemp, Log, TEXT("Refresh interaction slot"));
+
+	for (const TObjectPtr<AActor>& Info : InfoArray)
+	{
+		ALSDropItem* DI = Cast<ALSDropItem>(Info);
 		if (!DI)
 		{
 			continue;
 		}
 		ULSInventoryEntryWidget* Entry = CreateWidget<ULSInventoryEntryWidget>(this, EntryWidgetClass);
-		Entry->SetItem(DI->GetItemName(), DI->GetQuantity(), false);
-		Container->AddChildToVerticalBox(Entry);
+		if (Entry)
+		{
+			Container->AddChildToVerticalBox(Entry);
+			Entry->SetItem(DI->GetItemName(), DI->GetQuantity(), false);
+		}
 	}
 }
 
@@ -43,6 +61,8 @@ void ULSInteractionSlotWidget::NativeConstruct()
 		InteractionComp = P->FindComponentByClass<ULSInteractionComponent>();
 		if (InteractionComp.IsValid())
 		{
+			UE_LOG(LogTemp, Log, TEXT("Delegate Bind Interaction comp"));
+
 			InteractionComp->OnInteractionArrayUpdate.AddUObject(this, &ULSInteractionSlotWidget::RefreshSlot);
 
 			RefreshSlot();   // 최초 1회
@@ -66,6 +86,11 @@ bool ULSInteractionSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const F
 	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
 
 	// 받은 데이터 기반으로 드랍 이벤트 처리
+	if (!ItemOp->bFromInventory)
+	{
+		return false;
+	}
+
 
 	// 페이로드로 받은 데이터로 아이템을 스폰
 

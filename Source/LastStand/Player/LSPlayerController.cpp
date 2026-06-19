@@ -3,7 +3,9 @@
 
 #include "Player/LSPlayerController.h"
 #include "UI/LSUISubsystem.h"
+#include "UI/LSUIEventSubsystem.h"
 #include "UI/LSRootLayoutWidget.h"
+#include "EnhancedInputComponent.h"
 
 ALSPlayerController::ALSPlayerController()
 {
@@ -25,14 +27,11 @@ void ALSPlayerController::BeginPlay()
 			if (LayoutClass)
 				Manager->InitializeRootLayout(this, LayoutClass);
 		}
+
+		CachedUISubsystem = GI->GetSubsystem<ULSUIEventSubsystem>();
 	}
 }
 
-void ALSPlayerController::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-}
 
 void ALSPlayerController::OnPossess(APawn* InPawn)
 {
@@ -42,4 +41,20 @@ void ALSPlayerController::OnPossess(APawn* InPawn)
 	{
 		return;
 	}
+}
+
+void ALSPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+	
+	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent);
+
+	//Bind Action
+	EIC->BindAction(InventoryAction, ETriggerEvent::Started, this, &ALSPlayerController::ToggleInventory);
+}
+
+void ALSPlayerController::ToggleInventory(const FInputActionValue& Value)
+{
+	// Inventory 키기
+	CachedUISubsystem->InventoryInput.Broadcast();
 }

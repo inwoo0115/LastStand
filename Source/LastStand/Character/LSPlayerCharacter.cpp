@@ -28,6 +28,8 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Look);
 	EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Walk);
 	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Interact);
+	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Crouching);
+
 }
 
 void ALSPlayerCharacter::Move(const FInputActionValue& Value)
@@ -63,6 +65,11 @@ void ALSPlayerCharacter::Interact(const FInputActionValue& Value)
 	ServerRPCInteract();
 }
 
+void ALSPlayerCharacter::Crouching(const FInputActionValue& Value)
+{
+	ServerRPCCrouch();
+}
+
 void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -71,6 +78,20 @@ void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void ALSPlayerCharacter::ServerRPCInteract_Implementation()
 {
 	Interaction->Interact();
+}
+
+void ALSPlayerCharacter::ServerRPCCrouch_Implementation()
+{
+	if (IsCrouch)
+	{
+		IsCrouch = false;
+		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
+	}
+	else
+	{
+		IsCrouch = true;
+		GetCharacterMovement()->MaxWalkSpeed += 100.0f;
+	}
 }
 
 void ALSPlayerCharacter::OnRepIsRun()
@@ -82,6 +103,18 @@ void ALSPlayerCharacter::OnRepIsRun()
 	else
 	{
 		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
+	}
+}
+
+void ALSPlayerCharacter::OnRepIsCrouch()
+{
+	if (IsCrouch)
+	{
+		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed += 100.0f;
 	}
 }
 

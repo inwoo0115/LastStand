@@ -152,6 +152,8 @@ void ULSInteractionComponent::OnClosestCandidateRep()
 
 void ULSInteractionComponent::OnInteractionArrayChange()
 {
+	UE_LOG(LogTemp, Log, TEXT("OnInteractionArrayChange Broadcast"));
+
 	OnInteractionArrayUpdate.Broadcast();
 }
 

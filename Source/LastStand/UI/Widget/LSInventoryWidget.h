@@ -3,18 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "UI/LSWidgetBase.h"
 #include "LSInventoryWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class LASTSTAND_API ULSInventoryWidget : public UUserWidget
+class LASTSTAND_API ULSInventoryWidget : public ULSWidgetBase
 {
 	GENERATED_BODY()
 	
+public:
+    virtual void ToggleWidgetByInput() override;
+
 protected:
+    virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
+
+    FDelegateHandle InputDelegate;
+
     UPROPERTY(meta = (BindWidget)) 
     TObjectPtr<class ULSInventorySlotWidget> InventoryContainer;
 

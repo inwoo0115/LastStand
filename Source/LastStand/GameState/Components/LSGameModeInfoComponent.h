@@ -18,6 +18,8 @@ public:
 
 	virtual void BeginPlay() override;
 
+	void RemoveWidgetsFromLayer();
+
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -28,6 +30,8 @@ protected:
 	UFUNCTION()
 	void OnInfoDataRep();
 
-private:
+	UPROPERTY()
+	TArray<TObjectPtr<class UUserWidget>> WidgetArray;
+
 	void PushWidgetsToLayer(class ULSUISubsystem* UISubsystem, const TArray<TSoftClassPtr<UUserWidget>>& Widgets, FGameplayTag LayerTag);
 };

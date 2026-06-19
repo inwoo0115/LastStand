@@ -9,3 +9,10 @@ ALSGameState::ALSGameState()
 {
 	InfoComp = CreateDefaultSubobject<ULSGameModeInfoComponent>(TEXT("InfoComp"));
 }
+
+void ALSGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	InfoComp->RemoveWidgetsFromLayer();
+
+	Super::EndPlay(EndPlayReason);
+}

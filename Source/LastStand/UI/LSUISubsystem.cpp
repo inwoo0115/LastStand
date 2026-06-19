@@ -6,6 +6,7 @@
 #include "LSRootLayoutWidget.h"
 #include "LSLayerWidget.h"
 #include "Tags/LSGameplayTags.h"
+#include "Framework/Application/SlateApplication.h"
 
 void ULSUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -159,6 +160,10 @@ bool ULSUISubsystem::SetInputTypeByTag(FGameplayTag LayerTag)
 		ULSLayerWidget* Layer = *LayerPtr;
 		if (Layer->GetIsActivated())
 		{
+			// 최상단에 입력 고정
+			Layer->FocusOnTopWidget();
+
+			// Layer 기반 인풋 변경
 			EInputType NewInputType = Layer->GetInputType();
 			UpdateInputMode(NewInputType);
 			return true;
@@ -198,10 +203,15 @@ void ULSUISubsystem::UpdateInputMode(EInputType NewType)
 	case EInputType::GameAndUI:
 	{
 		FInputModeGameAndUI InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		InputMode.SetHideCursorDuringCapture(false);
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
+
+		if (GEngine && GEngine->GameViewport)
+		{
+			FSlateApplication::Get().SetAllUserFocusToGameViewport();
+		}
 	}
 	break;
 
@@ -210,6 +220,11 @@ void ULSUISubsystem::UpdateInputMode(EInputType NewType)
 		FInputModeUIOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
+
+		if (GEngine && GEngine->GameViewport)
+		{
+			FSlateApplication::Get().SetAllUserFocusToGameViewport();
+		}
 	}
 	break;
 	}

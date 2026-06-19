@@ -31,6 +31,8 @@ protected:
 
 	void Interact(const FInputActionValue& Value);
 
+	void Crouching(const FInputActionValue& Value);
+
 	void Jump();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -48,6 +50,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> CrouchAction;
+
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -58,10 +63,20 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCInteract();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPCCrouch();
+
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsRun)
 	bool IsRun = false;
 
+	// Character State flag
+	UPROPERTY(ReplicatedUsing = OnRepIsCrouch)
+	bool IsCrouch = false;
+
 	UFUNCTION()
 	void OnRepIsRun();
+
+	UFUNCTION()
+	void OnRepIsCrouch();
 };

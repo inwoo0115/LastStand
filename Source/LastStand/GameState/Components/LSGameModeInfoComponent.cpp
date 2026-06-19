@@ -27,6 +27,37 @@ void ULSGameModeInfoComponent::BeginPlay()
 	}
 }
 
+void ULSGameModeInfoComponent::RemoveWidgetsFromLayer()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[LSGameModeInfoComponent] OnInfoDataRep: World is null."));
+		return;
+	}
+
+	UGameInstance* GI = World->GetGameInstance();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[LSGameModeInfoComponent] OnInfoDataRep: GameInstance is null."));
+		return;
+	}
+
+	ULSUISubsystem* UISubsystem = GI->GetSubsystem<ULSUISubsystem>();
+	if (!UISubsystem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[LSGameModeInfoComponent] OnInfoDataRep: LSUISubsystem not found."));
+		return;
+	}
+
+	for (UUserWidget* Widget : WidgetArray)
+	{
+		UISubsystem->PopWidgetFromLayer(Widget);
+	}
+
+	WidgetArray.Empty();
+}
+
 void ULSGameModeInfoComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -87,6 +118,6 @@ void ULSGameModeInfoComponent::PushWidgetsToLayer(ULSUISubsystem* UISubsystem, c
 			continue;
 		}
 
-		UISubsystem->PushWidgetToLayer(LayerTag, WidgetClass);
+		WidgetArray.Push(UISubsystem->PushWidgetToLayer(LayerTag, WidgetClass));
 	}
 }

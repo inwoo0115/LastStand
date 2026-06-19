@@ -5,6 +5,7 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "LSUISubsystem.h"
+#include "LSWidgetBase.h"
 
 UUserWidget* ULSLayerWidget::PushWidget(TSubclassOf<UUserWidget> WidgetClass)
 {
@@ -13,7 +14,7 @@ UUserWidget* ULSLayerWidget::PushWidget(TSubclassOf<UUserWidget> WidgetClass)
     APlayerController* PC = GetOwningPlayer();
     if (!PC) return nullptr;
 
-    UUserWidget* NewWidget = CreateWidget<UUserWidget>(PC, WidgetClass);
+    ULSWidgetBase* NewWidget = CreateWidget<ULSWidgetBase>(PC, WidgetClass);
     if (!NewWidget) return nullptr;
 
     UOverlaySlot* OLSlot = WidgetContainer->AddChildToOverlay(NewWidget);
@@ -24,15 +25,21 @@ UUserWidget* ULSLayerWidget::PushWidget(TSubclassOf<UUserWidget> WidgetClass)
         OLSlot->SetVerticalAlignment(VAlign_Fill);
     }
 
-    WidgetStack.Add(NewWidget);
+    //WidgetStack.Add(NewWidget);
+
+    NewWidget->SetLayerWidget(this);
+
     return NewWidget;
 }
 
 void ULSLayerWidget::PopWidget(UUserWidget* Widget)
 {
-    if (!Widget || !WidgetContainer) return;
+    if (!Widget || !WidgetContainer)
+    {
+        return;
+    }
     WidgetContainer->RemoveChild(Widget);
-    WidgetStack.Remove(Widget);
+    //WidgetStack.Remove(Widget);
 }
 
 bool ULSLayerWidget::ContainsWidget(UUserWidget* Widget) const
@@ -43,31 +50,43 @@ bool ULSLayerWidget::ContainsWidget(UUserWidget* Widget) const
 
 void ULSLayerWidget::ActivateLayer()
 {
+    if (bIsActivated)
+    {
+        return;
+    }
+
     SetVisibility(ESlateVisibility::Visible);
 
     bIsActivated = true;
 
-    if (UGameInstance* GI = GetGameInstance())
+    if (CachedUISubsystem)
     {
-        if (ULSUISubsystem* Subsystem = GI->GetSubsystem<ULSUISubsystem>())
-        {
-            Subsystem->UpdateInputType();
-        }
+        CachedUISubsystem->UpdateInputType();
     }
 }
 
 void ULSLayerWidget::DeactivateLayer()
 {
+    if (!bIsActivated)
+    {
+        return;
+    }
+
     SetVisibility(ESlateVisibility::Collapsed);
 
     bIsActivated = false;
 
-    if (UGameInstance* GI = GetGameInstance())
+    if (CachedUISubsystem)
     {
-        if (ULSUISubsystem* Subsystem = GI->GetSubsystem<ULSUISubsystem>())
-        {
-            Subsystem->UpdateInputType();
-        }
+        CachedUISubsystem->UpdateInputType();
+    }
+}
+
+void ULSLayerWidget::DeactivateLayerIfEmpty()
+{
+    if (WidgetStack.IsEmpty())
+    {
+        DeactivateLayer();
     }
 }
 
@@ -81,6 +100,45 @@ EInputType ULSLayerWidget::GetInputType()
     return InputType;
 }
 
+void ULSLayerWidget::PushWidgetToWidgetStack(UUserWidget* Widget)
+{
+    if (!Widget)
+    {
+        return;
+    }
+
+    // 이미 있으면 지우고 최상단으로
+    WidgetStack.RemoveSingle(Widget);
+
+    WidgetStack.Push(Widget);
+
+    //Zorder 맨위로
+    UOverlaySlot* OLSlot = WidgetContainer->AddChildToOverlay(Widget);
+    if (OLSlot)
+    {
+        OLSlot->SetHorizontalAlignment(HAlign_Fill);
+        OLSlot->SetVerticalAlignment(VAlign_Fill);
+    }
+}
+
+void ULSLayerWidget::PopWidgetFromWidgetStack(UUserWidget* Widget)
+{
+    if (!Widget)
+    {
+        return;
+    }
+
+    WidgetStack.RemoveSingle(Widget);
+}
+
+void ULSLayerWidget::FocusOnTopWidget()
+{
+    if (!WidgetStack.IsEmpty())
+    {
+        WidgetStack.Top()->SetFocus();
+    }
+}
+
 void ULSLayerWidget::NativeConstruct()
 {
     Super::NativeConstruct();
@@ -92,5 +150,13 @@ void ULSLayerWidget::NativeConstruct()
     else
     {
         DeactivateLayer();
+    }
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (ULSUISubsystem* Subsystem = GI->GetSubsystem<ULSUISubsystem>())
+        {
+            CachedUISubsystem = Subsystem;
+        }
     }
 }

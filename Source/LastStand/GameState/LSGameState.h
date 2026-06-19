@@ -17,6 +17,7 @@ class LASTSTAND_API ALSGameState : public AGameState
 public:
 	ALSGameState();
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

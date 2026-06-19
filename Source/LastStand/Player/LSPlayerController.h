@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "InputActionValue.h"
 #include "LSPlayerController.generated.h"
 
 /**
@@ -19,14 +20,19 @@ public:
 
 	void BeginPlay() override;
 
-	void Tick(float DeltaSeconds) override;
-
 	virtual void OnPossess(APawn* InPawn) override;
+
+	virtual void SetupInputComponent() override;
+
+	void ToggleInventory(const FInputActionValue& Value);
 
 private:
 	UPROPERTY(EditAnywhere, Category = Layout, Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ULSRootLayoutWidget> LayoutClass;
 	
-	
-	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InventoryAction;
+
+	UPROPERTY()
+	TObjectPtr<class ULSUIEventSubsystem> CachedUISubsystem;
 };
