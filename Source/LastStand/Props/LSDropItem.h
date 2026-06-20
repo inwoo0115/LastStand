@@ -47,10 +47,10 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<class UBoxComponent> InteractionBox;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadOnly, Category = "Item")
 	FName ItemName = "Default";
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadOnly, Category = "Item")
 	int32 Quantity = 0;
 
 	UPROPERTY(Replicated)

@@ -114,4 +114,6 @@ void ALSDropItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 
 	DOREPLIFETIME(ALSDropItem, bCanInteract);
 	DOREPLIFETIME(ALSDropItem, InstanceID);
+	DOREPLIFETIME(ALSDropItem, Quantity);
+	DOREPLIFETIME(ALSDropItem, ItemName);
 }
