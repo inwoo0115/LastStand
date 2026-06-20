@@ -20,6 +20,8 @@ const FItemData* ULSDataSubsystem::FindItem(FName ItemID) const
 {
 	if (!ItemTable)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Cannot Found ItemTable"));
+
 		return nullptr;
 	}
 

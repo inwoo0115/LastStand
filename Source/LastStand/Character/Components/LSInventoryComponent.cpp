@@ -51,17 +51,6 @@ const FInventoryItemInfoArray& ULSInventoryComponent::GetInventoryItems() const
 	return InventoryItems;
 }
 
-void ULSInventoryComponent::DropItemToWorld(FName ItemID, int32 Quantity)
-{
-	// UI에서 호출 될 함수
-	if (GetOwner()->HasAuthority())
-	{
-		return;
-	}
-
-	ServerRPCDropItemToWorld(ItemID, Quantity);
-}
-
 
 void ULSInventoryComponent::ServerRPCAddItemToInventory_Implementation(const FName ItemInfoID, const int32 Quantity)
 {
@@ -85,16 +74,27 @@ void ULSInventoryComponent::OnInventoryItemChange()
 
 void ULSInventoryComponent::ServerRPCDropItemToWorld_Implementation(FName ItemID, int32 Quantity)
 {
+	UE_LOG(LogTemp, Log, TEXT("ServerRPCDropItemToWorld_Implementation"));
+
 	// Data 검색
 	const ULSDataSubsystem* Data = GetWorld()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	if (!Data)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Can not found ULSDataSubsystem"));
+		return;
+	}
+
 	const FItemData* Row = Data ? Data->FindItem(ItemID) : nullptr;
 	if (!Row)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Can not found Item: %s"), *ItemID.ToString());
 		return;
 	}
 
 	if (UClass* DropClass = Row->DropItemClass.LoadSynchronous())
 	{
+		UE_LOG(LogTemp, Log, TEXT("Drop Item Class Loading"));
+
 		const FVector Loc = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 150.f;
 		ALSDropItem* Drop = GetWorld()->SpawnActor<ALSDropItem>(DropClass, Loc, FRotator::ZeroRotator);
 		Drop->InitItem(ItemID, Quantity);

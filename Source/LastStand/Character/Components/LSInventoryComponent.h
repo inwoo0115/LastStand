@@ -28,8 +28,6 @@ public:
 
 	const FInventoryItemInfoArray& GetInventoryItems() const;
 
-	void DropItemToWorld(FName ItemID, int32 Quantity);
-
 	// UI Delegate
 	FOnInventoryUpdated OnInventoryUpdated;
 	

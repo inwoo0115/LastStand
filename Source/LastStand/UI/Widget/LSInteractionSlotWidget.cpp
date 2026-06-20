@@ -6,6 +6,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Character/Components/LSInteractionComponent.h"
+#include "Character/Components/LSInventoryComponent.h"
 #include "LSInventoryEntryWidget.h"
 #include "Props/LSDropItem.h"
 
@@ -66,6 +67,12 @@ void ULSInteractionSlotWidget::NativeConstruct()
 
 			RefreshSlot();   // 최초 1회
 		}
+
+		InventoryComp = P->FindComponentByClass<ULSInventoryComponent>();
+		if (!InventoryComp.IsValid())
+		{
+			UE_LOG(LogTemp, Log, TEXT("Inventory Comp is not valid"));
+		}
 	}
 }
 
@@ -84,18 +91,21 @@ bool ULSInteractionSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const F
 {
 	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
 
+	UE_LOG(LogTemp, Log, TEXT("Interaction slot drop event occur"));
+
 	// 받은 데이터 기반으로 드랍 이벤트 처리
 	if (!ItemOp->bFromInventory)
 	{
 		return false;
 	}
 
+	if (!InventoryComp.IsValid())
+	{
+		return false;
+	}
 
 	// 페이로드로 받은 데이터로 아이템을 스폰
-
-	// 인벤토리에서 제거 
-	
-
+	InventoryComp->ServerRPCDropItemToWorld(ItemOp->ItemID, ItemOp->Quantity);
 
 	return true;
 }

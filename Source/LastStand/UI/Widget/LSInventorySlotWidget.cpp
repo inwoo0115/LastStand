@@ -87,13 +87,10 @@ bool ULSInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDr
 		return false;
 	}
 
-	if (!InventoryComp.IsValid())
+	if (!InteractionComp.IsValid())
 	{
 		return false;
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("Inventory Drop UI Event occur"));
-
 
 	// 페이로드로 받은 데이터로 아이템을 인벤토리 추가
 	InteractionComp->ServerRPCInteractCertainCandidate(ItemOp->InstanceID);
