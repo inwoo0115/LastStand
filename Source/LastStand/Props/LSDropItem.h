@@ -26,9 +26,12 @@ public:
 
 	virtual const FName GetItemName() override;
 
+	virtual const FGuid GetInstanceID() override;
+
 	const int32 GetQuantity();
 
-	
+	virtual void PostInitializeComponents() override;
+
 	UFUNCTION()
 	void OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -52,4 +55,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bCanInteract = false;
+
+	UPROPERTY(Replicated)
+	FGuid InstanceID;
 };

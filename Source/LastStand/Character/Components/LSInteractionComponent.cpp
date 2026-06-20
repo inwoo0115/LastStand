@@ -152,9 +152,27 @@ void ULSInteractionComponent::OnClosestCandidateRep()
 
 void ULSInteractionComponent::OnInteractionArrayChange()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnInteractionArrayChange Broadcast"));
-
 	OnInteractionArrayUpdate.Broadcast();
+}
+
+void ULSInteractionComponent::ServerRPCInteractCertainCandidate_Implementation(FGuid InstanceID)
+{
+	UE_LOG(LogTemp, Log, TEXT("ServerRPCInteractCertainCandidate Occur"));
+
+
+	for (AActor* Candidate : Candidates)
+	{
+		// 정해진 액터에 상호작용 하는 함수
+		if (Candidate && Candidate->Implements<ULSInteractableInterface>())
+		{
+			ILSInteractableInterface* InteractActor = Cast<ILSInteractableInterface>(Candidate);
+			if (InteractActor && InteractActor->GetInstanceID() == InstanceID && GetOwner())
+			{
+				InteractActor->Interact(GetOwner());
+				break;
+			}
+		}
+	}
 }
 
 void ULSInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -9,11 +9,12 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Input/Reply.h"
 
-void ULSInventoryEntryWidget::SetItem(FName InItemID, int32 InQuantity, bool bInFromInventory)
+void ULSInventoryEntryWidget::SetItem(FName InItemID, int32 InQuantity, bool bInFromInventory, FGuid InInstanceID)
 {
 	ItemID = InItemID; 
 	Quantity = InQuantity; 
 	bFromInventory = bInFromInventory;
+    InstanceID = InInstanceID;
 
     // DataSubsystem으로 아이콘 로드
     if (const ULSDataSubsystem* Data = GetGameInstance()->GetSubsystem<ULSDataSubsystem>())
@@ -27,16 +28,19 @@ void ULSInventoryEntryWidget::SetItem(FName InItemID, int32 InQuantity, bool bIn
         }
     }
     QuantityText->SetText(FText::AsNumber(Quantity));
+    NameText->SetText(FText::FromName(ItemID));
 }
 
 void ULSInventoryEntryWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
     ULSItemDragDropOperation* Op = NewObject<ULSItemDragDropOperation>();
-    Op->ItemID = ItemID; 
-    Op->Quantity = Quantity; 
+    Op->ItemID = ItemID;
+    Op->Quantity = Quantity;
     Op->bFromInventory = bFromInventory;
+    Op->InstanceID = InstanceID;      // 월드 후보 식별용 GUID 전달
     Op->DefaultDragVisual = this;     // 끌 때 보일 비주얼 (간단히 자기 자신)
     Op->Pivot = EDragPivot::MouseDown;
+    Op->InstanceID = InstanceID;
     OutOperation = Op;
 }
 

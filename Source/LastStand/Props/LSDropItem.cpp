@@ -60,9 +60,24 @@ const FName ALSDropItem::GetItemName()
 	return ItemName;
 }
 
+const FGuid ALSDropItem::GetInstanceID()
+{
+	return InstanceID;
+}
+
 const int32 ALSDropItem::GetQuantity()
 {
 	return Quantity;
+}
+
+void ALSDropItem::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	
+	if (HasAuthority() && !InstanceID.IsValid())
+	{
+		InstanceID = FGuid::NewGuid();
+	}
 }
 
 void ALSDropItem::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -98,4 +113,5 @@ void ALSDropItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALSDropItem, bCanInteract);
+	DOREPLIFETIME(ALSDropItem, InstanceID);
 }

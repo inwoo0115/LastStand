@@ -39,6 +39,11 @@ public:
 	FOnInteractionUpdate OnInteractionUpdate;
 	
 	FOnInteractionArrayUpdated OnInteractionArrayUpdate;
+
+	// Server RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCInteractCertainCandidate(FGuid InstanceID);
+
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

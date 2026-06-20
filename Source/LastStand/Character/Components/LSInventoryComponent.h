@@ -32,6 +32,14 @@ public:
 
 	// UI Delegate
 	FOnInventoryUpdated OnInventoryUpdated;
+	
+	// Server RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCDropItemToWorld(FName ItemID, int32 Quantity);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCAddItemToInventory(const FName ItemInfoID, const int32 Quantity);
+
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -42,8 +50,4 @@ protected:
 
 	UFUNCTION()
 	void OnInventoryItemChange();
-
-	UFUNCTION(Server, Reliable)
-	void ServerRPCDropItemToWorld(FName ItemID, int32 Quantity);
-	
 };

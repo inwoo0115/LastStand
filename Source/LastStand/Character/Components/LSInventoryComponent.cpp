@@ -20,6 +20,9 @@ void ULSInventoryComponent::AddItemToInventory(const FName ItemInfoID, const int
 	FInventoryItemInfo NewInfo(ItemInfoID, Quantity);
 
 	InventoryItems.AddInventoryItem(NewInfo);
+
+	// authority(호스트/스탠드얼론)는 RepNotify가 호출되지 않으므로 직접 UI 갱신
+	OnInventoryItemChange();
 }
 
 void ULSInventoryComponent::RemoveItemFromInventory(const FName ItemInfoID)
@@ -59,6 +62,13 @@ void ULSInventoryComponent::DropItemToWorld(FName ItemID, int32 Quantity)
 	ServerRPCDropItemToWorld(ItemID, Quantity);
 }
 
+
+void ULSInventoryComponent::ServerRPCAddItemToInventory_Implementation(const FName ItemInfoID, const int32 Quantity)
+{
+	FInventoryItemInfo NewInfo(ItemInfoID, Quantity);
+
+	InventoryItems.AddInventoryItem(NewInfo);
+}
 
 void ULSInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

@@ -13,14 +13,11 @@ void ULSInteractionSlotWidget::RefreshSlot()
 {
 	if (!InteractionComp.IsValid() || !Container)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Can Not Refresh slot"));
-
 		return;
 	}
 
 	if (!EntryWidgetClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("RefreshSlot: EntryWidgetClass is not set"));
 		return;
 	}
 
@@ -34,8 +31,6 @@ void ULSInteractionSlotWidget::RefreshSlot()
 	// InteractionContainer 초기화
 	const TArray<TObjectPtr<AActor>>& InfoArray = InteractionComp->GetCandidates();
 
-	UE_LOG(LogTemp, Log, TEXT("Refresh interaction slot"));
-
 	for (const TObjectPtr<AActor>& Info : InfoArray)
 	{
 		ALSDropItem* DI = Cast<ALSDropItem>(Info);
@@ -47,8 +42,14 @@ void ULSInteractionSlotWidget::RefreshSlot()
 		if (Entry)
 		{
 			Container->AddChildToVerticalBox(Entry);
-			Entry->SetItem(DI->GetItemName(), DI->GetQuantity(), false);
+			Entry->SetItem(DI->GetItemName(), DI->GetQuantity(), false, DI->GetInstanceID());
 		}
+	}
+
+	// 드래그 중인 위젯 취소
+	if (FSlateApplication::IsInitialized() && FSlateApplication::Get().IsDragDropping())
+	{
+		FSlateApplication::Get().CancelDragDrop();
 	}
 }
 
@@ -61,8 +62,6 @@ void ULSInteractionSlotWidget::NativeConstruct()
 		InteractionComp = P->FindComponentByClass<ULSInteractionComponent>();
 		if (InteractionComp.IsValid())
 		{
-			UE_LOG(LogTemp, Log, TEXT("Delegate Bind Interaction comp"));
-
 			InteractionComp->OnInteractionArrayUpdate.AddUObject(this, &ULSInteractionSlotWidget::RefreshSlot);
 
 			RefreshSlot();   // 최초 1회

@@ -16,7 +16,7 @@ class LASTSTAND_API ULSInventoryEntryWidget : public UUserWidget
 	
 public:
 	// 인벤토리 위젯이 호출해 1칸을 채움
-	void SetItem(FName InItemID, int32 InQuantity, bool bInFromInventory);
+	void SetItem(FName InItemID, int32 InQuantity, bool bInFromInventory, FGuid InInstanceID);
 	
 protected:
 	virtual void NativeOnDragDetected(
@@ -32,9 +32,14 @@ protected:
 	UPROPERTY(meta = (BindWidget)) 
 	TObjectPtr<class UTextBlock> QuantityText;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UTextBlock> NameText;
+
 	FName ItemID; 
 
 	int32 Quantity = 0; 
+
+	FGuid InstanceID;
 
 	bool bFromInventory = false;
 };

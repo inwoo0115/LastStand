@@ -25,6 +25,6 @@ class LASTSTAND_API ILSInteractableInterface
 public:
 	virtual void Interact(AActor* InteractActor) = 0;
 	virtual const FName GetItemName() = 0;
-
+	virtual const FGuid GetInstanceID() = 0;
 	
 };
