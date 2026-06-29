@@ -8,6 +8,8 @@
 #include "DataTable/LSDataSubsystem.h"
 #include "LSInventoryComponent.h"
 #include "Item/Equipment/LSEquipmentBase.h"
+#include "Item/Equipment/Weapon/LSWeaponBase.h"
+
 
 // Sets default values for this component's properties
 ULSEquipmentComponent::ULSEquipmentComponent()
@@ -112,6 +114,47 @@ void ULSEquipmentComponent::UnEquipItemFromInventory(EEquipmentType EquipType)
 	IC->AddItemToInventory(EB->GetItemName(), 1);
 }
 
+void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
+{
+	// 서버 실행
+	if (!GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	if (EquipType == EEquipmentType::None)
+	{
+		FocusEquipment = nullptr;
+	}
+	else if (Equipments.Contains(EquipType))
+	{
+		ALSWeaponBase* WB = Cast<ALSWeaponBase>(Equipments[EquipType]);
+		if (WB)
+		{
+			FocusEquipment = WB;
+		}
+	}
+}
+
+void ULSEquipmentComponent::LaunchEquipment()
+{
+	FocusEquipment->LaunchWeapon();
+}
+
+void ULSEquipmentComponent::ReleaseEquipment()
+{
+	FocusEquipment->ReleaseWeapon();
+}
+
+
+void ULSEquipmentComponent::Reload()
+{
+	// TODO: Inventory 확인 후 총알 있을 시 리로드
+
+	FocusEquipment->ReloadWeapon();
+}
+
+
 
 void ULSEquipmentComponent::BeginPlay()
 {
@@ -120,12 +163,16 @@ void ULSEquipmentComponent::BeginPlay()
 	
 }
 
+void ULSEquipmentComponent::OnRepFocusEquipment()
+{
+	// 애니메이션 출력
+}
+
 
 void ULSEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	//DOREPLIFETIME(ULSEquipmentComponent, Equipments);
-	// Map 리플리케이션이 안되서 고민좀
+	DOREPLIFETIME(ULSEquipmentComponent, FocusEquipment);
 }
 

@@ -22,9 +22,20 @@ public:
 
 	void UnEquipItemFromInventory(EEquipmentType EquipType);
 
+	void FocusEquipmentByType(EEquipmentType EquipType);
+
+	void LaunchEquipment();
+
+	void ReleaseEquipment();
+
+	void Reload();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnRepFocusEquipment();
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -33,4 +44,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TMap<EEquipmentType, TObjectPtr<AActor>> Equipments;
 
+	UPROPERTY(ReplicatedUsing=OnRepFocusEquipment)
+	TObjectPtr<class ALSWeaponBase> FocusEquipment;
 };

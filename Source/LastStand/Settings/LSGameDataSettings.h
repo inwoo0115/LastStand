@@ -17,4 +17,7 @@ class LASTSTAND_API ULSGameDataSettings : public UDeveloperSettings
 public:
 	UPROPERTY(Config, EditAnywhere, Category = "Data Tables")
 	TSoftObjectPtr<UDataTable> ItemTable;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Data Tables")
+	TSoftObjectPtr<UDataTable> WeaponTable;
 };

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "LSItemData.h"
+#include "LSWeaponData.h"
 #include "LSDataSubsystem.generated.h"
 
 /**
@@ -20,8 +21,13 @@ public:
 
 	const FItemData* FindItem(FName ItemID) const;
 
+	const FWeaponData* FindWeapon(FName ItemID) const;
+
 protected: 
 	// 데이터 테이블 포인터
 	UPROPERTY()
 	TObjectPtr<UDataTable> ItemTable;
+
+	UPROPERTY()
+	TObjectPtr<UDataTable> WeaponTable;
 };

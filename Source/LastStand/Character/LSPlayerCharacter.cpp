@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/LSInteractionComponent.h"
+#include "Components/LSEquipmentComponent.h"
 #include "Net/UnrealNetwork.h"
 
 ALSPlayerCharacter::ALSPlayerCharacter()
@@ -29,6 +30,11 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Walk);
 	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Interact);
 	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Crouching);
+	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Attack);
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Aim);
+	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ALSPlayerCharacter::Release);
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ALSPlayerCharacter::AimRelease);
+	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Reload);
 
 }
 
@@ -138,4 +144,31 @@ void ALSPlayerCharacter::Jump()
 	{
 		Super::Jump();
 	}
+}
+
+void ALSPlayerCharacter::Aim()
+{
+	// 카메라 옮기기
+}
+
+
+void ALSPlayerCharacter::Attack()
+{
+	Equipments->LaunchEquipment();
+}
+
+
+void ALSPlayerCharacter::Release()
+{
+	Equipments->ReleaseEquipment();
+}
+
+void ALSPlayerCharacter::AimRelease()
+{
+	// 카메라 원위치
+}
+
+void ALSPlayerCharacter::Reload()
+{
+	Equipments->Reload();
 }

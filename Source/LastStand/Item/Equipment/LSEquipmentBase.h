@@ -15,6 +15,11 @@ class LASTSTAND_API ALSEquipmentBase : public ALSItemBase
 	GENERATED_BODY()
 	
 public:
-	void UnEquipped();
+	virtual void Equipped();
+
+	virtual void UnEquipped();
 	
+protected:
+	
+	virtual void InitEquipment();
 };

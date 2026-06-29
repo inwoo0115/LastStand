@@ -4,7 +4,7 @@
 #include "DataTable/LSDataSubsystem.h"
 #include "Settings/LSGameDataSettings.h"
 #include "LSItemData.h"
-
+#include "LSWeaponData.h"
 #include "LSDataSubsystem.h"
 
 void ULSDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -14,6 +14,7 @@ void ULSDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// 세션 시작하면 로드 하기
 	const ULSGameDataSettings* Settings = GetDefault<ULSGameDataSettings>();
 	ItemTable = Settings->ItemTable.LoadSynchronous();
+	WeaponTable = Settings->WeaponTable.LoadSynchronous();
 }
 
 const FItemData* ULSDataSubsystem::FindItem(FName ItemID) const
@@ -26,4 +27,16 @@ const FItemData* ULSDataSubsystem::FindItem(FName ItemID) const
 	}
 
 	return ItemTable->FindRow<FItemData>(ItemID, TEXT("UDataSubsystem::FindItem"));
+}
+
+const FWeaponData* ULSDataSubsystem::FindWeapon(FName ItemID) const
+{
+	if (!WeaponTable)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Cannot Found WeaponTable"));
+
+		return nullptr;
+	}
+
+	return WeaponTable->FindRow<FWeaponData>(ItemID, TEXT("UDataSubsystem::FindWeapon"));
 }

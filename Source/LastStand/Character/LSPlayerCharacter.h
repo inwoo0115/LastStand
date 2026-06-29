@@ -35,6 +35,16 @@ protected:
 
 	void Jump();
 
+	void Attack();
+
+	void Aim();
+
+	void Release();
+
+	void AimRelease();
+
+	void Reload();
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> JumpAction;
 
@@ -53,6 +63,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> CrouchAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> AttackAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> AimAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ReloadAction;
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
