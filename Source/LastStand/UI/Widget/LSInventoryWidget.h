@@ -28,4 +28,7 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<class ULSInteractionSlotWidget> DropItemContainer;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<class ULSEquipmentSlotWidget> EquipmentContainer;
 };

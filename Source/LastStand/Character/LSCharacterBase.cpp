@@ -55,6 +55,31 @@ ULSInventoryComponent* ALSCharacterBase::GetInventoryComponent()
 	return Inventory;
 }
 
+USpringArmComponent* ALSCharacterBase::GetSpringArmComponent()
+{
+	return SpringArm;
+}
+
+FTransform ALSCharacterBase::GetCurrentCameraTransform() const
+{
+	if (!SpringArm)
+	{
+		return FTransform::Identity;
+	}
+
+	return SpringArm->GetSocketTransform(USpringArmComponent::SocketName);
+}
+
+float ALSCharacterBase::GetCurrentSpringArmLength() const
+{
+	if (!SpringArm)
+	{
+		return 0.0f;
+	}
+
+	return SpringArm->TargetArmLength;
+}
+
 // Called when the game starts or when spawned
 void ALSCharacterBase::BeginPlay()
 {

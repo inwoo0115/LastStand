@@ -149,6 +149,7 @@ void ALSPlayerCharacter::Jump()
 void ALSPlayerCharacter::Aim()
 {
 	// 카메라 옮기기
+	Equipments->Aim();
 }
 
 
@@ -166,6 +167,7 @@ void ALSPlayerCharacter::Release()
 void ALSPlayerCharacter::AimRelease()
 {
 	// 카메라 원위치
+	Equipments->AimRelease();
 }
 
 void ALSPlayerCharacter::Reload()

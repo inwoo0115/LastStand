@@ -20,6 +20,7 @@ public:
 	virtual void UnEquipped();
 	
 protected:
+	virtual void BeginPlay() override;
 	
 	virtual void InitEquipment();
 };

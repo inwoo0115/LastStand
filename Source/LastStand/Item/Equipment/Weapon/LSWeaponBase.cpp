@@ -3,7 +3,13 @@
 
 #include "Item/Equipment/Weapon/LSWeaponBase.h"
 #include "DataTable/LSDataSubsystem.h"
-#include "DataTable/LSItemData.h"
+#include "DataTable/LSWeaponData.h"
+#include "Components/TimelineComponent.h"
+#include "Character/LSCharacterBase.h"
+#include "Net/UnrealNetwork.h"
+#include "Data/LSWeaponInfoData.h"
+#include "GameFramework/SpringArmComponent.h"
+
 
 void ALSWeaponBase::LaunchWeapon()
 {
@@ -25,11 +31,69 @@ void ALSWeaponBase::ReloadWeapon()
 {
 }
 
+void ALSWeaponBase::Aim()
+{
+	// 무기에 따른 카메라 위치 변경
+	if (AimCurveFloat)
+	{
+		AimTimeline.Play();
+	}
+	
+}
+
+void ALSWeaponBase::AimRelease()
+{
+	// 카메라 원 위치
+	if (AimCurveFloat)
+	{
+		AimTimeline.Reverse();
+	}
+}
+
+void ALSWeaponBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Timeline 업데이트
+	AimTimeline.TickTimeline(DeltaSeconds);
+}
+
+FTransform ALSWeaponBase::GetCurrentOwnerCamera()
+{
+	ALSCharacterBase *Base = Cast<ALSCharacterBase>(GetOwner());
+	if (!Base)
+	{
+		return FTransform::Identity;
+	}
+
+	return Base->GetCurrentCameraTransform();
+}
+
+float ALSWeaponBase::GetCurrentOwnerSpringArmLength()
+{
+	ALSCharacterBase* Base = Cast<ALSCharacterBase>(GetOwner());
+	if (!Base)
+	{
+		return 0.0f;
+	}
+
+	return Base->GetCurrentSpringArmLength();
+}
+
+void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALSWeaponBase, WeaponData);
+
+}
+
 void ALSWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
 	InitEquipment();
+	InitAimCurve();
 }
 
 void ALSWeaponBase::InitEquipment()
@@ -45,12 +109,41 @@ void ALSWeaponBase::InitEquipment()
 		return;
 	}
 
-	const FItemData* ID = Sub->FindItem(ItemName);
+	const FWeaponData* ID = Sub->FindWeapon(ItemName);
 	if (!ID)
 	{
 		return;
 	}
 
 	// 정보 저장
-	ItemData = *ID;
+	WeaponData = *ID;
+
+	// Spring Arm 캐싱
+	ALSCharacterBase* Base = Cast<ALSCharacterBase>(GetOwner());
+	if (!Base)
+	{
+		return;
+	}
+	CachedSpringArm = Base->GetSpringArmComponent();
+}
+
+void ALSWeaponBase::AimUpdate(float Value)
+{
+	CachedSpringArm->TargetArmLength = Value;
+}
+
+void ALSWeaponBase::InitAimCurve()
+{
+	float EndLength = WeaponData.WeaponDataAsset->TargetArmLength;
+	float StartLength = GetCurrentOwnerSpringArmLength();
+
+	// AimTimeline 초기화
+	AimCurveFloat = NewObject<UCurveFloat>(this, TEXT("AimCurveFloat"));
+	FRichCurve& RichCurve = AimCurveFloat->FloatCurve;
+	RichCurve.AddKey(0.0f, StartLength); // 시작 시점
+	RichCurve.AddKey(0.1f, EndLength); // 끝 시점
+	OnTimelineFloatCallback.BindUFunction(this, FName("AimUpdate"));
+	AimTimeline.AddInterpFloat(AimCurveFloat, OnTimelineFloatCallback);
+	AimTimeline.SetLooping(false);
+	AimTimeline.SetPlayRate(1.0f);
 }

@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Item/Equipment/LSEquipmentBase.h"
-#include "DataTable/LSItemData.h"
+#include "DataTable/LSWeaponData.h"
+#include "Components/TimelineComponent.h"
 #include "LSWeaponBase.generated.h"
 
 /**
@@ -26,13 +27,40 @@ public:
 
 	virtual void ReloadWeapon();
 
+	virtual void Aim();
+
+	virtual void AimRelease();
+
+	virtual void Tick(float DeltaSeconds) override;
 	
+	FTransform GetCurrentOwnerCamera();
+
+	float GetCurrentOwnerSpringArmLength();
 protected:
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
 	virtual void InitEquipment() override;
 
+	UPROPERTY(Replicated)
+	FWeaponData WeaponData;
+
+	// Aim Timeline
+	FTimeline AimTimeline;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Timeline)
+	TObjectPtr<class UCurveFloat> AimCurveFloat;
+
+	FOnTimelineFloat OnTimelineFloatCallback{};
+
+	UFUNCTION()
+	void AimUpdate(float Value);
+
+	void InitAimCurve();
+
 	UPROPERTY()
-	FItemData ItemData;
+	TObjectPtr<class USpringArmComponent> CachedSpringArm;
 };

@@ -30,6 +30,10 @@ public:
 
 	void Reload();
 
+	void Aim();
+
+	void AimRelease();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -44,6 +48,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TMap<EEquipmentType, TObjectPtr<AActor>> Equipments;
 
-	UPROPERTY(ReplicatedUsing=OnRepFocusEquipment)
+	UPROPERTY(EditAnywhere, ReplicatedUsing=OnRepFocusEquipment)
 	TObjectPtr<class ALSWeaponBase> FocusEquipment;
 };

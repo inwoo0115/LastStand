@@ -138,11 +138,19 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 
 void ULSEquipmentComponent::LaunchEquipment()
 {
+	if (!FocusEquipment)
+	{
+		return;
+	}
 	FocusEquipment->LaunchWeapon();
 }
 
 void ULSEquipmentComponent::ReleaseEquipment()
 {
+	if (!FocusEquipment)
+	{
+		return;
+	}
 	FocusEquipment->ReleaseWeapon();
 }
 
@@ -150,7 +158,10 @@ void ULSEquipmentComponent::ReleaseEquipment()
 void ULSEquipmentComponent::Reload()
 {
 	// TODO: Inventory 확인 후 총알 있을 시 리로드
-
+	if (!FocusEquipment)
+	{
+		return;
+	}
 	FocusEquipment->ReloadWeapon();
 }
 
@@ -176,3 +187,18 @@ void ULSEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ULSEquipmentComponent, FocusEquipment);
 }
 
+void ULSEquipmentComponent::AimRelease()
+{
+	if (FocusEquipment)
+	{
+		FocusEquipment->AimRelease();
+	}
+}
+
+void ULSEquipmentComponent::Aim()
+{
+	if (FocusEquipment)
+	{
+		FocusEquipment->Aim();
+	}
+}

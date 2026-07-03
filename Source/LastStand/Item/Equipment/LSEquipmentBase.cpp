@@ -14,6 +14,13 @@ void ALSEquipmentBase::UnEquipped()
 	Destroy();
 }
 
+void ALSEquipmentBase::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	InitEquipment();
+}
+
 void ALSEquipmentBase::InitEquipment()
 {
 }

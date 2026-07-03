@@ -25,9 +25,16 @@ public:
 	// Sets default values for this character's properties
 	ALSCharacterBase();
 
-	virtual ULSInteractionComponent* GetInteractionComponent();
+	virtual ULSInteractionComponent* GetInteractionComponent() override;
 
-	virtual ULSInventoryComponent* GetInventoryComponent();
+	virtual ULSInventoryComponent* GetInventoryComponent() override;
+
+	class USpringArmComponent* GetSpringArmComponent();
+
+
+	FTransform GetCurrentCameraTransform() const;
+
+	float GetCurrentSpringArmLength() const;
 
 protected:
 	// Called when the game starts or when spawned

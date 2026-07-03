@@ -91,8 +91,6 @@ bool ULSInteractionSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const F
 {
 	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
 
-	UE_LOG(LogTemp, Log, TEXT("Interaction slot drop event occur"));
-
 	// 받은 데이터 기반으로 드랍 이벤트 처리
 	if (!ItemOp->bFromInventory)
 	{
