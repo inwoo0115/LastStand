@@ -157,9 +157,6 @@ void ULSInteractionComponent::OnInteractionArrayChange()
 
 void ULSInteractionComponent::ServerRPCInteractCertainCandidate_Implementation(FGuid InstanceID)
 {
-	UE_LOG(LogTemp, Log, TEXT("ServerRPCInteractCertainCandidate Occur"));
-
-
 	for (AActor* Candidate : Candidates)
 	{
 		// 정해진 액터에 상호작용 하는 함수

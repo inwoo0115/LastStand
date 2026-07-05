@@ -36,4 +36,15 @@ struct FWeaponData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
     EEquipmentType WeaponType = EEquipmentType::None;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+    TSoftClassPtr<AActor> WeaponClass;
+
+    // 장착 시 부착할 소켓 이름
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+    FName SocketName = NAME_None;
+
+    // 아이콘 에셋은 소프트 레퍼런스로 — 하드 레퍼런스 금지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    TSoftObjectPtr<UTexture2D> Icon;
 };

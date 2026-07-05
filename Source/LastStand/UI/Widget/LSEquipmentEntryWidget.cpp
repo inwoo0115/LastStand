@@ -6,17 +6,34 @@
 #include "UI/Operation/LSEquipmentDragDropOperation.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Input/Reply.h"
+#include "DataTable/LSDataSubsystem.h"
+#include "DataTable/LSWeaponData.h"
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
 
 void ULSEquipmentEntryWidget::SetEntry(FName InItemID)
 {
-    // Data subsystem에서 무기 정보 찾아서 이미지 세팅
+    ItemID = InItemID;
+
+    // DataSubsystem으로 아이콘 로드
+    if (const ULSDataSubsystem* Data = GetGameInstance()->GetSubsystem<ULSDataSubsystem>())
+    {
+        if (const FWeaponData* Row = Data->FindWeapon(ItemID))
+        {
+            if (UTexture2D* Tex = Row->Icon.LoadSynchronous())
+            {
+                IconImage->SetBrushFromTexture(Tex);
+            }
+        }
+    }
+    NameText->SetText(FText::FromName(ItemID));
 }
 
 void ULSEquipmentEntryWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
     ULSEquipmentDragDropOperation* Op = NewObject<ULSEquipmentDragDropOperation>();
 
-    // Inventory에 전달할 데이터
+    // Inventory에 전달할 데이터 TODO: 추후 구현
 
 
     OutOperation = Op;

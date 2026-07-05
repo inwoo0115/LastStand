@@ -11,7 +11,7 @@
 #include "Item/Equipment/Weapon/LSWeaponBase.h"
 #include "DataTable/LSWeaponData.h"
 #include "Data/LSWeaponInfoData.h"
-
+#include "GameFramework/Character.h"
 
 // Sets default values for this component's properties
 ULSEquipmentComponent::ULSEquipmentComponent()
@@ -23,50 +23,86 @@ ULSEquipmentComponent::ULSEquipmentComponent()
 
 void ULSEquipmentComponent::EquipItemFromInventory(FName ItemName)
 {
-	//if (!GetOwner()->HasAuthority())
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Call from Client Error"));
-	//	return;
-	//}
+	if (!GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Call from Client Error"));
+		return;
+	}
 
-	//ULSDataSubsystem* Sub = GetOwner()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
-	//if (!Sub)
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Unavail Data sub system"));
-	//	return;
-	//}
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Unavail Owner Character"));
+		return;
+	}
 
-	//const FItemData* ID = Sub->FindItem(ItemName);
-	//if (!ID)
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Unavail Item Data"));
-	//	return;
-	//}
+	ULSDataSubsystem* Sub = GetOwner()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	if (!Sub)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Unavail Data sub system"));
+		return;
+	}
 
-	//ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>();
-	//if (!IC)
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: No Inventory"));
-	//	return;
-	//}
+	const FWeaponData* ID = Sub->FindWeapon(ItemName);
+	if (!ID)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: Unavail Item Data"));
+		return;
+	}
 
-	//// Spawn Param 설정
-	//FActorSpawnParameters SpawnParams;
-	//SpawnParams.Owner = GetOwner();
-	//SpawnParams.SpawnCollisionHandlingOverride =
-	//	ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>();
+	if (!IC)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: No Inventory"));
+		return;
+	}
 
-	//TSubclassOf<AActor> ItemClass = ID->ItemClass.LoadSynchronous();
+	if (!OwnerCharacter->GetMesh()->DoesSocketExist(ID->SocketName))
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: No avail socket"));
+		return;
+	}
 
-	//AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(ItemClass, FVector(), FRotator(), SpawnParams);
+	// Spawn Param 설정
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = GetOwner();
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	//if (!SpawnedActor)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("[SpawnerComponent] 스폰 실패: %s"), *ItemClass->GetName());
-	//}
+	TSubclassOf<AActor> WeaponClass = ID->WeaponClass.LoadSynchronous();
 
-	//// 인벤토리에서 제거
-	//IC->AddDeltaToItem(ID->ItemName, -1);
+	AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(WeaponClass, OwnerCharacter->GetMesh()->GetSocketLocation(ID->SocketName), OwnerCharacter->GetMesh()->GetSocketRotation(ID->SocketName), SpawnParams);
+
+	if (!SpawnedActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SpawnerComponent] 스폰 실패: %s"), *WeaponClass->GetName());
+		return;
+	}
+
+	// 소켓에 부착
+	SpawnedActor->AttachToComponent(
+		OwnerCharacter->GetMesh(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		ID->SocketName
+	);
+
+	// 장비 타입 체크
+	const EEquipmentType EquipType = ID->WeaponType;
+
+	// 이미 장착한 무기가 있을 경우 인벤토리로 이동
+	if (Equipments.Contains(EquipType))
+	{
+		UnEquipItemFromInventory(EquipType);
+	}
+
+	// 인벤토리에서 제거
+	IC->AddDeltaToItem(ID->ItemName, -1);
+
+	// 배열과 map 갱신
+	Equipments.Add(EquipType, SpawnedActor);
+	ReplicatedEquipments.Add(SpawnedActor);
+
+	// 장착 무기 활성화
+	FocusEquipmentByType(EquipType);
 }
 
 void ULSEquipmentComponent::UnEquipItemFromInventory(EEquipmentType EquipType)
@@ -94,9 +130,10 @@ void ULSEquipmentComponent::UnEquipItemFromInventory(EEquipmentType EquipType)
 	}
 
 	// 장비 제거
-	EB->UnEquipped();
+	ReplicatedEquipments.RemoveSingle(Equipment);
 	Equipments.Remove(EquipType);
-
+	EB->UnEquipped();
+	
 	// 인벤토리에 추가
 	IC->AddItemToInventory(EB->GetItemName(), 1);
 }
@@ -109,6 +146,12 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 		return;
 	}
 
+	// 기존 장비 해제
+	if (FocusEquipment)
+	{
+		FocusEquipment->DeActivateEquipment();
+	}
+
 	if (EquipType == EEquipmentType::None)
 	{
 		FocusEquipment = nullptr;
@@ -119,6 +162,7 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 		if (WB)
 		{
 			FocusEquipment = WB;
+			FocusEquipment->ActivateEquipment();
 		}
 	}
 }
@@ -168,6 +212,8 @@ void ULSEquipmentComponent::OnRepFocusEquipment()
 
 void ULSEquipmentComponent::OnRepEquipments()
 {
+	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent::OnRepEquipments()"));
+
 	// Map 초기화
 	Equipments.Reset();
 
@@ -208,6 +254,13 @@ void ULSEquipmentComponent::AimRelease()
 const TMap<EEquipmentType, TObjectPtr<AActor>> ULSEquipmentComponent::GetEquipments()
 {
 	return Equipments;
+}
+
+void ULSEquipmentComponent::ServerRPCEquipItemFromInventory_Implementation(FName ItemName)
+{
+	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: ServerRPCEquipItemFromInventory"));
+
+	EquipItemFromInventory(ItemName);
 }
 
 void ULSEquipmentComponent::Aim()

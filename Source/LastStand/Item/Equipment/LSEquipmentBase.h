@@ -15,11 +15,21 @@ class LASTSTAND_API ALSEquipmentBase : public ALSItemBase
 	GENERATED_BODY()
 	
 public:
+	ALSEquipmentBase();
+
 	virtual void Equipped();
 
 	virtual void UnEquipped();
+
+	virtual void ActivateEquipment();
+
+	virtual void DeActivateEquipment();
+
 	
 protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class USceneComponent> Root;
+
 	virtual void BeginPlay() override;
 	
 	virtual void InitEquipment();

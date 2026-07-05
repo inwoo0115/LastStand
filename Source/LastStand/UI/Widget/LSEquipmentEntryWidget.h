@@ -26,6 +26,14 @@ protected:
 
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
-	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UImage> IconImage;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UTextBlock> NameText;
+
+	FName ItemID;
+
+	int32 Quantity = 0;
 	
 };

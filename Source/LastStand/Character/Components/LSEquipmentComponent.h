@@ -40,6 +40,9 @@ public:
 
 	const TMap<EEquipmentType, TObjectPtr<AActor>> GetEquipments();
 
+	// Server RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCEquipItemFromInventory(FName ItemName);
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -52,6 +55,8 @@ protected:
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
 
 	// 리플리케이션용 배열
 	UPROPERTY(ReplicatedUsing = OnRepEquipments)

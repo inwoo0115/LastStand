@@ -34,7 +34,7 @@ void ULSInventoryComponent::UpdateItemInInventory(const FName ItemInfoID, const 
 {
 	if (!InventoryItems.UpdateItemQuantity(ItemInfoID, NewQuantity))
 	{
-		UE_LOG(LogTemp, Log, TEXT("No available Item in Inventory"));
+		UE_LOG(LogTemp, Log, TEXT("UpdateItemInInventory"));
 	}
 }
 
@@ -42,7 +42,7 @@ void ULSInventoryComponent::AddDeltaToItem(const FName ItemInfoID, const int32 D
 {
 	if (InventoryItems.AddItemQuantity(ItemInfoID, Delta))
 	{
-		UE_LOG(LogTemp, Log, TEXT("No available Item in Inventory"));
+		UE_LOG(LogTemp, Log, TEXT("AddDeltaToItem"));
 	}
 }
 

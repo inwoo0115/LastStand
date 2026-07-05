@@ -11,6 +11,12 @@
 #include "GameFramework/SpringArmComponent.h"
 
 
+ALSWeaponBase::ALSWeaponBase()
+{
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	WeaponMesh->SetupAttachment(Root);
+}
+
 void ALSWeaponBase::LaunchWeapon()
 {
 }
@@ -58,6 +64,31 @@ void ALSWeaponBase::Tick(float DeltaSeconds)
 	AimTimeline.TickTimeline(DeltaSeconds);
 }
 
+void ALSWeaponBase::ActivateEquipment()
+{
+	Super::ActivateEquipment();
+
+	if (WeaponMesh)
+	{
+		// 일단 No Collision으로 세팅 추후에 콜리전 세팅 할 때 변경
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		WeaponMesh->SetVisibility(true);
+	}
+	bIsActived = true;
+}
+
+void ALSWeaponBase::DeActivateEquipment()
+{
+	Super::DeActivateEquipment();
+	
+	if (WeaponMesh)
+	{
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		WeaponMesh->SetVisibility(false);
+	}
+	bIsActived = false;
+}
+
 FTransform ALSWeaponBase::GetCurrentOwnerCamera()
 {
 	ALSCharacterBase *Base = Cast<ALSCharacterBase>(GetOwner());
@@ -90,7 +121,7 @@ void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALSWeaponBase, WeaponData);
-
+	DOREPLIFETIME(ALSWeaponBase, bIsActived);
 }
 
 void ALSWeaponBase::BeginPlay()
@@ -130,6 +161,22 @@ void ALSWeaponBase::InitEquipment()
 		return;
 	}
 	CachedSpringArm = Base->GetSpringArmComponent();
+}
+
+void ALSWeaponBase::OnRepIsActived()
+{
+	if (bIsActived)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs Actived"));
+
+		ActivateEquipment();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs DeActived"));
+
+		DeActivateEquipment();
+	}
 }
 
 void ALSWeaponBase::AimUpdate(float Value)

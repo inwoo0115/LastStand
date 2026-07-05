@@ -17,6 +17,8 @@ class LASTSTAND_API ALSWeaponBase : public ALSEquipmentBase
 	GENERATED_BODY()
 
 public:
+	ALSWeaponBase();
+	 
 	virtual void LaunchWeapon();
 
 	virtual void ReleaseWeapon();
@@ -32,6 +34,10 @@ public:
 	virtual void AimRelease();
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void ActivateEquipment() override;
+
+	virtual void DeActivateEquipment() override;
 	
 	FTransform GetCurrentOwnerCamera();
 
@@ -40,8 +46,11 @@ public:
 	const FWeaponData GetWeaponData();
 
 protected:
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components",
+		Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USkeletalMeshComponent> WeaponMesh;
 
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -50,6 +59,12 @@ protected:
 
 	UPROPERTY(Replicated)
 	FWeaponData WeaponData;
+
+	UPROPERTY(ReplicatedUsing=OnRepIsActived)
+	bool bIsActived = false;
+
+	UFUNCTION()
+	void OnRepIsActived();
 
 	// Aim Timeline
 	FTimeline AimTimeline;

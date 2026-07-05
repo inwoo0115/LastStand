@@ -40,15 +40,13 @@ bool ULSEquipmentSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDr
 		return false;
 	}
 
-	// 장비 인지 체크
+	if (!EquipmentComp.IsValid())
+	{
+		return false;
+	}
 
-	// Equipment Component 확인
+	EquipmentComp->ServerRPCEquipItemFromInventory(ItemOp->ItemID);
 
-	// interact에서 드래그 시 처리
-
-	// inventroy 드래그 시 처리
-
-	// 일단 해제는 나중에 만들어야 할듯 함
 	return true;
 }
 
@@ -59,6 +57,8 @@ bool ULSEquipmentSlotWidget::NativeOnDragOver(const FGeometry& InGeometry, const
 
 void ULSEquipmentSlotWidget::RefreshSlot()
 {
+	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget::RefreshSlot()"));
+
 	if (!Container || !EquipmentComp.IsValid())
 	{
 		return;
@@ -76,6 +76,7 @@ void ULSEquipmentSlotWidget::RefreshSlot()
 	{
 		if (EquipmentMap.Find(EquipmentType))
 		{
+			UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget: Create Equipment Entry Widget"));
 			ALSEquipmentBase* EB = Cast<ALSEquipmentBase>(EquipmentMap[EquipmentType]);
 			if (EB)
 			{
@@ -87,6 +88,10 @@ void ULSEquipmentSlotWidget::RefreshSlot()
 				}
 			}
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget: EquipmentMap is Empty"));
 	}
 
 	// 드래그 중인 위젯 취소
