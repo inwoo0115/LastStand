@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "DataTable/LSWeaponData.h"
 #include "LSEquipmentSlotWidget.generated.h"
 
 /**
@@ -17,6 +18,9 @@ class LASTSTAND_API ULSEquipmentSlotWidget : public UUserWidget
 public:
 	void RefreshSlot();
 	
+	// 블루프린트 detail창에서 수정가능하게
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	EEquipmentType EquipmentType = EEquipmentType::None;
 
 protected:
 	virtual void NativeConstruct() override;
@@ -28,4 +32,13 @@ protected:
 		const FGeometry& InGeometry,
 		const FDragDropEvent& InDragDropEvent,
 		UDragDropOperation* InOperation) override;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UOverlay> Container;
+
+	UPROPERTY()
+	TWeakObjectPtr<class ULSEquipmentComponent> EquipmentComp;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Equipment")
+	TSubclassOf<class ULSEquipmentEntryWidget> EntryWidgetClass;
 };

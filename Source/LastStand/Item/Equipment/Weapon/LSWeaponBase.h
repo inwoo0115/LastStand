@@ -36,6 +36,9 @@ public:
 	FTransform GetCurrentOwnerCamera();
 
 	float GetCurrentOwnerSpringArmLength();
+
+	const FWeaponData GetWeaponData();
+
 protected:
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

@@ -7,6 +7,16 @@
 #include "Data/LSWeaponInfoData.h"
 #include "LSWeaponData.generated.h"
 
+UENUM()
+enum class EEquipmentType : uint8
+{
+    None,
+    Main,
+    Sub,
+    Throwable,
+    Melee
+};
+
 /**
  * 
  */
@@ -23,4 +33,7 @@ struct FWeaponData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
     TObjectPtr<ULSWeaponInfoData> WeaponDataAsset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+    EEquipmentType WeaponType = EEquipmentType::None;
 };

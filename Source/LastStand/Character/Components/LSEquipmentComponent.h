@@ -5,8 +5,10 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "DataTable/LSItemData.h"
+#include "DataTable/LSWeaponData.h"
 #include "LSEquipmentComponent.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnEquipmentArrayUpdated);
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -34,6 +36,10 @@ public:
 
 	void AimRelease();
 
+	FOnEquipmentArrayUpdated OnEquipmentArrayUpdated;
+
+	const TMap<EEquipmentType, TObjectPtr<AActor>> GetEquipments();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -41,8 +47,15 @@ protected:
 	UFUNCTION()
 	void OnRepFocusEquipment();
 
+	UFUNCTION()
+	void OnRepEquipments();
+
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// 리플리케이션용 배열
+	UPROPERTY(ReplicatedUsing = OnRepEquipments)
+	TArray<TObjectPtr<AActor>> ReplicatedEquipments;
 
 	// 장착 무기
 	UPROPERTY(EditAnywhere, Category = Equipment, Meta = (AllowPrivateAccess = "true"))

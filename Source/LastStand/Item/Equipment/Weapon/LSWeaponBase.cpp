@@ -80,6 +80,11 @@ float ALSWeaponBase::GetCurrentOwnerSpringArmLength()
 	return Base->GetCurrentSpringArmLength();
 }
 
+const FWeaponData ALSWeaponBase::GetWeaponData()
+{
+	return WeaponData;
+}
+
 void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

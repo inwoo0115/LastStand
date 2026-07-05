@@ -4,26 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/DragDropOperation.h"
-#include "LSItemDragDropOperation.generated.h"
+#include "LSEquipmentDragDropOperation.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class LASTSTAND_API ULSItemDragDropOperation : public UDragDropOperation
+class LASTSTAND_API ULSEquipmentDragDropOperation : public UDragDropOperation
 {
 	GENERATED_BODY()
-	
+
 public:
 	UPROPERTY()
 	FName ItemID;
-	UPROPERTY() 
-	int32 Quantity = 0;
-
+	 
 	UPROPERTY()
-	FGuid InstanceID;
+	int32 Quantity = 1;
+
 
 	// 출처 구분: 인벤토리에서 끌었나, 월드 후보에서 끌었나
 	UPROPERTY() 
 	bool bFromInventory = false;
+	
 };
