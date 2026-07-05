@@ -79,6 +79,6 @@ protected:
 
 	void InitAimCurve();
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<class USpringArmComponent> CachedSpringArm;
 };

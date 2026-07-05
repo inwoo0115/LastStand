@@ -31,6 +31,7 @@ void ALSWeaponBase::Equipped()
 
 void ALSWeaponBase::UnEquipped()
 {
+	Super::UnEquipped();
 }
 
 void ALSWeaponBase::ReloadWeapon()
@@ -122,6 +123,7 @@ void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME(ALSWeaponBase, WeaponData);
 	DOREPLIFETIME(ALSWeaponBase, bIsActived);
+	DOREPLIFETIME(ALSWeaponBase, CachedSpringArm);
 }
 
 void ALSWeaponBase::BeginPlay()
@@ -181,6 +183,10 @@ void ALSWeaponBase::OnRepIsActived()
 
 void ALSWeaponBase::AimUpdate(float Value)
 {
+	if (!CachedSpringArm)
+	{
+		return;
+	}
 	CachedSpringArm->TargetArmLength = Value;
 }
 

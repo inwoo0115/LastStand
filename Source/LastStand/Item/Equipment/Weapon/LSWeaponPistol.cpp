@@ -17,4 +17,5 @@ void ALSWeaponPistol::Equipped()
 
 void ALSWeaponPistol::UnEquipped()
 {
+	Super::UnEquipped();
 }

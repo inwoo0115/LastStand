@@ -6,7 +6,7 @@
 
 ALSEquipmentBase::ALSEquipmentBase()
 {
-	PrimaryActorTick.bCanEverTick = false; // 기본적으로 틱 자체를 안 쓰게
+	PrimaryActorTick.bCanEverTick = true;
 
 	SetActorHiddenInGame(true);
 
@@ -21,6 +21,8 @@ void ALSEquipmentBase::Equipped()
 void ALSEquipmentBase::UnEquipped()
 {
 	//장비 제거 구현
+	UE_LOG(LogTemp, Log, TEXT("ALSEquipmentBase::UnEquipped()"));
+
 	Destroy();
 }
 
