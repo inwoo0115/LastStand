@@ -117,6 +117,43 @@ const FWeaponData ALSWeaponBase::GetWeaponData()
 	return WeaponData;
 }
 
+void ALSWeaponBase::LinkWeaponAnimClassLayer(UClass* LayerClass)
+{
+	if (!LayerClass)
+	{
+		return;
+	}
+
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh)
+	{
+		if (USkeletalMeshComponent* MeshComp = OwnerCh->GetMesh())
+		{
+			if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+			{
+				AnimInstance->LinkAnimClassLayers(LayerClass);
+			}
+		}
+		CurrentAnimLayerClass = LayerClass; // 나중에 Unlink 하려면 캐싱해둠
+	}
+}
+
+void ALSWeaponBase::UnLinkWeaponAnimClassLayer()
+{
+	// Animation Layer 해제
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh)
+	{
+		if (USkeletalMeshComponent* MeshComp = OwnerCh->GetMesh())
+		{
+			if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+			{
+				AnimInstance->UnlinkAnimClassLayers(CurrentAnimLayerClass);
+			}
+		}
+	}
+}
+
 void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -136,11 +173,7 @@ void ALSWeaponBase::BeginPlay()
 
 void ALSWeaponBase::InitEquipment()
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		return;
-	}
-
+	// 애니메이션 세팅을 위해 클라이언트에서도 각각 데이터 저장
 	ULSDataSubsystem* Sub = GetOwner()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
 	if (!Sub)
 	{

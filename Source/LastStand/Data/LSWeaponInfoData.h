@@ -14,10 +14,28 @@ class LASTSTAND_API ULSWeaponInfoData : public UDataAsset
 {
 	GENERATED_BODY()
 	
-public:
-	UPROPERTY(EditAnywhere, Category = Bullet)
-	uint32 MaxAmmo;
-	
+public:	
 	UPROPERTY(EditAnywhere, Category = SpringArm)
 	float TargetArmLength = 40.0f;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	uint32 MaxAmmo;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	uint32 CurrentAmmo;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	uint32 MaxRange;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	float ShotGroupRadius;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	float LaunchIntervalTime;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	float ReloadIntervalTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	TSoftClassPtr<UAnimInstance> AnimLayerClass;
 };

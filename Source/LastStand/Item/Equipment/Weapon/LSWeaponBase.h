@@ -45,6 +45,11 @@ public:
 
 	const FWeaponData GetWeaponData();
 
+	void LinkWeaponAnimClassLayer(UClass* LayerClass);
+
+	void UnLinkWeaponAnimClassLayer();
+
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components",
 		Meta = (AllowPrivateAccess = "true"))
@@ -81,4 +86,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	TObjectPtr<class USpringArmComponent> CachedSpringArm;
+
+	UPROPERTY()
+	TObjectPtr<UClass> CurrentAnimLayerClass;
 };

@@ -43,8 +43,7 @@ void ALSEquipmentBase::DeActivateEquipment()
 void ALSEquipmentBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	InitEquipment();
+
 }
 
 void ALSEquipmentBase::InitEquipment()
