@@ -39,6 +39,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCReload();
 
+	// Multicast RPC (서버 → 전 머신, 총구→착탄점 디버그 라인)
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCDrawFireLine(const FVector& EndPoint, bool bHit);
+
 	// 타이머 / 상태
 	FTimerHandle LaunchTimerHandle;
 	FTimerHandle ReloadTimerHandle;
@@ -68,6 +72,9 @@ protected:
 	UPROPERTY(Replicated)
 	float ReloadIntervalTime;
 
-	
-	
+	UPROPERTY(Replicated)
+	bool bIsRapidFire;
+
+	UPROPERTY()
+	FName MuzzleName;
 };

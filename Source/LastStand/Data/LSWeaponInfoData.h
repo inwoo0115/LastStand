@@ -36,6 +36,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = WeaponInfo)
 	float ReloadIntervalTime;
 
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	bool bIsRapidFire;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	FName MuzzleName;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	TSoftClassPtr<UAnimInstance> AnimLayerClass;
 };

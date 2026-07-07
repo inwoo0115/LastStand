@@ -25,7 +25,7 @@ public:
 public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
-	TObjectPtr<class ACharacter> Owner;
+	TObjectPtr<class ALSPlayerCharacter> Owner;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	TObjectPtr<class UCharacterMovementComponent> Movement;
@@ -38,5 +38,22 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	FVector Axis;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	float Yaw;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	float Pitch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	float Roll;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsAim;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsRun;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsMontagePlaying;
 };

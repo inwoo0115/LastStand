@@ -22,6 +22,10 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	bool GetIsAim();
+
+	bool GetIsRun();
+
 protected:
 	void Move(const FInputActionValue& Value);
 
@@ -86,15 +90,17 @@ protected:
 
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsRun)
-	bool IsRun = false;
+	bool bIsRun = false;
 
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsCrouch)
-	bool IsCrouch = false;
+	bool bIsCrouch = false;
 
 	UFUNCTION()
 	void OnRepIsRun();
 
 	UFUNCTION()
 	void OnRepIsCrouch();
+
+	bool bIsAim = false;
 };

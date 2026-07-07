@@ -80,6 +80,22 @@ float ALSCharacterBase::GetCurrentSpringArmLength() const
 	return SpringArm->TargetArmLength;
 }
 
+FRotator ALSCharacterBase::GetCurrentControllerRotation() const
+{
+	return CurrentControllerRotation;
+}
+
+void ALSCharacterBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// 컨트롤러 로테이션 업데이트
+	if (HasAuthority())
+	{
+		CurrentControllerRotation = Controller->GetControlRotation();
+	}
+}
+
 // Called when the game starts or when spawned
 void ALSCharacterBase::BeginPlay()
 {
@@ -135,6 +151,7 @@ void ALSCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALSCharacterBase, CurrentCharacterControlType);
+	DOREPLIFETIME(ALSCharacterBase, CurrentControllerRotation);
 }
 
 void ALSCharacterBase::OnRep_ControlType()

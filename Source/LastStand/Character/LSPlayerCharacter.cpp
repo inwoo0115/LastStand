@@ -38,6 +38,16 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 }
 
+bool ALSPlayerCharacter::GetIsAim()
+{
+	return bIsAim;
+}
+
+bool ALSPlayerCharacter::GetIsRun()
+{
+	return bIsRun;
+}
+
 void ALSPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D Movement = Value.Get<FVector2D>();
@@ -88,21 +98,21 @@ void ALSPlayerCharacter::ServerRPCInteract_Implementation()
 
 void ALSPlayerCharacter::ServerRPCCrouch_Implementation()
 {
-	if (IsCrouch)
+	if (bIsCrouch)
 	{
-		IsCrouch = false;
+		bIsCrouch = false;
 		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
 	}
 	else
 	{
-		IsCrouch = true;
+		bIsCrouch = true;
 		GetCharacterMovement()->MaxWalkSpeed += 100.0f;
 	}
 }
 
 void ALSPlayerCharacter::OnRepIsRun()
 {
-	if (IsRun)
+	if (bIsRun)
 	{
 		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
 	}
@@ -114,7 +124,7 @@ void ALSPlayerCharacter::OnRepIsRun()
 
 void ALSPlayerCharacter::OnRepIsCrouch()
 {
-	if (IsCrouch)
+	if (bIsCrouch)
 	{
 		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
 	}
@@ -126,14 +136,14 @@ void ALSPlayerCharacter::OnRepIsCrouch()
 
 void ALSPlayerCharacter::ServerRPCRun_Implementation()
 {
-	if (IsRun)
+	if (bIsRun)
 	{
-		IsRun = false;
+		bIsRun = false;
 		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
 	}
 	else
 	{
-		IsRun = true;
+		bIsRun = true;
 		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
 	}
 }
@@ -148,8 +158,8 @@ void ALSPlayerCharacter::Jump()
 
 void ALSPlayerCharacter::Aim()
 {
-	// 카메라 옮기기
 	Equipments->Aim();
+	bIsAim = true;
 }
 
 
@@ -166,8 +176,8 @@ void ALSPlayerCharacter::Release()
 
 void ALSPlayerCharacter::AimRelease()
 {
-	// 카메라 원위치
 	Equipments->AimRelease();
+	bIsAim = false;
 }
 
 void ALSPlayerCharacter::Reload()

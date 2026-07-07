@@ -31,10 +31,13 @@ public:
 
 	class USpringArmComponent* GetSpringArmComponent();
 
-
 	FTransform GetCurrentCameraTransform() const;
 
 	float GetCurrentSpringArmLength() const;
+
+	FRotator GetCurrentControllerRotation() const;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -50,6 +53,10 @@ protected:
 
 	UFUNCTION()
 	void OnRep_ControlType();
+
+	// Controller Rotation Replication
+	UPROPERTY(Replicated)
+	FRotator CurrentControllerRotation = FRotator(0.0f, 0.0f, 0.0f);
 
 	// 컨트롤 매니저
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
