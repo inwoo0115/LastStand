@@ -9,6 +9,8 @@
 #include "Tags/LSGameplayTags.h"
 #include "Engine/GameInstance.h"
 #include "Blueprint/UserWidget.h"
+#include "Character/LSCharacterBase.h"
+#include "GameFramework/PlayerController.h"
 
 ULSGameModeInfoComponent::ULSGameModeInfoComponent()
 {
@@ -99,6 +101,46 @@ void ULSGameModeInfoComponent::OnInfoDataRep()
 	PushWidgetsToLayer(UISubsystem, InfoData->GameWidgets,  LSUITags::Layer_Game);
 	PushWidgetsToLayer(UISubsystem, InfoData->MenuWidgets,  LSUITags::Layer_Menu);
 	PushWidgetsToLayer(UISubsystem, InfoData->ModalWidgets, LSUITags::Layer_Modal);
+
+	// 컨트롤 데이터 적용
+	ApplyControlDataToLocalPawn();
+}
+
+ULSCharacterControlData* ULSGameModeInfoComponent::GetControlData() const
+{
+	return InfoData ? InfoData->ControlData : nullptr;
+}
+
+void ULSGameModeInfoComponent::ApplyControlDataToLocalPawn()
+{
+	if (!InfoData || !InfoData->ControlData)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC)
+	{
+		// 로컬 플레이어 컨트롤러가 아직 없음. 캐릭터 BeginPlay 폴백이 처리
+		UE_LOG(LogTemp, Warning, TEXT("[LSGameModeInfoComponent] ApplyControlDataToLocalPawn: PlayerController is null."));
+		return;
+	}
+
+	ALSCharacterBase* Character = Cast<ALSCharacterBase>(PC->GetPawn());
+	if (!Character)
+	{
+		// 폰이 아직 스폰/빙의되지 않음. 캐릭터 BeginPlay 폴백이 처리
+		UE_LOG(LogTemp, Warning, TEXT("[LSGameModeInfoComponent] ApplyControlDataToLocalPawn: Pawn is not ALSCharacterBase."));
+		return;
+	}
+
+	Character->SetCharacterControlData(InfoData->ControlData);
 }
 
 void ULSGameModeInfoComponent::PushWidgetsToLayer(ULSUISubsystem* UISubsystem, const TArray<TSoftClassPtr<UUserWidget>>& Widgets, FGameplayTag LayerTag)

@@ -39,6 +39,9 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	// 컨트롤 데이터 직접 적용 (GameMode InfoData 등 외부 소스)
+	void SetCharacterControlData(class ULSCharacterControlData* ControlData);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

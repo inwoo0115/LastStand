@@ -12,6 +12,7 @@
 #include "Components/LSEquipmentComponent.h"
 #include "Components/LSInventoryComponent.h"
 #include "Components/LSInteractionComponent.h"
+#include "GameState/LSGameState.h"
 
 
 // Sets default values
@@ -100,14 +101,36 @@ void ALSCharacterBase::Tick(float DeltaSeconds)
 void ALSCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// 컨트롤 데이터 설정
-	SetCharacterControlData(CurrentCharacterControlType);
+
+	// 컨트롤 데이터 설정: GameMode InfoData의 ControlData 우선, 없으면 캐릭터 자체 맵 기본값 폴백
+	ULSCharacterControlData* GameControlData = nullptr;
+	if (ALSGameState* GS = GetWorld()->GetGameState<ALSGameState>())
+	{
+		GameControlData = GS->GetControlData();
+	}
+
+	if (GameControlData)
+	{
+		SetCharacterControlData(GameControlData);
+	}
+	else
+	{
+		SetCharacterControlData(CurrentCharacterControlType);
+	}
 }
 
 void ALSCharacterBase::SetCharacterControlData(ECharacterControlType ControlType)
 {
-	auto CharacterControlData = CharacterControlManager[ControlType];
+	ULSCharacterControlData* Data = CharacterControlManager.FindRef(ControlType);
+	SetCharacterControlData(Data);
+}
+
+void ALSCharacterBase::SetCharacterControlData(ULSCharacterControlData* CharacterControlData)
+{
+	if (!CharacterControlData)
+	{
+		return;
+	}
 
 	// Character Control Setting
 

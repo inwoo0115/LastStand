@@ -20,6 +20,9 @@ public:
 
 	void RemoveWidgetsFromLayer();
 
+	// InfoData에 설정된 컨트롤 데이터 반환 (없으면 nullptr)
+	class ULSCharacterControlData* GetControlData() const;
+
 protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -34,4 +37,7 @@ protected:
 	TArray<TObjectPtr<class UUserWidget>> WidgetArray;
 
 	void PushWidgetsToLayer(class ULSUISubsystem* UISubsystem, const TArray<TSoftClassPtr<UUserWidget>>& Widgets, FGameplayTag LayerTag);
+
+	// 로컬 플레이어의 캐릭터에 InfoData의 ControlData 적용
+	void ApplyControlDataToLocalPawn();
 };

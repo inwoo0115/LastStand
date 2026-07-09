@@ -18,6 +18,10 @@ public:
 	ALSGameState();
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// InfoComp에 설정된 컨트롤 데이터 반환 (없으면 nullptr)
+	class ULSCharacterControlData* GetControlData() const;
+
 protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

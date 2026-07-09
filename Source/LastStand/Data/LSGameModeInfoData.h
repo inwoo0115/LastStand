@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "LSCharacterControlData.h"
 #include "LSGameModeInfoData.generated.h"
 
 /**
@@ -23,4 +24,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI Data")
 	TArray<TSoftClassPtr<UUserWidget>> ModalWidgets;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Control")
+	TObjectPtr<ULSCharacterControlData> ControlData;
 };

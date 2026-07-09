@@ -16,3 +16,8 @@ void ALSGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 }
+
+ULSCharacterControlData* ALSGameState::GetControlData() const
+{
+	return InfoComp ? InfoComp->GetControlData() : nullptr;
+}
