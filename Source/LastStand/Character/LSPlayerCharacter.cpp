@@ -89,6 +89,9 @@ void ALSPlayerCharacter::Crouching(const FInputActionValue& Value)
 void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// 로컬 제외 나머지 클라이언트에게만 리플리케이트 (COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(ALSPlayerCharacter, bIsAim, COND_SkipOwner);
 }
 
 void ALSPlayerCharacter::ServerRPCInteract_Implementation()
@@ -159,7 +162,8 @@ void ALSPlayerCharacter::Jump()
 void ALSPlayerCharacter::Aim()
 {
 	Equipments->Aim();
-	bIsAim = true;
+	bIsAim = true;       
+	ServerRPCAim(true);
 }
 
 
@@ -178,6 +182,13 @@ void ALSPlayerCharacter::AimRelease()
 {
 	Equipments->AimRelease();
 	bIsAim = false;
+	ServerRPCAim(false);
+}
+
+void ALSPlayerCharacter::ServerRPCAim_Implementation(bool bNewAim)
+{
+	// 서버 변수 변경 → COND_SkipOwner로 소유 클라 제외 나머지에 리플리케이트
+	bIsAim = bNewAim;
 }
 
 void ALSPlayerCharacter::Reload()

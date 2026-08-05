@@ -88,6 +88,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCCrouch();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPCAim(bool bNewAim);
+
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsRun)
 	bool bIsRun = false;
@@ -102,5 +105,6 @@ protected:
 	UFUNCTION()
 	void OnRepIsCrouch();
 
+	UPROPERTY(Replicated)
 	bool bIsAim = false;
 };

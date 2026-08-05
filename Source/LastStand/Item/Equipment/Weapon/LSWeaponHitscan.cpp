@@ -11,6 +11,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimMontage.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
@@ -56,6 +57,10 @@ void ALSWeaponHitscan::ReloadWeapon()
 
 	// 장전 중에는 발사 정지
 	GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
+
+	// 반응성: 소유 클라에서 즉시 로컬 재생
+	PlayWeaponMontage(EWeaponMontageType::Reload);
+
 	ServerRPCReload();
 }
 
@@ -78,6 +83,9 @@ void ALSWeaponHitscan::Fire()
 	const FVector ShotDir = FMath::VRandCone(AimDir, ConeHalfAngleRad);
 	const FVector End = Start + ShotDir * static_cast<float>(MaxRange);
 
+	// 반응성: 소유 클라에서 즉시 로컬 재생
+	PlayWeaponMontage(EWeaponMontageType::Fire);
+
 	// 서버에 발사 요청(권위적 판정)
 	ServerRPCFire(Start, End);
 }
@@ -99,6 +107,9 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 
 	// 탄약 소모
 	--CurrentAmmo;
+
+	// 타 머신으로 발사 몽타주 전파
+	MulticastRPCPlayMontage(EWeaponMontageType::Fire);
 
 	// 권위적 라인 트레이스
 	FHitResult Hit;
@@ -138,6 +149,45 @@ void ALSWeaponHitscan::MulticastRPCDrawFireLine_Implementation(const FVector& En
 #endif
 }
 
+void ALSWeaponHitscan::PlayWeaponMontage(EWeaponMontageType MontageType)
+{
+	if (!WeaponData.WeaponDataAsset)
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UAnimMontage>* Found = WeaponData.WeaponDataAsset->WeaponMontages.Find(MontageType);
+	if (!Found)
+	{
+		return;
+	}
+
+	UAnimMontage* Montage = Found->LoadSynchronous();
+	if (!Montage)
+	{
+		return;
+	}
+
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh)
+	{
+		// 캐릭터 Mesh의 AnimInstance에서 재생
+		OwnerCh->PlayAnimMontage(Montage);
+	}
+}
+
+void ALSWeaponHitscan::MulticastRPCPlayMontage_Implementation(EWeaponMontageType MontageType)
+{
+	// 소유(로컬 조종) 클라이언트는 이미 로컬에서 재생했으므로 중복 재생 방지
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh && OwnerCh->IsLocallyControlled())
+	{
+		return;
+	}
+
+	PlayWeaponMontage(MontageType);
+}
+
 void ALSWeaponHitscan::ServerRPCReload_Implementation()
 {
 	if (bIsReloading || CurrentAmmo == MaxAmmo)
@@ -146,6 +196,10 @@ void ALSWeaponHitscan::ServerRPCReload_Implementation()
 	}
 
 	bIsReloading = true;
+
+	// 타 머신으로 재장전 몽타주 전파(소유 클라는 이미 로컬 재생했으므로 스킵)
+	MulticastRPCPlayMontage(EWeaponMontageType::Reload);
+
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &ALSWeaponHitscan::FinishReload, ReloadIntervalTime, false);
 }
 

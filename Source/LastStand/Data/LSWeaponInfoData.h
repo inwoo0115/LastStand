@@ -6,8 +6,19 @@
 #include "Engine/DataAsset.h"
 #include "LSWeaponInfoData.generated.h"
 
+class UAnimMontage;
+
+UENUM(BlueprintType)
+enum class EWeaponMontageType : uint8
+{
+	Fire      UMETA(DisplayName = "Fire"),
+	Reload    UMETA(DisplayName = "Reload"),
+	Equip     UMETA(DisplayName = "Equip"),
+	UnEquip   UMETA(DisplayName = "UnEquip")
+};
+
 /**
- * 
+ *
  */
 UCLASS()
 class LASTSTAND_API ULSWeaponInfoData : public UDataAsset
@@ -44,4 +55,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	TSoftClassPtr<UAnimInstance> AnimLayerClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	TMap<EWeaponMontageType, TSoftObjectPtr<UAnimMontage>> WeaponMontages;
 };

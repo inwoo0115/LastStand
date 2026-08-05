@@ -43,6 +43,13 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCDrawFireLine(const FVector& EndPoint, bool bHit);
 
+	// 무기 상황별 몽타주 재생 (오너 캐릭터 메시에서 재생)
+	void PlayWeaponMontage(EWeaponMontageType MontageType);
+
+	// 서버 → 전 머신 전파. 소유(로컬 조종) 클라는 이미 로컬 재생했으므로 스킵
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCPlayMontage(EWeaponMontageType MontageType);
+
 	// 타이머 / 상태
 	FTimerHandle LaunchTimerHandle;
 	FTimerHandle ReloadTimerHandle;
