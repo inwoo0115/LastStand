@@ -48,6 +48,9 @@ public:
 	float ReloadIntervalTime;
 
 	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	float EquipIntervalTime;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
 	bool bIsRapidFire;
 
 	UPROPERTY(EditAnywhere, Category = WeaponInfo)

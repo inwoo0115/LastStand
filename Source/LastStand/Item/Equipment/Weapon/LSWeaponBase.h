@@ -52,6 +52,9 @@ public:
 	// 이 무기의 애니메이션 레이어를 로드해 오너 캐릭터 메시에 링크
 	void ApplyWeaponAnimLayer();
 
+	// 무기 상황별 몽타주 재생 (오너 캐릭터 메시에서 재생)
+	void PlayWeaponMontage(EWeaponMontageType MontageType);
+
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components",
@@ -76,6 +79,12 @@ protected:
 
 	UFUNCTION()
 	void OnRepIsActived();
+
+	// 장착 가드: Activate 후 EquipIntervalTime 동안 발사/장전 차단 (머신별 로컬 상태)
+	void FinishEquip();
+
+	bool bIsEquipping = false;
+	FTimerHandle EquipTimerHandle;
 
 	// Aim Timeline
 	FTimeline AimTimeline;

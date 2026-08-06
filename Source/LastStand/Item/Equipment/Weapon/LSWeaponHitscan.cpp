@@ -17,7 +17,7 @@
 void ALSWeaponHitscan::LaunchWeapon()
 {
 	// 소유 클라이언트 입력에 의해 호출됨
-	if (bIsReloading || CurrentAmmo == 0)
+	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
 	{
 		return;
 	}
@@ -48,7 +48,7 @@ void ALSWeaponHitscan::UnEquipped()
 void ALSWeaponHitscan::ReloadWeapon()
 {
 	// 소유 클라이언트 입력에 의해 호출됨
-	if (bIsReloading || CurrentAmmo == MaxAmmo)
+	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo)
 	{
 		return;
 	}
@@ -64,8 +64,8 @@ void ALSWeaponHitscan::ReloadWeapon()
 
 void ALSWeaponHitscan::Fire()
 {
-	// 탄약 소진/장전 중이면 연사 타이머 정지
-	if (bIsReloading || CurrentAmmo == 0)
+	// 탄약 소진/장전 중/장착 중이면 연사 타이머 정지
+	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
 	{
 		GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
 		return;
@@ -90,7 +90,7 @@ void ALSWeaponHitscan::Fire()
 
 void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd)
 {
-	if (bIsReloading || CurrentAmmo == 0)
+	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
 	{
 		return;
 	}
@@ -147,33 +147,6 @@ void ALSWeaponHitscan::MulticastRPCDrawFireLine_Implementation(const FVector& En
 #endif
 }
 
-void ALSWeaponHitscan::PlayWeaponMontage(EWeaponMontageType MontageType)
-{
-	if (!WeaponData.WeaponDataAsset)
-	{
-		return;
-	}
-
-	const TSoftObjectPtr<UAnimMontage>* Found = WeaponData.WeaponDataAsset->WeaponMontages.Find(MontageType);
-	if (!Found)
-	{
-		return;
-	}
-
-	UAnimMontage* Montage = Found->LoadSynchronous();
-	if (!Montage)
-	{
-		return;
-	}
-
-	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
-	if (OwnerCh)
-	{
-		// 캐릭터 Mesh의 AnimInstance에서 재생
-		OwnerCh->PlayAnimMontage(Montage);
-	}
-}
-
 void ALSWeaponHitscan::MulticastRPCPlayMontage_Implementation(EWeaponMontageType MontageType)
 {
 	// 소유(로컬 조종) 클라이언트는 이미 로컬에서 재생했으므로 중복 재생 방지
@@ -188,7 +161,7 @@ void ALSWeaponHitscan::MulticastRPCPlayMontage_Implementation(EWeaponMontageType
 
 void ALSWeaponHitscan::ServerRPCReload_Implementation()
 {
-	if (bIsReloading || CurrentAmmo == MaxAmmo)
+	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo)
 	{
 		return;
 	}

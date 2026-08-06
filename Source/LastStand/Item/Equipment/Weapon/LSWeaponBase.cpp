@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Data/LSWeaponInfoData.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Animation/AnimMontage.h"
 
 
 ALSWeaponBase::ALSWeaponBase()
@@ -76,6 +77,18 @@ void ALSWeaponBase::ActivateEquipment()
 		WeaponMesh->SetVisibility(true);
 	}
 	bIsActived = true;
+
+	// 장착 가드 시작: EquipIntervalTime 동안 발사/장전 차단 (서버·클라 각자 로컬)
+	bIsEquipping = true;
+	const float EquipTime = WeaponData.WeaponDataAsset ? WeaponData.WeaponDataAsset->EquipIntervalTime : 0.0f;
+	if (EquipTime > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(EquipTimerHandle, this, &ALSWeaponBase::FinishEquip, EquipTime, false);
+	}
+	else
+	{
+		bIsEquipping = false;
+	}
 }
 
 void ALSWeaponBase::DeActivateEquipment()
@@ -88,6 +101,10 @@ void ALSWeaponBase::DeActivateEquipment()
 		WeaponMesh->SetVisibility(false);
 	}
 	bIsActived = false;
+
+	// 장착 가드 정리
+	GetWorldTimerManager().ClearTimer(EquipTimerHandle);
+	bIsEquipping = false;
 }
 
 FTransform ALSWeaponBase::GetCurrentOwnerCamera()
@@ -225,12 +242,47 @@ void ALSWeaponBase::OnRepIsActived()
 		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs Actived"));
 
 		ActivateEquipment();
+
+		// 서버 제외 모든 클라에서 장착 몽타주 재생 (OnRep은 클라에서만 발화)
+		PlayWeaponMontage(EWeaponMontageType::Equip);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs DeActived"));
 
 		DeActivateEquipment();
+	}
+}
+
+void ALSWeaponBase::FinishEquip()
+{
+	bIsEquipping = false;
+}
+
+void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType)
+{
+	if (!WeaponData.WeaponDataAsset)
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UAnimMontage>* Found = WeaponData.WeaponDataAsset->WeaponMontages.Find(MontageType);
+	if (!Found)
+	{
+		return;
+	}
+
+	UAnimMontage* Montage = Found->LoadSynchronous();
+	if (!Montage)
+	{
+		return;
+	}
+
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh)
+	{
+		// 캐릭터 Mesh의 AnimInstance에서 재생
+		OwnerCh->PlayAnimMontage(Montage);
 	}
 }
 
