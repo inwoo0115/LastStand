@@ -16,5 +16,8 @@ class LASTSTAND_API ULSUIEventSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 	
 public:
+	// 사용자 입력 관련 HUD UI 실행 델리게이트
 	FOnInput InventoryInput;
+
+	// 이벤트로 HUD UI 실행 델리게이트
 };

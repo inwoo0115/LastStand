@@ -76,7 +76,7 @@ void ALSEnemyBase::Tick(float DeltaTime)
 			const FVector WidgetLoc = HealthBarWidget->GetComponentLocation();
 
 			// 위젯 정면이 카메라를 향하게 (수평 유지)
-			FRotator LookAt = (WidgetLoc - CamLoc).Rotation();
+			FRotator LookAt = (CamLoc - WidgetLoc).Rotation();
 			LookAt.Pitch = 0.0f;
 			LookAt.Roll = 0.0f;
 			HealthBarWidget->SetWorldRotation(LookAt);
