@@ -12,6 +12,7 @@
 #include "Components/LSEquipmentComponent.h"
 #include "Components/LSInventoryComponent.h"
 #include "Components/LSInteractionComponent.h"
+#include "Components/LSStatComponent.h"
 #include "GameState/LSGameState.h"
 
 
@@ -44,6 +45,9 @@ ALSCharacterBase::ALSCharacterBase()
 
 	// Interaction
 	Interaction = CreateDefaultSubobject<ULSInteractionComponent>(TEXT("Interaction"));
+
+	// Stat
+	Stat = CreateDefaultSubobject<ULSStatComponent>(TEXT("Stat"));
 }
 
 ULSInteractionComponent* ALSCharacterBase::GetInteractionComponent()
@@ -54,6 +58,19 @@ ULSInteractionComponent* ALSCharacterBase::GetInteractionComponent()
 ULSInventoryComponent* ALSCharacterBase::GetInventoryComponent()
 {
 	return Inventory;
+}
+
+ULSStatComponent* ALSCharacterBase::GetStatComponent()
+{
+	return Stat;
+}
+
+void ALSCharacterBase::ApplyDamage(int32 Damage)
+{
+	if (ULSStatComponent* StatComp = GetStatComponent())
+	{
+		StatComp->ApplyDamage(Damage);
+	}
 }
 
 USpringArmComponent* ALSCharacterBase::GetSpringArmComponent()

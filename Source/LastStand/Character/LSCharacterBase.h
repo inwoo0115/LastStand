@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Interface/LSInteractComponentInterface.h"
 #include "Interface/LSInventoryComponentInterface.h"
+#include "Interface/LSStatComponentInterface.h"
 #include "LSCharacterBase.generated.h"
 
 
@@ -17,7 +18,7 @@ enum class ECharacterControlType : uint8
 
 
 UCLASS()
-class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComponentInterface, public ILSInventoryComponentInterface
+class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComponentInterface, public ILSInventoryComponentInterface, public ILSStatComponentInterface
 {
 	GENERATED_BODY()
 
@@ -28,6 +29,10 @@ public:
 	virtual ULSInteractionComponent* GetInteractionComponent() override;
 
 	virtual ULSInventoryComponent* GetInventoryComponent() override;
+
+	virtual ULSStatComponent* GetStatComponent() override;
+
+	virtual void ApplyDamage(int32 Damage) override;
 
 	class USpringArmComponent* GetSpringArmComponent();
 
@@ -80,4 +85,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSInteractionComponent> Interaction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSStatComponent> Stat;
 };

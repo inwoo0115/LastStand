@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "LSItemData.h"
 #include "LSWeaponData.h"
+#include "LSEnemyData.h"
 #include "LSDataSubsystem.generated.h"
 
 /**
@@ -23,11 +24,16 @@ public:
 
 	const FWeaponData* FindWeapon(FName ItemID) const;
 
-protected: 
+	const FEnemyData* FindEnemy(FName EnemyID) const;
+
+protected:
 	// 데이터 테이블 포인터
 	UPROPERTY()
 	TObjectPtr<UDataTable> ItemTable;
 
 	UPROPERTY()
 	TObjectPtr<UDataTable> WeaponTable;
+
+	UPROPERTY()
+	TObjectPtr<UDataTable> EnemyTable;
 };

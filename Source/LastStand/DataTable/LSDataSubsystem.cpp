@@ -15,6 +15,7 @@ void ULSDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	const ULSGameDataSettings* Settings = GetDefault<ULSGameDataSettings>();
 	ItemTable = Settings->ItemTable.LoadSynchronous();
 	WeaponTable = Settings->WeaponTable.LoadSynchronous();
+	EnemyTable = Settings->EnemyTable.LoadSynchronous();
 }
 
 const FItemData* ULSDataSubsystem::FindItem(FName ItemID) const
@@ -39,4 +40,16 @@ const FWeaponData* ULSDataSubsystem::FindWeapon(FName ItemID) const
 	}
 
 	return WeaponTable->FindRow<FWeaponData>(ItemID, TEXT("UDataSubsystem::FindWeapon"));
+}
+
+const FEnemyData* ULSDataSubsystem::FindEnemy(FName EnemyID) const
+{
+	if (!EnemyTable)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Cannot Found EnemyTable"));
+
+		return nullptr;
+	}
+
+	return EnemyTable->FindRow<FEnemyData>(EnemyID, TEXT("UDataSubsystem::FindEnemy"));
 }
