@@ -42,8 +42,6 @@ void ALSWeaponHitscan::UnEquipped()
 	GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
 	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
 
-	UnLinkWeaponAnimClassLayer();
-
 	Super::UnEquipped();
 }
 
@@ -197,7 +195,7 @@ void ALSWeaponHitscan::ServerRPCReload_Implementation()
 
 	bIsReloading = true;
 
-	// 타 머신으로 재장전 몽타주 전파(소유 클라는 이미 로컬 재생했으므로 스킵)
+	// 타 머신으로 재장전 몽타주 전파
 	MulticastRPCPlayMontage(EWeaponMontageType::Reload);
 
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &ALSWeaponHitscan::FinishReload, ReloadIntervalTime, false);
@@ -222,10 +220,6 @@ void ALSWeaponHitscan::InitEquipment()
 	ReloadIntervalTime = WeaponData.WeaponDataAsset->ReloadIntervalTime;
 	bIsRapidFire = WeaponData.WeaponDataAsset->bIsRapidFire;
 	MuzzleName = WeaponData.WeaponDataAsset->MuzzleName;
-
-	// Animation Layer 설정
-	UClass* LayerClass = WeaponData.WeaponDataAsset->AnimLayerClass.LoadSynchronous();
-	LinkWeaponAnimClassLayer(LayerClass);
 }
 
 void ALSWeaponHitscan::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

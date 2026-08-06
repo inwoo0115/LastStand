@@ -29,8 +29,8 @@ protected:
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// 발사/장전 헬퍼
-	void Fire();          // 소유 클라이언트: 트레이스 계산 후 Server RPC 요청
-	void FinishReload();  // 서버: 장전 완료 타이머 콜백
+	void Fire();
+	void FinishReload();
 
 	// Server RPC (소유 클라이언트 → 서버)
 	UFUNCTION(Server, Reliable)

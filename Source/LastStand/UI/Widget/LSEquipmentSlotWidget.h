@@ -17,8 +17,7 @@ class LASTSTAND_API ULSEquipmentSlotWidget : public UUserWidget
 	
 public:
 	void RefreshSlot();
-	
-	// 블루프린트 detail창에서 수정가능하게
+
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	EEquipmentType EquipmentType = EEquipmentType::None;
 

@@ -91,8 +91,8 @@ bool ULSInteractionSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const F
 {
 	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
 
-	// 받은 데이터 기반으로 드랍 이벤트 처리
-	if (!ItemOp->bFromInventory)
+	// 받은 데이터 기반으로 드랍 이벤트 처리 (장비 오퍼레이션 등은 무시)
+	if (!ItemOp || !ItemOp->bFromInventory)
 	{
 		return false;
 	}

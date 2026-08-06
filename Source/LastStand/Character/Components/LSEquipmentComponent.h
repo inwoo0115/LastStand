@@ -43,20 +43,21 @@ public:
 	// Server RPC
 	UFUNCTION(Server, Reliable)
 	void ServerRPCEquipItemFromInventory(FName ItemName);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCUnEquipItemFromInventory(FName ItemName);
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void OnRepFocusEquipment();
+	void OnRepFocusEquipment(class ALSWeaponBase* OldFocusEquipment);
 
 	UFUNCTION()
 	void OnRepEquipments();
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-
 
 	// 리플리케이션용 배열
 	UPROPERTY(ReplicatedUsing = OnRepEquipments)

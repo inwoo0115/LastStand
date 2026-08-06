@@ -49,6 +49,9 @@ public:
 
 	void UnLinkWeaponAnimClassLayer();
 
+	// 이 무기의 애니메이션 레이어를 로드해 오너 캐릭터 메시에 링크
+	void ApplyWeaponAnimLayer();
+
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components",
@@ -59,7 +62,10 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+
+	// 언이큅/파괴 시 링크한 애니메이션 레이어 해제(모든 머신)
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	virtual void InitEquipment() override;
 
 	UPROPERTY(Replicated)

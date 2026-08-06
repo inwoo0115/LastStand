@@ -8,6 +8,9 @@
 #include "UI/Operation/LSItemDragDropOperation.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Input/Reply.h"
+#include "GameFramework/Pawn.h"
+#include "Character/Components/LSEquipmentComponent.h"
+#include "Character/Components/LSInteractionComponent.h"
 
 void ULSInventoryEntryWidget::SetItem(FName InItemID, int32 InQuantity, bool bInFromInventory, FGuid InInstanceID)
 {
@@ -46,6 +49,39 @@ void ULSInventoryEntryWidget::NativeOnDragDetected(const FGeometry& InGeometry, 
 
 FReply ULSInventoryEntryWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+    // 오른쪽 버튼: 드래그와 유사한 이동을 즉시 실행
+    if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+    {
+        HandleRightClick();
+        return FReply::Handled();
+    }
+
     // 왼쪽 버튼이 눌리면 드래그 감지
     return UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton).NativeReply;
+}
+
+void ULSInventoryEntryWidget::HandleRightClick()
+{
+    APawn* P = GetOwningPlayerPawn();
+    if (!P)
+    {
+        return;
+    }
+
+    if (bFromInventory)
+    {
+        // 인벤토리 아이템 → 타입에 맞는 장비칸(차 있으면 드래그와 동일하게 스왑)
+        if (ULSEquipmentComponent* Equip = P->FindComponentByClass<ULSEquipmentComponent>())
+        {
+            Equip->ServerRPCEquipItemFromInventory(ItemID);
+        }
+    }
+    else
+    {
+        // 월드 후보(Interaction) → 인벤토리 픽업
+        if (ULSInteractionComponent* Interaction = P->FindComponentByClass<ULSInteractionComponent>())
+        {
+            Interaction->ServerRPCInteractCertainCandidate(InstanceID);
+        }
+    }
 }

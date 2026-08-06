@@ -205,9 +205,18 @@ void ULSEquipmentComponent::BeginPlay()
 	
 }
 
-void ULSEquipmentComponent::OnRepFocusEquipment()
+void ULSEquipmentComponent::OnRepFocusEquipment(ALSWeaponBase* OldFocusEquipment)
 {
-	// 애니메이션 출력
+	if (IsValid(OldFocusEquipment))
+	{
+		OldFocusEquipment->UnLinkWeaponAnimClassLayer();
+	}
+
+	// 새 포커스 무기 레이어 적용
+	if (IsValid(FocusEquipment))
+	{
+		FocusEquipment->ApplyWeaponAnimLayer();
+	}
 }
 
 void ULSEquipmentComponent::OnRepEquipments()
@@ -261,6 +270,23 @@ void ULSEquipmentComponent::ServerRPCEquipItemFromInventory_Implementation(FName
 	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent: ServerRPCEquipItemFromInventory"));
 
 	EquipItemFromInventory(ItemName);
+}
+
+void ULSEquipmentComponent::ServerRPCUnEquipItemFromInventory_Implementation(FName ItemName)
+{
+	ULSDataSubsystem* Sub = GetOwner()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	if (!Sub)
+	{
+		return;
+	}
+
+	const FWeaponData* ID = Sub->FindWeapon(ItemName);
+	if (!ID)
+	{
+		return;
+	}
+
+	UnEquipItemFromInventory(ID->WeaponType);
 }
 
 void ULSEquipmentComponent::Aim()

@@ -4,10 +4,12 @@
 #include "UI/Widget/LSInventorySlotWidget.h"
 #include "LSInventorySlotWidget.h"
 #include "UI/Operation/LSItemDragDropOperation.h"
+#include "UI/Operation/LSEquipmentDragDropOperation.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Character/Components/LSInventoryComponent.h"
 #include "Character/Components/LSInteractionComponent.h"
+#include "Character/Components/LSEquipmentComponent.h"
 #include "LSInventoryEntryWidget.h"
 
 void ULSInventorySlotWidget::RefreshSlot()
@@ -63,6 +65,12 @@ void ULSInventorySlotWidget::NativeConstruct()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Interaction Comp is not valid"));
 		}
+
+		EquipmentComp = P->FindComponentByClass<ULSEquipmentComponent>();
+		if (!EquipmentComp.IsValid())
+		{
+			UE_LOG(LogTemp, Log, TEXT("Equipment Comp is not valid"));
+		}
 	}
 }
 
@@ -79,10 +87,20 @@ void ULSInventorySlotWidget::NativeDestruct()
 
 bool ULSInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
-	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
+	// 장비칸에서 끌어온 아이템 → 언이큅(인벤토리로 복귀)
+	if (ULSEquipmentDragDropOperation* EquipOp = Cast<ULSEquipmentDragDropOperation>(InOperation))
+	{
+		if (!EquipmentComp.IsValid())
+		{
+			return false;
+		}
+		EquipmentComp->ServerRPCUnEquipItemFromInventory(EquipOp->ItemID);
+		return true;
+	}
 
-	// 받은 데이터 기반으로 드랍 이벤트 처리
-	if (ItemOp->bFromInventory)
+	// 월드 후보 → 인벤토리 픽업(널가드 추가)
+	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
+	if (!ItemOp || ItemOp->bFromInventory)
 	{
 		return false;
 	}

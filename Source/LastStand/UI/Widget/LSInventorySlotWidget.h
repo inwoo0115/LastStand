@@ -38,6 +38,9 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<class ULSInteractionComponent> InteractionComp;
 
+	UPROPERTY()
+	TWeakObjectPtr<class ULSEquipmentComponent> EquipmentComp;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	TSubclassOf<class ULSInventoryEntryWidget> EntryWidgetClass;  // 1칸 위젯 클래스
 };

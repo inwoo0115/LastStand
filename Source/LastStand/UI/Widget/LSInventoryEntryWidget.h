@@ -26,6 +26,9 @@ protected:
 
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
+	// 우클릭 처리 — bFromInventory에 따라 인벤토리→장비 또는 월드후보→인벤토리로 분기
+	void HandleRightClick();
+
 	UPROPERTY(meta = (BindWidget)) 
 	TObjectPtr<class UImage> IconImage;
 

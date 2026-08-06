@@ -34,8 +34,9 @@ void ULSEquipmentSlotWidget::NativeDestruct()
 bool ULSEquipmentSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
 	ULSItemDragDropOperation* ItemOp = Cast<ULSItemDragDropOperation>(InOperation);
-	
-	if (!ItemOp->bFromInventory)
+
+	// 인벤토리 출처 아이템만 장착 (장비 오퍼레이션 등은 무시)
+	if (!ItemOp || !ItemOp->bFromInventory)
 	{
 		return false;
 	}
