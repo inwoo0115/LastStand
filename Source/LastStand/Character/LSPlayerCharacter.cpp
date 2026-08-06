@@ -35,6 +35,8 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ALSPlayerCharacter::Release);
 	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ALSPlayerCharacter::AimRelease);
 	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Reload);
+	EnhancedInputComponent->BindAction(SelectMainAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::SelectMainWeapon);
+	EnhancedInputComponent->BindAction(SelectSubAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::SelectSubWeapon);
 
 }
 
@@ -194,4 +196,24 @@ void ALSPlayerCharacter::ServerRPCAim_Implementation(bool bNewAim)
 void ALSPlayerCharacter::Reload()
 {
 	Equipments->Reload();
+}
+
+void ALSPlayerCharacter::SelectMainWeapon(const FInputActionValue& Value)
+{
+	ServerRPCFocusMainWeapon();
+}
+
+void ALSPlayerCharacter::SelectSubWeapon(const FInputActionValue& Value)
+{
+	ServerRPCFocusSubWeapon();
+}
+
+void ALSPlayerCharacter::ServerRPCFocusMainWeapon_Implementation()
+{
+	Equipments->FocusEquipmentByType(EEquipmentType::Main);
+}
+
+void ALSPlayerCharacter::ServerRPCFocusSubWeapon_Implementation()
+{
+	Equipments->FocusEquipmentByType(EEquipmentType::Sub);
 }

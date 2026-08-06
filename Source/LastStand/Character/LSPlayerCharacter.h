@@ -49,6 +49,10 @@ protected:
 
 	void Reload();
 
+	void SelectMainWeapon(const FInputActionValue& Value);
+
+	void SelectSubWeapon(const FInputActionValue& Value);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> JumpAction;
 
@@ -76,6 +80,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ReloadAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> SelectMainAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> SelectSubAction;
+
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -90,6 +100,12 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCAim(bool bNewAim);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCFocusMainWeapon();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCFocusSubWeapon();
 
 	// Character State flag
 	UPROPERTY(ReplicatedUsing = OnRepIsRun)
