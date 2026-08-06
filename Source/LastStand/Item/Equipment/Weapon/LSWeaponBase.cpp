@@ -185,7 +185,6 @@ void ALSWeaponBase::ApplyWeaponAnimLayer()
 void ALSWeaponBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// 언이큅/파괴 시 이 무기가 링크한 레이어를 안전하게 해제
-	// (포커스 무기든 아니든 동일. 링크한 적 없으면 CurrentAnimLayerClass=null 이라 내부에서 안전한 no-op)
 	UnLinkWeaponAnimClassLayer();
 
 	Super::EndPlay(EndPlayReason);

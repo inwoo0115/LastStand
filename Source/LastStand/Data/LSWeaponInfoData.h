@@ -13,8 +13,7 @@ enum class EWeaponMontageType : uint8
 {
 	Fire      UMETA(DisplayName = "Fire"),
 	Reload    UMETA(DisplayName = "Reload"),
-	Equip     UMETA(DisplayName = "Equip"),
-	UnEquip   UMETA(DisplayName = "UnEquip")
+	Equip     UMETA(DisplayName = "Equip")
 };
 
 /**
