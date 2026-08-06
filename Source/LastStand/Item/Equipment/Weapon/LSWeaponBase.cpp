@@ -46,7 +46,6 @@ void ALSWeaponBase::Aim()
 	{
 		AimTimeline.Play();
 	}
-	
 }
 
 void ALSWeaponBase::AimRelease()

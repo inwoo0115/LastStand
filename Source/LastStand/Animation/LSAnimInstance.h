@@ -56,4 +56,8 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	uint8 bIsMontagePlaying;
+
+	// 에임 보간 변수
+	UPROPERTY(BlueprintReadOnly, Category = "Aim")
+	float AimBlendAlpha = 0.f;
 };

@@ -161,10 +161,19 @@ void ALSPlayerCharacter::Jump()
 	}
 }
 
+void ALSPlayerCharacter::OnAimRemainTimeout()
+{
+	if (!bIsAimActionActive)
+	{
+		bIsAim = false;
+	}
+}
+
 void ALSPlayerCharacter::Aim()
 {
 	Equipments->Aim();
-	bIsAim = true;       
+	bIsAim = true;
+	bIsAimActionActive = true;
 	ServerRPCAim(true);
 }
 
@@ -172,6 +181,12 @@ void ALSPlayerCharacter::Aim()
 void ALSPlayerCharacter::Attack()
 {
 	Equipments->LaunchEquipment();
+
+	if (!bIsAimActionActive)
+	{
+		bIsAim = true;
+		GetWorldTimerManager().SetTimer(AimRemainTimerHandle, this, &ALSPlayerCharacter::OnAimRemainTimeout, AimRemainTime, false);
+	}
 }
 
 
@@ -184,6 +199,7 @@ void ALSPlayerCharacter::AimRelease()
 {
 	Equipments->AimRelease();
 	bIsAim = false;
+	bIsAimActionActive = false;
 	ServerRPCAim(false);
 }
 

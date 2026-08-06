@@ -44,6 +44,7 @@ void ULSAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		}
 		else
 		{
+			// 다른 로컬 클라이언트 용
 			ControlRotation = Owner->GetCurrentControllerRotation();
 		}
 
@@ -55,5 +56,15 @@ void ULSAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		Pitch = DeltaRotation.Pitch;
 		Roll = DeltaRotation.Roll;
 
+		// 에임 오프셋 보간 처리
+		const float TargetAlpha = bIsAim ? 1.f : 0.f;
+		const float Speed = bIsAim ? 20.f : 10.f;   // 에임 들어오는 / 나가는 속도
+
+		AimBlendAlpha = FMath::FInterpTo(AimBlendAlpha, TargetAlpha, DeltaSceonds, Speed);
+
+		if (FMath::IsNearlyEqual(AimBlendAlpha, TargetAlpha, KINDA_SMALL_NUMBER))
+		{
+			AimBlendAlpha = TargetAlpha;
+		}
 	}
 }

@@ -123,4 +123,14 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bIsAim = false;
+
+	// Aim Timer
+	UPROPERTY(EditAnywhere, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float AimRemainTime = 3.0f;
+
+	FTimerHandle AimRemainTimerHandle;
+
+	bool bIsAimActionActive = false;
+
+	void OnAimRemainTimeout();
 };
