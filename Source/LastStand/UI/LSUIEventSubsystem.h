@@ -7,6 +7,8 @@
 #include "LSUIEventSubsystem.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnInput);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEvent, int32);
 /**
  * 
  */
@@ -20,4 +22,5 @@ public:
 	FOnInput InventoryInput;
 
 	// 이벤트로 HUD UI 실행 델리게이트
+	FOnEvent DamageEvent;
 };

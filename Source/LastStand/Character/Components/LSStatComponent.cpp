@@ -5,6 +5,7 @@
 #include "Net/UnrealNetwork.h"
 #include "DataTable/LSDataSubsystem.h"
 #include "DataTable/LSEnemyData.h"
+#include "UI/LSUIEventSubsystem.h"
 
 ULSStatComponent::ULSStatComponent()
 {
@@ -68,6 +69,21 @@ void ULSStatComponent::ApplyDamage(int32 Damage)
 	if (CurrentHealth <= 0)
 	{
 		OnDeath.Broadcast();
+	}
+}
+
+void ULSStatComponent::CalculateDamage(int32 RawDamage)
+{
+	// TODO: 추후 방어력 등 반영한 계산식으로 확장
+	const int32 FinalDamage = RawDamage;
+
+	// 데미지 UI 이벤트 브로드캐스트 (호출한 머신=로컬 클라 기준)
+	if (UGameInstance* GI = GetOwner()->GetGameInstance())
+	{
+		if (ULSUIEventSubsystem* UISub = GI->GetSubsystem<ULSUIEventSubsystem>())
+		{
+			UISub->DamageEvent.Broadcast(FinalDamage);
+		}
 	}
 }
 

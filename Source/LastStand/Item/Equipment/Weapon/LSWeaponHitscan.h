@@ -32,6 +32,12 @@ protected:
 	void Fire();
 	void FinishReload();
 
+	// 로컬 연사 가드 (LaunchIntervalTime 동안 로컬 이펙트/몽타주 재실행 차단)
+	void OnLocalFireReady();
+
+	// 이펙트, UI 등 로컬 실행 헬퍼 (예측 트레이스 구간 전달)
+	void PlayWeaponLocalEvent(const FVector& Start, const FVector& End);
+
 	// Server RPC (소유 클라이언트 → 서버)
 	UFUNCTION(Server, Reliable)
 	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd);
@@ -50,6 +56,10 @@ protected:
 	// 타이머 / 상태
 	FTimerHandle LaunchTimerHandle;
 	FTimerHandle ReloadTimerHandle;
+
+	// 로컬 연사 가드
+	bool bLocalFireReady = true;
+	FTimerHandle LocalFireTimerHandle;
 
 	UPROPERTY(Replicated)
 	bool bIsReloading = false;

@@ -26,6 +26,9 @@ public:
 	// 데미지 적용 (서버 권위) — 체력 감소/클램프/사망 처리
 	void ApplyDamage(int32 Damage);
 
+	// 받은 데미지를 계산(추후 방어력 등 반영)하고 데미지 UI 이벤트를 브로드캐스트
+	void CalculateDamage(int32 RawDamage);
+
 	int32 GetMaxHealth() const { return MaxHealth; }
 	int32 GetCurrentHealth() const { return CurrentHealth; }
 	int32 GetAttackDamage() const { return AttackDamage; }
