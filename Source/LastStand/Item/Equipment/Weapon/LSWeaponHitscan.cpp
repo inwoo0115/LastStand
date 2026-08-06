@@ -12,6 +12,7 @@
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimMontage.h"
+#include "Interface/LSStatComponentInterface.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
@@ -116,7 +117,16 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	Params.AddIgnoredActor(GetOwner());
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params);
 
-	// TODO: bHit 시 Hit.GetActor()에 데미지 적용(데미지/체력 파이프라인 구축 후)
+	// 피격 대상이 stat 인터페이스를 가지면 데미지 적용
+	if (bHit)
+	{
+		AActor* HitActor = Hit.GetActor();
+		if (HitActor && HitActor->Implements<ULSStatComponentInterface>())
+		{
+			ILSStatComponentInterface* Target = Cast<ILSStatComponentInterface>(HitActor);
+			Target->ApplyDamage(Damage);
+		}
+	}
 
 	// 시각화: 총구 → 착탄점(또는 최대 사거리) 디버그 라인. 전 머신에서 각자 그림
 	const FVector EndPoint = bHit ? Hit.ImpactPoint : TraceEnd;
@@ -188,6 +198,7 @@ void ALSWeaponHitscan::InitEquipment()
 	MaxAmmo = WeaponData.WeaponDataAsset->MaxAmmo;
 	CurrentAmmo = MaxAmmo;
 	MaxRange = WeaponData.WeaponDataAsset->MaxRange;
+	Damage = WeaponData.WeaponDataAsset->Damage;
 	ShotGroupRadius = WeaponData.WeaponDataAsset->ShotGroupRadius;
 	LaunchIntervalTime = WeaponData.WeaponDataAsset->LaunchIntervalTime;
 	ReloadIntervalTime = WeaponData.WeaponDataAsset->ReloadIntervalTime;

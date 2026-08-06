@@ -66,6 +66,9 @@ protected:
 
 	UPROPERTY(Replicated)
 	uint32 MaxRange;
+
+	// 발사 데미지 (서버 ServerRPCFire에서만 사용)
+	int32 Damage = 0;
 	
 	UPROPERTY(Replicated)
 	float ShotGroupRadius;

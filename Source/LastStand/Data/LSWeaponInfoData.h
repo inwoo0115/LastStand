@@ -38,6 +38,9 @@ public:
 	uint32 MaxRange;
 
 	UPROPERTY(EditAnywhere, Category = WeaponInfo)
+	int32 Damage;
+
+	UPROPERTY(EditAnywhere, Category = WeaponInfo)
 	float ShotGroupRadius;
 
 	UPROPERTY(EditAnywhere, Category = WeaponInfo)
