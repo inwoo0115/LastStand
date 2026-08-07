@@ -22,6 +22,8 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -41,4 +43,8 @@ protected:
 	// 체력바 위젯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> HealthBarWidget;
+
+	// 이 적이 실행할 비헤이비어 트리 (적 BP에서 지정)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UBehaviorTree> BehaviorTree;
 };

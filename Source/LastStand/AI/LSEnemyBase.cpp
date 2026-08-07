@@ -8,6 +8,7 @@
 #include "UI/Widget/LSEnemyStatWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/PlayerCameraManager.h"
+#include "AI/LSAIController.h"
 
 ALSEnemyBase::ALSEnemyBase()
 {
@@ -28,6 +29,10 @@ ALSEnemyBase::ALSEnemyBase()
 	HealthBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));
 	// World space: 3D 씬의 일부로 렌더 → 화면 최상단에 겹쳐 그려지지 않음
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
+
+	// AI: 스폰/배치 시 커스텀 AIController가 자동 possess → OnPossess에서 BT 실행
+	AIControllerClass = ALSAIController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
 ULSStatComponent* ALSEnemyBase::GetStatComponent()
