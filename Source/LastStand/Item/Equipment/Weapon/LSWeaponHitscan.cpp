@@ -221,7 +221,7 @@ void ALSWeaponHitscan::PlayFireEffects(bool bHit, const FVector& ImpactPoint, co
 			WeaponMesh,
 			MuzzleName,
 			FVector::ZeroVector,
-			FRotator(0.f, 180.f, 0.f),   // 총구 소켓이 반대 방향이라 Yaw 180도 회전
+			FRotator(0.f, 0.f, 0.f),
 			EAttachLocation::SnapToTarget,
 			true);
 	}
