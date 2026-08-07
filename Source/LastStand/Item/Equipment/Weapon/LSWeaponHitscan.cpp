@@ -14,6 +14,8 @@
 #include "Animation/AnimMontage.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "Character/Components/LSStatComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
@@ -150,6 +152,9 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	// 시각화: 총구 → 착탄점(또는 최대 사거리) 디버그 라인. 전 머신에서 각자 그림
 	const FVector EndPoint = bHit ? Hit.ImpactPoint : TraceEnd;
 	MulticastRPCDrawFireLine(EndPoint, bHit);
+
+	// 발사 이펙트 전파 (소유 클라 제외 나머지 머신)
+	MulticastRPCPlayFireEffects(bHit, Hit.ImpactPoint, bHit ? Hit.ImpactNormal : FVector::ZeroVector);
 }
 
 void ALSWeaponHitscan::MulticastRPCDrawFireLine_Implementation(const FVector& EndPoint, bool bHit)
@@ -186,6 +191,67 @@ void ALSWeaponHitscan::MulticastRPCPlayMontage_Implementation(EWeaponMontageType
 	}
 
 	PlayWeaponMontage(MontageType);
+}
+
+void ALSWeaponHitscan::MulticastRPCPlayFireEffects_Implementation(bool bHit, FVector_NetQuantize ImpactPoint, FVector_NetQuantizeNormal ImpactNormal)
+{
+	// 소유(로컬 조종) 클라이언트는 이미 로컬에서 재생했으므로 중복 재생 방지
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh && OwnerCh->IsLocallyControlled())
+	{
+		return;
+	}
+
+	PlayFireEffects(bHit, ImpactPoint, ImpactNormal);
+}
+
+void ALSWeaponHitscan::PlayFireEffects(bool bHit, const FVector& ImpactPoint, const FVector& ImpactNormal)
+{
+	// 데디 서버는 렌더링하지 않으므로 스킵
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	// 총구 발사 이펙트 — 총구 소켓에 부착 (반동/이동 따라감). 명중 여부 무관하게 재생
+	if (MuzzleEffect && WeaponMesh)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			MuzzleEffect,
+			WeaponMesh,
+			MuzzleName,
+			FVector::ZeroVector,
+			FRotator(0.f, 180.f, 0.f),   // 총구 소켓이 반대 방향이라 Yaw 180도 회전
+			EAttachLocation::SnapToTarget,
+			true);
+	}
+
+	if (!bHit)
+	{
+		return;
+	}
+
+	// 탄착 지점 이펙트 — 표면 노멀 방향으로 정렬
+	if (ImpactEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			ImpactEffect,
+			ImpactPoint,
+			ImpactNormal.Rotation());
+	}
+
+	// 탄착 지점 데칼 — 표면 노멀 방향으로 정렬
+	if (ImpactDecal)
+	{
+		UGameplayStatics::SpawnDecalAtLocation(
+			GetWorld(),
+			ImpactDecal,
+			WeaponData.DecalSize,
+			ImpactPoint,
+			ImpactNormal.Rotation(),
+			WeaponData.DecalLifeSpan);
+	}
 }
 
 void ALSWeaponHitscan::ServerRPCReload_Implementation()
@@ -237,7 +303,8 @@ void ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVector&
 		}
 	}
 
-	// TODO: 탄착군 탄착 이펙트 + 총구 발사 이펙트 재생
+	// 총구 발사 + 착탄 이펙트/데칼 로컬 재생 (반응성)
+	PlayFireEffects(bHit, Hit.ImpactPoint, Hit.ImpactNormal);
 }
 
 void ALSWeaponHitscan::InitEquipment()
@@ -254,6 +321,14 @@ void ALSWeaponHitscan::InitEquipment()
 	ReloadIntervalTime = WeaponData.WeaponDataAsset->ReloadIntervalTime;
 	bIsRapidFire = WeaponData.WeaponDataAsset->bIsRapidFire;
 	MuzzleName = WeaponData.WeaponDataAsset->MuzzleName;
+
+	// 발사 이펙트 로드 — 데디 서버는 렌더링 안 하므로 스킵
+	if (GetNetMode() != NM_DedicatedServer)
+	{
+		MuzzleEffect = WeaponData.MuzzleEffect.LoadSynchronous();
+		ImpactEffect = WeaponData.ImpactEffect.LoadSynchronous();
+		ImpactDecal = WeaponData.ImpactDecal.LoadSynchronous();
+	}
 }
 
 void ALSWeaponHitscan::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

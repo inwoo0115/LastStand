@@ -6,6 +6,9 @@
 #include "Item/Equipment/Weapon/LSWeaponBase.h"
 #include "LSWeaponHitscan.generated.h"
 
+class UNiagaraSystem;
+class UMaterialInterface;
+
 /**
  * 
  */
@@ -38,6 +41,9 @@ protected:
 	// 이펙트, UI 등 로컬 실행 헬퍼 (예측 트레이스 구간 전달)
 	void PlayWeaponLocalEvent(const FVector& Start, const FVector& End);
 
+	// 총구 + 착탄 이펙트/데칼을 실제로 스폰 (렌더링 머신에서만 실행)
+	void PlayFireEffects(bool bHit, const FVector& ImpactPoint, const FVector& ImpactNormal);
+
 	// Server RPC (소유 클라이언트 → 서버)
 	UFUNCTION(Server, Reliable)
 	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd);
@@ -52,6 +58,10 @@ protected:
 	// 서버 → 전 머신 전파. 소유(로컬 조종) 클라는 이미 로컬 재생했으므로 스킵
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayMontage(EWeaponMontageType MontageType);
+
+	// 서버 → 전 머신, 발사 이펙트(총구/착탄/데칼). 소유 클라는 로컬 재생했으므로 스킵
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCPlayFireEffects(bool bHit, FVector_NetQuantize ImpactPoint, FVector_NetQuantizeNormal ImpactNormal);
 
 	// 타이머 / 상태
 	FTimerHandle LaunchTimerHandle;
@@ -94,4 +104,14 @@ protected:
 
 	UPROPERTY()
 	FName MuzzleName;
+
+	// 발사 이펙트 캐시 (InitEquipment에서 로드, 데디 서버는 스킵)
+	UPROPERTY()
+	TObjectPtr<UNiagaraSystem> MuzzleEffect;
+
+	UPROPERTY()
+	TObjectPtr<UNiagaraSystem> ImpactEffect;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInterface> ImpactDecal;
 };
