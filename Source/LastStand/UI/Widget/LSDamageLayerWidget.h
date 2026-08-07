@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "UI/LSWidgetBase.h"
 #include "LSDamageLayerWidget.generated.h"
 
 /**
@@ -12,7 +12,7 @@
  * 풀에서 하나를 꺼내 화면 중앙 부근 랜덤 위치에 표시한다.
  */
 UCLASS()
-class LASTSTAND_API ULSDamageLayerWidget : public UUserWidget
+class LASTSTAND_API ULSDamageLayerWidget : public ULSWidgetBase
 {
 	GENERATED_BODY()
 

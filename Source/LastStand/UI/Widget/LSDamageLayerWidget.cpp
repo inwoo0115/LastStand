@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/Widget/LSDamageLayerWidget.h"
@@ -10,6 +10,9 @@
 void ULSDamageLayerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	UE_LOG(LogTemp, Log, TEXT("ULSDamageLayerWidget Construct"));
+
 
 	// 풀 사전 생성
 	if (DamageWidgetClass && DamageCanvas)
@@ -80,6 +83,8 @@ ULSDamageNumberWidget* ULSDamageLayerWidget::AcquireWidget()
 
 void ULSDamageLayerWidget::HandleDamage(int32 Damage)
 {
+	UE_LOG(LogTemp, Log, TEXT("Handle Damage UI"));
+
 	ULSDamageNumberWidget* W = AcquireWidget();
 	if (!W)
 	{
