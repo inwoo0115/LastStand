@@ -166,6 +166,7 @@ void ALSPlayerCharacter::OnAimRemainTimeout()
 	if (!bIsAimActionActive)
 	{
 		bIsAim = false;
+		ServerRPCAim(false);
 	}
 }
 
@@ -185,6 +186,7 @@ void ALSPlayerCharacter::Attack()
 	if (!bIsAimActionActive)
 	{
 		bIsAim = true;
+		ServerRPCAim(true);
 		GetWorldTimerManager().SetTimer(AimRemainTimerHandle, this, &ALSPlayerCharacter::OnAimRemainTimeout, AimRemainTime, false);
 	}
 }
