@@ -76,6 +76,7 @@ protected:
 
 	// 로컬 정리 공용 헬퍼 (DeActivateEquipment / CleanupOnLocalClient 공용)
 	void RemoveCrosshairWidget();   // 주입한 조준선 위젯 해제
+	void RemoveWeaponInfoWidget();  // 주입한 무기 정보 위젯 해제
 	void ResetAimState();           // 에임 타임라인 리셋 → 스프링암 기본 길이 복원
 
 	virtual void InitEquipment() override;
@@ -116,4 +117,7 @@ protected:
 
 	// 로컬에서 주입한 crosshair 위젯 핸들 (해제용)
 	FSlotHandle CrosshairSlotHandle;
+
+	// 로컬에서 주입한 무기 정보 위젯 핸들 (해제용)
+	FSlotHandle WeaponInfoSlotHandle;
 };

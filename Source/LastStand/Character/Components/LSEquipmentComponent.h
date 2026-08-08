@@ -43,6 +43,9 @@ public:
 	// 현재 포커스 무기의 타입 (없으면 None) — HUD 하이라이트용
 	EEquipmentType GetFocusEquipmentType() const;
 
+	// 현재 포커스 무기 (없으면 nullptr) — HUD pull용
+	class ALSWeaponBase* GetFocusEquipment() const { return FocusEquipment; }
+
 	// Server RPC
 	UFUNCTION(Server, Reliable)
 	void ServerRPCEquipItemFromInventory(FName ItemName);

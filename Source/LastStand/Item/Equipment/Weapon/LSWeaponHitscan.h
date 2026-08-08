@@ -29,9 +29,21 @@ public:
 protected:
 	virtual void InitEquipment() override;
 
+	// 활성화 시 초기 탄약 전파
+	virtual void ActivateEquipment() override;
+
 	// 넷 롤별 정리 (무기별 타이머)
 	virtual void CleanupOnServer() override;
 	virtual void CleanupOnLocalClient() override;
+
+	// 탄약 OnRep → 로컬 플레이어 HUD로 AmmoEvent 전파
+	UFUNCTION()
+	void OnRep_MaxAmmo();
+
+	UFUNCTION()
+	void OnRep_CurrentAmmo();
+
+	void BroadcastAmmoToUI();
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -82,10 +94,10 @@ protected:
 	float LastFireServerTime = 0.0f;
 
 	// 아이템 관련 정보
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_MaxAmmo)
 	uint32 MaxAmmo;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo)
 	uint32 CurrentAmmo;
 
 	UPROPERTY(Replicated)

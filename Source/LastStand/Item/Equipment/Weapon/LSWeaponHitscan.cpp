@@ -16,6 +16,8 @@
 #include "Character/Components/LSStatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/LSUIEventSubsystem.h"
+#include "GameFramework/Pawn.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
@@ -44,6 +46,42 @@ void ALSWeaponHitscan::UnEquipped()
 {
 	// 타이머 등 정리는 파괴 시 EndPlay → CleanupOnServer/LocalClient에서 넷 롤별로 처리
 	Super::UnEquipped();
+}
+
+void ALSWeaponHitscan::ActivateEquipment()
+{
+	Super::ActivateEquipment();
+
+	// 베이스가 무기 정보 위젯을 주입한 직후 초기 탄약 전파 (로컬 플레이어 HUD)
+	BroadcastAmmoToUI();
+}
+
+void ALSWeaponHitscan::OnRep_MaxAmmo()
+{
+	BroadcastAmmoToUI();
+}
+
+void ALSWeaponHitscan::OnRep_CurrentAmmo()
+{
+	BroadcastAmmoToUI();
+}
+
+void ALSWeaponHitscan::BroadcastAmmoToUI()
+{
+	// 적(AI)·원격 플레이어·데디 서버 제외: 로컬 조종 + 플레이어 조종 폰만 (HUD 소유 클라)
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn || !OwnerPawn->IsLocallyControlled() || !OwnerPawn->IsPlayerControlled())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (ULSUIEventSubsystem* UISub = GI->GetSubsystem<ULSUIEventSubsystem>())
+		{
+			UISub->AmmoEvent.Broadcast(static_cast<int32>(CurrentAmmo), static_cast<int32>(MaxAmmo));
+		}
+	}
 }
 
 void ALSWeaponHitscan::CleanupOnServer()

@@ -75,4 +75,8 @@ struct FWeaponData : public FTableRowBase
     // 조준선 위젯 클래스 (텍스처 등 비주얼은 BP에서 처리)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair")
     TSoftClassPtr<UUserWidget> CrosshairWidgetClass;
+
+    // 포커스 무기 정보 위젯 클래스 (UI.Slot.Weapon에 주입)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+    TSoftClassPtr<UUserWidget> WeaponInfoWidgetClass;
 };

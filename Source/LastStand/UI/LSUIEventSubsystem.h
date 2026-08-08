@@ -13,8 +13,11 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnEvent, int32);
 // 체력 이벤트 (Current, Max)
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHealthEvent, int32, int32);
 
-// 파라미터 없는 HUD 갱신 신호 (위젯이 컴포넌트에서 pull)
+// 파라미터 없는 HUD 갱신 신호
 DECLARE_MULTICAST_DELEGATE(FOnUIRefresh);
+
+// 포커스 무기 탄약 이벤트 (Current, Max)
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAmmoEvent, int32, int32);
 /**
  * 
  */
@@ -38,4 +41,7 @@ public:
 
 	// 포커스 무기 변경 HUD 갱신
 	FOnUIRefresh FocusEquipmentChanged;
+
+	// 포커스 무기 탄약 HUD 갱신 (Current, Max)
+	FOnAmmoEvent AmmoEvent;
 };

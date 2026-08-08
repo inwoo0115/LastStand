@@ -104,6 +104,13 @@ void ALSWeaponBase::ActivateEquipment()
 				const FGameplayTag CrosshairTag = FGameplayTag::RequestGameplayTag(FName("UI.Slot.Crosshair"));
 				CrosshairSlotHandle = Sub->InjectWidgetToSlot(CrosshairTag, CrosshairClass);
 			}
+
+			// 무기 정보 위젯 주입
+			if (UClass* InfoClass = WeaponData.WeaponInfoWidgetClass.LoadSynchronous())
+			{
+				const FGameplayTag WeaponTag = FGameplayTag::RequestGameplayTag(FName("UI.Slot.Weapon"));
+				WeaponInfoSlotHandle = Sub->InjectWidgetToSlot(WeaponTag, InfoClass);
+			}
 		}
 	}
 }
@@ -123,8 +130,9 @@ void ALSWeaponBase::DeActivateEquipment()
 	GetWorldTimerManager().ClearTimer(EquipTimerHandle);
 	bIsEquipping = false;
 
-	// 주입한 조준선 위젯 해제 + 에임(줌) 상태 원복 (로컬 정리 공용 헬퍼)
+	// 주입한 조준선/무기정보 위젯 해제 + 에임(줌) 상태 원복 (로컬 정리 공용 헬퍼)
 	RemoveCrosshairWidget();
+	RemoveWeaponInfoWidget();
 	ResetAimState();
 }
 
@@ -138,6 +146,19 @@ void ALSWeaponBase::RemoveCrosshairWidget()
 			Sub->RemoveWidgetFromSlot(CrosshairSlotHandle);
 		}
 		CrosshairSlotHandle = FSlotHandle{};
+	}
+}
+
+void ALSWeaponBase::RemoveWeaponInfoWidget()
+{
+	// 로컬에서만 유효한 핸들
+	if (WeaponInfoSlotHandle.HandleId != INDEX_NONE)
+	{
+		if (ULSUISubsystem* Sub = GetGameInstance()->GetSubsystem<ULSUISubsystem>())
+		{
+			Sub->RemoveWidgetFromSlot(WeaponInfoSlotHandle);
+		}
+		WeaponInfoSlotHandle = FSlotHandle{};
 	}
 }
 
@@ -225,21 +246,26 @@ void ALSWeaponBase::ApplyWeaponAnimLayer()
 
 void ALSWeaponBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 파괴 전 넷 롤별 정리 디스패치
-	if (HasAuthority())
+	// 활성(포커스) 상태였던 무기만 정리 — 비활성 무기는 애님 레이어/위젯/줌을 적용한 적 없음(또는 이미 해제).
+	// 무조건 정리하면 현재 포커스 무기의 공유 상태(같은 애님 레이어 언링크, 공유 스프링암 줌)를 잘못 건드림.
+	if (bIsActived)
 	{
-		CleanupOnServer();
-	}
-	else
-	{
-		// 소유 클라도 비권위이므로 여기에 포함
-		CleanupOnClient();
-	}
+		// 파괴 전 넷 롤별 정리 디스패치
+		if (HasAuthority())
+		{
+			CleanupOnServer();
+		}
+		else
+		{
+			// 소유 클라도 비권위이므로 여기에 포함
+			CleanupOnClient();
+		}
 
-	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
-	if (OwnerCh && OwnerCh->IsLocallyControlled())
-	{
-		CleanupOnLocalClient();
+		ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+		if (OwnerCh && OwnerCh->IsLocallyControlled())
+		{
+			CleanupOnLocalClient();
+		}
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -258,8 +284,9 @@ void ALSWeaponBase::CleanupOnClient()
 
 void ALSWeaponBase::CleanupOnLocalClient()
 {
-	// 조준선 위젯/에임(줌) 상태 정리 (무기 파괴로는 안 지워지는 UI/카메라 상태)
+	// 조준선/무기정보 위젯 및 에임(줌) 상태 정리 (무기 파괴로는 안 지워지는 UI/카메라 상태)
 	RemoveCrosshairWidget();
+	RemoveWeaponInfoWidget();
 	ResetAimState();
 
 	// 장착 가드 타이머 정리
