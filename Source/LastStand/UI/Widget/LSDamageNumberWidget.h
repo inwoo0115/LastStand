@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "LSDamageNumberWidget.generated.h"
 
+class UWidgetAnimation;
+
 /**
  * 데미지 숫자 하나를 표시하는 단일 위젯. LSDamageLayerWidget이 오브젝트 풀로 관리한다.
  */
@@ -27,10 +29,18 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+	// 애니메이션 종료 시 자동 해제
+	UFUNCTION()
+	void OnShowAnimFinished();
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UTextBlock> DamageText;
 
-	// 표시 지속 시간(초)
+	// WBP의 애니메이션과 이름이 정확히 일치해야 함 (ShowAnim). 없으면 폴백 타이머 사용
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	TObjectPtr<UWidgetAnimation> ShowAnim;
+
+	// 애니메이션 미바인딩 시 폴백 표시 지속 시간(초)
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float DisplayDuration = 1.0f;
 

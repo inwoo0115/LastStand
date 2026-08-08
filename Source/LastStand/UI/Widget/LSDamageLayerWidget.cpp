@@ -93,8 +93,8 @@ void ULSDamageLayerWidget::HandleDamage(int32 Damage)
 
 	// 화면 중앙 기준 랜덤 오프셋으로 밀집 배치
 	const FVector2D Pos(
-		FMath::FRandRange(-SpreadRange.X, SpreadRange.X),
-		FMath::FRandRange(-SpreadRange.Y, SpreadRange.Y));
+		FMath::FRandRange(0, SpreadRange.X),
+		FMath::FRandRange(-SpreadRange.Y, 0));
 
 	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(W->Slot))
 	{

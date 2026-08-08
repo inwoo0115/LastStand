@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -40,7 +40,7 @@ protected:
 
 	// 중앙 기준 랜덤 오프셋 반경 (X, Y) — 중앙 밀집도 조절
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	FVector2D SpreadRange = FVector2D(160.f, 120.f);
+	FVector2D SpreadRange = FVector2D(50.f, 50.f);
 
 	UPROPERTY()
 	TArray<TObjectPtr<ULSDamageNumberWidget>> WidgetPool;
