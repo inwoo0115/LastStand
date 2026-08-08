@@ -9,6 +9,7 @@
 
 class UNiagaraSystem;
 class UMaterialInterface;
+class UUserWidget;
 
 UENUM()
 enum class EEquipmentType : uint8
@@ -70,4 +71,8 @@ struct FWeaponData : public FTableRowBase
     // 데칼 수명(초)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
     float DecalLifeSpan = 10.f;
+
+    // 조준선 위젯 클래스 (텍스처 등 비주얼은 BP에서 처리)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair")
+    TSoftClassPtr<UUserWidget> CrosshairWidgetClass;
 };

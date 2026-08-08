@@ -9,7 +9,10 @@
 #include "Net/UnrealNetwork.h"
 #include "Data/LSWeaponInfoData.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/Character.h"
 #include "Animation/AnimMontage.h"
+#include "UI/LSUISubsystem.h"
+#include "Blueprint/UserWidget.h"
 
 
 ALSWeaponBase::ALSWeaponBase()
@@ -88,6 +91,20 @@ void ALSWeaponBase::ActivateEquipment()
 	{
 		bIsEquipping = false;
 	}
+
+	// 조준선 위젯 주입 (위젯이므로 소유 로컬 클라에서만)
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh && OwnerCh->IsLocallyControlled())
+	{
+		if (ULSUISubsystem* Sub = GetGameInstance()->GetSubsystem<ULSUISubsystem>())
+		{
+			if (UClass* CrosshairClass = WeaponData.CrosshairWidgetClass.LoadSynchronous())
+			{
+				const FGameplayTag CrosshairTag = FGameplayTag::RequestGameplayTag(FName("UI.Slot.Crosshair"));
+				CrosshairSlotHandle = Sub->InjectWidgetToSlot(CrosshairTag, CrosshairClass);
+			}
+		}
+	}
 }
 
 void ALSWeaponBase::DeActivateEquipment()
@@ -104,6 +121,16 @@ void ALSWeaponBase::DeActivateEquipment()
 	// 장착 가드 정리
 	GetWorldTimerManager().ClearTimer(EquipTimerHandle);
 	bIsEquipping = false;
+
+	// 주입한 조준선 위젯 해제 (로컬에서만 유효한 핸들)
+	if (CrosshairSlotHandle.HandleId != INDEX_NONE)
+	{
+		if (ULSUISubsystem* Sub = GetGameInstance()->GetSubsystem<ULSUISubsystem>())
+		{
+			Sub->RemoveWidgetFromSlot(CrosshairSlotHandle);
+		}
+		CrosshairSlotHandle = FSlotHandle{};
+	}
 }
 
 FTransform ALSWeaponBase::GetCurrentOwnerCamera()

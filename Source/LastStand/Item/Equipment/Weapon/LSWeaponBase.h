@@ -6,6 +6,7 @@
 #include "Item/Equipment/LSEquipmentBase.h"
 #include "DataTable/LSWeaponData.h"
 #include "Components/TimelineComponent.h"
+#include "UI/LSUISubsystem.h"
 #include "LSWeaponBase.generated.h"
 
 /**
@@ -104,4 +105,7 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UClass> CurrentAnimLayerClass;
+
+	// 로컬에서 주입한 crosshair 위젯 핸들 (해제용)
+	FSlotHandle CrosshairSlotHandle;
 };

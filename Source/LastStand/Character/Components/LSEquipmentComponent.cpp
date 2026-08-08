@@ -152,7 +152,7 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 		FocusEquipment->DeActivateEquipment();
 	}
 
-	if (EquipType == EEquipmentType::None)
+	if (EquipType == EEquipmentType::None || !Equipments.Contains(EquipType))
 	{
 		FocusEquipment = nullptr;
 	}
