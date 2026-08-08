@@ -47,11 +47,14 @@ protected:
 	UFUNCTION()
 	void OnRep_CurrentHealth();
 
+	// 로컬 플레이어 소유 폰일 때만 UI HealthEvent로 현재/최대 체력 전파 (HUD 소유 클라)
+	void BroadcastHealthToUI();
+
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth)
-	int32 CurrentHealth = 0;
+	int32 CurrentHealth = 100;
 
 	UPROPERTY(Replicated)
-	int32 MaxHealth = 0;
+	int32 MaxHealth = 100;
 
 	UPROPERTY(Replicated)
 	int32 AttackDamage = 0;

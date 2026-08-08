@@ -6,6 +6,7 @@
 #include "DataTable/LSDataSubsystem.h"
 #include "DataTable/LSEnemyData.h"
 #include "UI/LSUIEventSubsystem.h"
+#include "GameFramework/Pawn.h"
 
 ULSStatComponent::ULSStatComponent()
 {
@@ -66,6 +67,9 @@ void ULSStatComponent::ApplyDamage(int32 Damage)
 	// 서버 로컬 브로드캐스트(클라는 OnRep_CurrentHealth에서)
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 
+	// 리슨 호스트가 플레이어인 경우 자신의 HUD 갱신 (데디 서버는 가드로 no-op)
+	BroadcastHealthToUI();
+
 	if (CurrentHealth <= 0)
 	{
 		OnDeath.Broadcast();
@@ -91,9 +95,30 @@ void ULSStatComponent::OnRep_CurrentHealth()
 {
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 
+	// 클라 측: 최초 리플리케이션(초기화)과 이후 체력 변경을 플레이어 HUD로 전파
+	BroadcastHealthToUI();
+
 	if (CurrentHealth <= 0)
 	{
 		OnDeath.Broadcast();
+	}
+}
+
+void ULSStatComponent::BroadcastHealthToUI()
+{
+	// 적(AI)·원격 플레이어·데디 서버 제외: 로컬 조종 + 플레이어 조종 폰만 (HUD 소유 클라)
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn || !OwnerPawn->IsLocallyControlled() || !OwnerPawn->IsPlayerControlled())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetOwner()->GetGameInstance())
+	{
+		if (ULSUIEventSubsystem* UISub = GI->GetSubsystem<ULSUIEventSubsystem>())
+		{
+			UISub->HealthEvent.Broadcast(CurrentHealth, MaxHealth);
+		}
 	}
 }
 
