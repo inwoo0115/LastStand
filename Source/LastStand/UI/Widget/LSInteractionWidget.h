@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "UI/LSWidgetBase.h"
 #include "LSInteractionWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
-class LASTSTAND_API ULSInteractionWidget : public UUserWidget
+class LASTSTAND_API ULSInteractionWidget : public ULSWidgetBase
 {
 	GENERATED_BODY()
 	
