@@ -11,6 +11,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Character.h"
 #include "Animation/AnimMontage.h"
+#include "Animation/AnimInstance.h"
 #include "UI/LSUISubsystem.h"
 #include "Blueprint/UserWidget.h"
 
@@ -131,6 +132,10 @@ void ALSWeaponBase::DeActivateEquipment()
 		}
 		CrosshairSlotHandle = FSlotHandle{};
 	}
+
+	// 에임(줌) 상태 원복
+	AimTimeline.SetNewTime(0.0f);
+	AimTimeline.Stop();
 }
 
 FTransform ALSWeaponBase::GetCurrentOwnerCamera()
@@ -264,18 +269,17 @@ void ALSWeaponBase::OnRepIsActived()
 {
 	if (bIsActived)
 	{
-		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs Actived"));
-
 		ActivateEquipment();
 
-		// 서버 제외 모든 클라에서 장착 몽타주 재생 (OnRep은 클라에서만 발화)
+		// 서버 제외 모든 클라에서 장착 몽타주 재생
 		PlayWeaponMontage(EWeaponMontageType::Equip);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("ALSWeaponBase::OnRepIs DeActived"));
-
 		DeActivateEquipment();
+
+		// 장착 몽타주 역재생 (무기 집어넣기 연출)
+		PlayWeaponMontage(EWeaponMontageType::Equip, true);
 	}
 }
 
@@ -284,7 +288,7 @@ void ALSWeaponBase::FinishEquip()
 	bIsEquipping = false;
 }
 
-void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType)
+void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType, bool bReverse)
 {
 	if (!WeaponData.WeaponDataAsset)
 	{
@@ -304,10 +308,23 @@ void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType)
 	}
 
 	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
-	if (OwnerCh)
+	if (!OwnerCh)
 	{
-		// 캐릭터 Mesh의 AnimInstance에서 재생
+		return;
+	}
+
+	if (!bReverse)
+	{
+		// 캐릭터 Mesh의 AnimInstance에서 정방향 재생
 		OwnerCh->PlayAnimMontage(Montage);
+	}
+	else if (USkeletalMeshComponent* Mesh = OwnerCh->GetMesh())
+	{
+		// 역재생: 몽타주 끝 지점에서 시작해 -1 배속으로 재생 (PlayAnimMontage는 역재생 미지원)
+		if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+		{
+			AnimInstance->Montage_Play(Montage, -1.0f, EMontagePlayReturnType::MontageLength, Montage->GetPlayLength());
+		}
 	}
 }
 
