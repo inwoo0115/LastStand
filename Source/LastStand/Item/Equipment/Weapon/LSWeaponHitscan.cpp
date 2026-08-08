@@ -42,11 +42,25 @@ void ALSWeaponHitscan::ReleaseWeapon()
 
 void ALSWeaponHitscan::UnEquipped()
 {
-	// 남은 타이머 정리
-	GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
-	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
-
+	// 타이머 등 정리는 파괴 시 EndPlay → CleanupOnServer/LocalClient에서 넷 롤별로 처리
 	Super::UnEquipped();
+}
+
+void ALSWeaponHitscan::CleanupOnServer()
+{
+	Super::CleanupOnServer();
+
+	// 서버 장전 타이머 정리
+	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
+}
+
+void ALSWeaponHitscan::CleanupOnLocalClient()
+{
+	Super::CleanupOnLocalClient();
+
+	// 로컬 연사/연사 가드 타이머 정리
+	GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
+	GetWorldTimerManager().ClearTimer(LocalFireTimerHandle);
 }
 
 void ALSWeaponHitscan::ReloadWeapon()

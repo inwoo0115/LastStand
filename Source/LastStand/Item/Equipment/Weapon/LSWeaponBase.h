@@ -66,8 +66,17 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// 언이큅/파괴 시 링크한 애니메이션 레이어 해제
+	// 언이큅/파괴 시 넷 롤별 정리를 디스패치
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// 파괴 전 넷 롤별 정리 훅 (EndPlay에서 호출)
+	virtual void CleanupOnServer();        // 서버 권위 상태 정리
+	virtual void CleanupOnClient();        // 비권위(원격 포함) 클라 정리
+	virtual void CleanupOnLocalClient();   // 소유 로컬 클라(HUD/카메라) 정리
+
+	// 로컬 정리 공용 헬퍼 (DeActivateEquipment / CleanupOnLocalClient 공용)
+	void RemoveCrosshairWidget();   // 주입한 조준선 위젯 해제
+	void ResetAimState();           // 에임 타임라인 리셋 → 스프링암 기본 길이 복원
 
 	virtual void InitEquipment() override;
 

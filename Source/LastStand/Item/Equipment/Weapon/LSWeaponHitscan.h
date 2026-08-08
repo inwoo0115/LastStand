@@ -29,6 +29,10 @@ public:
 protected:
 	virtual void InitEquipment() override;
 
+	// 넷 롤별 정리 (무기별 타이머)
+	virtual void CleanupOnServer() override;
+	virtual void CleanupOnLocalClient() override;
+
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// 발사/장전 헬퍼

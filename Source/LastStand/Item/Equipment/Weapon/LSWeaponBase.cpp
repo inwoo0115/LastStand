@@ -123,7 +123,14 @@ void ALSWeaponBase::DeActivateEquipment()
 	GetWorldTimerManager().ClearTimer(EquipTimerHandle);
 	bIsEquipping = false;
 
-	// 주입한 조준선 위젯 해제 (로컬에서만 유효한 핸들)
+	// 주입한 조준선 위젯 해제 + 에임(줌) 상태 원복 (로컬 정리 공용 헬퍼)
+	RemoveCrosshairWidget();
+	ResetAimState();
+}
+
+void ALSWeaponBase::RemoveCrosshairWidget()
+{
+	// 로컬에서만 유효한 핸들
 	if (CrosshairSlotHandle.HandleId != INDEX_NONE)
 	{
 		if (ULSUISubsystem* Sub = GetGameInstance()->GetSubsystem<ULSUISubsystem>())
@@ -132,8 +139,11 @@ void ALSWeaponBase::DeActivateEquipment()
 		}
 		CrosshairSlotHandle = FSlotHandle{};
 	}
+}
 
-	// 에임(줌) 상태 원복
+void ALSWeaponBase::ResetAimState()
+{
+	// 에임 타임라인을 시작(비-에임)으로 되돌려 스프링암 기본 길이 복원
 	AimTimeline.SetNewTime(0.0f);
 	AimTimeline.Stop();
 }
@@ -215,10 +225,45 @@ void ALSWeaponBase::ApplyWeaponAnimLayer()
 
 void ALSWeaponBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 언이큅/파괴 시 이 무기가 링크한 레이어를 안전하게 해제
-	UnLinkWeaponAnimClassLayer();
+	// 파괴 전 넷 롤별 정리 디스패치
+	if (HasAuthority())
+	{
+		CleanupOnServer();
+	}
+	else
+	{
+		// 소유 클라도 비권위이므로 여기에 포함
+		CleanupOnClient();
+	}
+
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (OwnerCh && OwnerCh->IsLocallyControlled())
+	{
+		CleanupOnLocalClient();
+	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void ALSWeaponBase::CleanupOnServer()
+{
+	// 베이스는 정리할 서버 상태 없음 (하위 클래스에서 확장)
+}
+
+void ALSWeaponBase::CleanupOnClient()
+{
+	// 애님 레이어는 클라(OnRepFocusEquipment)에서 링크됨 → 여기서 언링크
+	UnLinkWeaponAnimClassLayer();
+}
+
+void ALSWeaponBase::CleanupOnLocalClient()
+{
+	// 조준선 위젯/에임(줌) 상태 정리 (무기 파괴로는 안 지워지는 UI/카메라 상태)
+	RemoveCrosshairWidget();
+	ResetAimState();
+
+	// 장착 가드 타이머 정리
+	GetWorldTimerManager().ClearTimer(EquipTimerHandle);
 }
 
 void ALSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
