@@ -12,6 +12,10 @@
 #include "DataTable/LSWeaponData.h"
 #include "Data/LSWeaponInfoData.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/Pawn.h"
+#include "UI/LSUIEventSubsystem.h"
+#include "Item/LSItemBase.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 ULSEquipmentComponent::ULSEquipmentComponent()
@@ -63,20 +67,30 @@ void ULSEquipmentComponent::EquipItemFromInventory(FName ItemName)
 		return;
 	}
 
-	// Spawn Param 설정
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
 	TSubclassOf<AActor> WeaponClass = ID->WeaponClass.LoadSynchronous();
 
-	AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(WeaponClass, OwnerCharacter->GetMesh()->GetSocketLocation(ID->SocketName), OwnerCharacter->GetMesh()->GetSocketRotation(ID->SocketName), SpawnParams);
+	// 지연 스폰: BeginPlay(InitEquipment) 전에 ItemName을 주입해 액터가 올바른 데이터로 초기화되게 함
+	const FTransform SpawnTransform(
+		OwnerCharacter->GetMesh()->GetSocketRotation(ID->SocketName),
+		OwnerCharacter->GetMesh()->GetSocketLocation(ID->SocketName));
+
+	AActor* SpawnedActor = GetWorld()->SpawnActorDeferred<AActor>(
+		WeaponClass, SpawnTransform, GetOwner(), nullptr,
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 
 	if (!SpawnedActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[SpawnerComponent] 스폰 실패: %s"), *WeaponClass->GetName());
 		return;
 	}
+
+	// 드롭한 아이템 이름 부여
+	if (ALSItemBase* SpawnedItem = Cast<ALSItemBase>(SpawnedActor))
+	{
+		SpawnedItem->SetItemName(ItemName);
+	}
+
+	UGameplayStatics::FinishSpawningActor(SpawnedActor, SpawnTransform);
 
 	// 소켓에 부착
 	SpawnedActor->AttachToComponent(
@@ -87,6 +101,9 @@ void ULSEquipmentComponent::EquipItemFromInventory(FName ItemName)
 
 	// 장비 타입 체크
 	const EEquipmentType EquipType = ID->WeaponType;
+
+	UE_LOG(LogTemp, Warning, TEXT("EquipItemFromInventory WeaponType: %s"), *UEnum::GetValueAsString(EquipType));
+
 
 	// 이미 장착한 무기가 있을 경우 인벤토리로 이동
 	if (Equipments.Contains(EquipType))
@@ -217,6 +234,12 @@ void ULSEquipmentComponent::OnRepFocusEquipment(ALSWeaponBase* OldFocusEquipment
 	{
 		FocusEquipment->ApplyWeaponAnimLayer();
 	}
+
+	// 로컬 플레이어 HUD에 포커스 변경 전파 (데디 서버는 가드로 no-op)
+	if (ULSUIEventSubsystem* UISub = GetLocalPlayerUISubsystem())
+	{
+		UISub->FocusEquipmentChanged.Broadcast();
+	}
 }
 
 void ULSEquipmentComponent::OnRepEquipments()
@@ -235,12 +258,38 @@ void ULSEquipmentComponent::OnRepEquipments()
 		}
 
 		const FWeaponData WeaponData = WB->GetWeaponData();
+		UE_LOG(LogTemp, Warning, TEXT("OnRepEquipments() WeaponType: %s"), *UEnum::GetValueAsString(WeaponData.WeaponType));
+
 		
 		// Map에 추가
 		Equipments.Add(WeaponData.WeaponType, Equipment);
 	}
 
 	OnEquipmentArrayUpdated.Broadcast();
+
+	// 로컬 플레이어 HUD에 장비 배열 변경(최초 리플리케이션=초기화 포함) 전파 (데디 서버 no-op)
+	if (ULSUIEventSubsystem* UISub = GetLocalPlayerUISubsystem())
+	{
+		UISub->EquipmentArrayChanged.Broadcast();
+	}
+}
+
+EEquipmentType ULSEquipmentComponent::GetFocusEquipmentType() const
+{
+	return FocusEquipment ? FocusEquipment->GetWeaponData().WeaponType : EEquipmentType::None;
+}
+
+ULSUIEventSubsystem* ULSEquipmentComponent::GetLocalPlayerUISubsystem() const
+{
+	// 적(AI)·원격 플레이어·데디 서버 제외: 로컬 조종 + 플레이어 조종 폰만 (HUD 소유 클라)
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn || !OwnerPawn->IsLocallyControlled() || !OwnerPawn->IsPlayerControlled())
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = GetOwner()->GetGameInstance();
+	return GI ? GI->GetSubsystem<ULSUIEventSubsystem>() : nullptr;
 }
 
 

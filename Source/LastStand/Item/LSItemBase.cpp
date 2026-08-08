@@ -2,6 +2,7 @@
 
 
 #include "Item/LSItemBase.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ALSItemBase::ALSItemBase()
@@ -15,6 +16,13 @@ ALSItemBase::ALSItemBase()
 const FName ALSItemBase::GetItemName()
 {
 	return ItemName;
+}
+
+void ALSItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALSItemBase, ItemName);
 }
 
 

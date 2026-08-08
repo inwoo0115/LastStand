@@ -6,6 +6,7 @@
 #include "Item/LSItemArray.h"
 #include "DataTable/LSDataSubsystem.h"
 #include "Props/LSDropItem.h"
+#include "Kismet/GameplayStatics.h"
 
 
 ULSInventoryComponent::ULSInventoryComponent()
@@ -96,8 +97,15 @@ void ULSInventoryComponent::ServerRPCDropItemToWorld_Implementation(FName ItemID
 		UE_LOG(LogTemp, Log, TEXT("Drop Item Class Loading"));
 
 		const FVector Loc = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 150.f;
-		ALSDropItem* Drop = GetWorld()->SpawnActor<ALSDropItem>(DropClass, Loc, FRotator::ZeroRotator);
-		Drop->InitItem(ItemID, Quantity);
+
+		// 지연 스폰: BeginPlay 전에 ItemName/Quantity 주입
+		const FTransform SpawnTransform(FRotator::ZeroRotator, Loc);
+		ALSDropItem* Drop = GetWorld()->SpawnActorDeferred<ALSDropItem>(DropClass, SpawnTransform, GetOwner());
+		if (Drop)
+		{
+			Drop->InitItem(ItemID, Quantity);
+			UGameplayStatics::FinishSpawningActor(Drop, SpawnTransform);
+		}
 	}
 
 	AddDeltaToItem(ItemID, -Quantity);

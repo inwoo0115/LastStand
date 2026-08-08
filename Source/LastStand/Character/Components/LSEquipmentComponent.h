@@ -40,6 +40,9 @@ public:
 
 	const TMap<EEquipmentType, TObjectPtr<AActor>> GetEquipments();
 
+	// 현재 포커스 무기의 타입 (없으면 None) — HUD 하이라이트용
+	EEquipmentType GetFocusEquipmentType() const;
+
 	// Server RPC
 	UFUNCTION(Server, Reliable)
 	void ServerRPCEquipItemFromInventory(FName ItemName);
@@ -55,6 +58,9 @@ protected:
 
 	UFUNCTION()
 	void OnRepEquipments();
+
+	// 로컬 플레이어 소유 폰일 때만 UI 서브시스템 반환 (데디 서버·원격·AI 배제)
+	class ULSUIEventSubsystem* GetLocalPlayerUISubsystem() const;
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
