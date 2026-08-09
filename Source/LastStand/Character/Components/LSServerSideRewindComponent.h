@@ -59,6 +59,10 @@ public:
 	// 명중이면 true, 스냅샷 없음/판정 실패/미명중이면 false.
 	bool ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const;
 
+	// 서버가 기록한 히트박스 스냅샷을 전 클라에서 디버그 박스로 그림
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastDrawDebugBoxes(const TArray<FHitBoxSnapshot>& Boxes);
+
 protected:
 	// 스냅샷 저장 간격 (20ms)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Server Side Rewind")
@@ -67,6 +71,14 @@ protected:
 	// 버퍼 최대 보관 연령 (200ms) — 이보다 오래된 스냅샷은 제거. 최대 리와인드 연령 겸용(리와인드 0~200ms)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Server Side Rewind")
 	float HistoryEndOffset = 0.2f;
+
+	// 스냅샷 위치를 디버그 박스로 시각화
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Server Side Rewind")
+	bool bDrawDebugSnapshot = true;
+
+	// 디버그 박스 전송/표시 주기 (0.5초). 리와인드 저장 주기(RecordInterval, 20ms)와 별개
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Server Side Rewind")
+	float DebugDrawInterval = 0.5f;
 
 private:
 	// 히스토리 큐: [0]=가장 오래됨, 마지막=최신
@@ -80,6 +92,8 @@ private:
 	// 마지막으로 스냅샷을 저장한 서버 시간
 	float LastRecordTime = 0.0f;
 
+	// 마지막으로 디버그 박스를 전송한 서버 시간
+	float LastDebugDrawTime = 0.0f;
+
 	// TODO(후속): ConfirmHit이 명중 히트박스(부위/DamageMultiplier)를 out으로 반환 → 무기에서 배율 데미지 적용
-	// TODO(후속): 두 프레임 선형 보간으로 판정 정확도 개선
 };
