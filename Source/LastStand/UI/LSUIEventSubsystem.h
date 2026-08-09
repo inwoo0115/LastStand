@@ -44,4 +44,7 @@ public:
 
 	// 포커스 무기 탄약 HUD 갱신 (Current, Max)
 	FOnAmmoEvent AmmoEvent;
+
+	// 예비 탄약(캐시) 변경 HUD 갱신
+	FOnUIRefresh ReserveAmmoChanged;
 };

@@ -12,7 +12,8 @@ enum class EItemType : uint8
     Weapon,
     Armor,
     Consumable,
-    Quest
+    Quest,
+    Ammo
 };
 
 USTRUCT(BlueprintType)

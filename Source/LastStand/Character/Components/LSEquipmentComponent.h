@@ -10,6 +10,22 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnEquipmentArrayUpdated);
 
+// 탄알 캐시 갱신 시 발화 (향후 HUD 연동)
+DECLARE_MULTICAST_DELEGATE(FOnAmmoCacheUpdated);
+
+// 인벤토리에 보유한 탄알 캐시 엔트리 (AmmoID → 보유 수량)
+USTRUCT()
+struct FLSAmmoCacheEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName AmmoID;
+
+	UPROPERTY()
+	int32 Count = 0;
+};
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LASTSTAND_API ULSEquipmentComponent : public UActorComponent
@@ -38,6 +54,8 @@ public:
 
 	FOnEquipmentArrayUpdated OnEquipmentArrayUpdated;
 
+	FOnAmmoCacheUpdated OnAmmoCacheUpdated;
+
 	const TMap<EEquipmentType, TObjectPtr<AActor>> GetEquipments();
 
 	// 현재 포커스 무기의 타입 (없으면 None) — HUD 하이라이트용
@@ -45,6 +63,9 @@ public:
 
 	// 현재 포커스 무기 (없으면 nullptr) — HUD pull용
 	class ALSWeaponBase* GetFocusEquipment() const { return FocusEquipment; }
+
+	// 지정 탄약 ID의 캐시 보유량 (없으면 0) — HUD pull용
+	int32 GetAmmoCount(FName AmmoName) const;
 
 	// Server RPC
 	UFUNCTION(Server, Reliable)
@@ -55,6 +76,20 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// 인벤토리 수량 변경 델리게이트 핸들러 (서버) — 탄알이면 캐시에 델타 반영
+	void HandleInventoryItemChanged(FName ItemID, int32 Delta);
+
+	// 탄알 캐시 델타 적용 (서버 권위) — Delta 부호 있음, 0 이하가 되면 엔트리 제거
+	void ApplyAmmoDelta(FName AmmoID, int32 Delta);
+
+	// 캐시 갱신 후 컴포넌트 델리게이트 + 로컬 플레이어 HUD로 전파
+	void BroadcastAmmoCacheToUI();
+
+	UFUNCTION()
+	void OnRep_AmmoCache();
 
 	UFUNCTION()
 	void OnRepFocusEquipment(class ALSWeaponBase* OldFocusEquipment);
@@ -78,4 +113,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, ReplicatedUsing=OnRepFocusEquipment)
 	TObjectPtr<class ALSWeaponBase> FocusEquipment;
+
+	// 인벤토리 보유 탄알 캐시 (서버에서 갱신, 클라로 리플리케이트)
+	UPROPERTY(ReplicatedUsing = OnRep_AmmoCache)
+	TArray<FLSAmmoCacheEntry> AmmoCache;
 };

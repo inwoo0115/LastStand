@@ -24,6 +24,9 @@ void ULSInventoryComponent::AddItemToInventory(const FName ItemInfoID, const int
 
 	// authority(호스트/스탠드얼론)는 RepNotify가 호출되지 않으므로 직접 UI 갱신
 	OnInventoryItemChange();
+
+	// 서버측 게임플레이 연동 (탄알 캐싱 등) — 습득은 양수 델타
+	OnInventoryItemChanged.Broadcast(ItemInfoID, Quantity);
 }
 
 void ULSInventoryComponent::RemoveItemFromInventory(const FName ItemInfoID)
@@ -41,9 +44,10 @@ void ULSInventoryComponent::UpdateItemInInventory(const FName ItemInfoID, const 
 
 void ULSInventoryComponent::AddDeltaToItem(const FName ItemInfoID, const int32 Delta)
 {
+	// 실제 수량 변경이 일어났을 때만 게임플레이 연동 브로드캐스트 (탄알 캐시 동기화 등)
 	if (InventoryItems.AddItemQuantity(ItemInfoID, Delta))
 	{
-		UE_LOG(LogTemp, Log, TEXT("AddDeltaToItem"));
+		OnInventoryItemChanged.Broadcast(ItemInfoID, Delta);
 	}
 }
 
@@ -55,9 +59,8 @@ const FInventoryItemInfoArray& ULSInventoryComponent::GetInventoryItems() const
 
 void ULSInventoryComponent::ServerRPCAddItemToInventory_Implementation(const FName ItemInfoID, const int32 Quantity)
 {
-	FInventoryItemInfo NewInfo(ItemInfoID, Quantity);
-
-	InventoryItems.AddInventoryItem(NewInfo);
+	// 습득 경로를 단일화 (UI 갱신 + 게임플레이 델리게이트 브로드캐스트 공유)
+	AddItemToInventory(ItemInfoID, Quantity);
 }
 
 void ULSInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

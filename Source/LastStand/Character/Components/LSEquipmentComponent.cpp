@@ -219,7 +219,120 @@ void ULSEquipmentComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	// 서버에서만 인벤토리 습득 델리게이트 구독 (탄알 캐싱은 서버 권위)
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		if (ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>())
+		{
+			IC->OnInventoryItemChanged.AddUObject(this, &ULSEquipmentComponent::HandleInventoryItemChanged);
+		}
+	}
+}
+
+void ULSEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 구독 해제 (같은 액터에 붙은 인벤토리가 아직 살아있을 수 있음)
+	if (GetOwner())
+	{
+		if (ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>())
+		{
+			IC->OnInventoryItemChanged.RemoveAll(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void ULSEquipmentComponent::HandleInventoryItemChanged(FName ItemID, int32 Delta)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	ULSDataSubsystem* Sub = GetOwner()->GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	if (!Sub)
+	{
+		return;
+	}
+
+	const FItemData* Row = Sub->FindItem(ItemID);
+	if (!Row || Row->ItemType != EItemType::Ammo)
+	{
+		return;
+	}
+
+	ApplyAmmoDelta(ItemID, Delta);
+}
+
+void ULSEquipmentComponent::ApplyAmmoDelta(FName AmmoID, int32 Delta)
+{
+	// 기존 엔트리면 델타 반영 (음수면 차감), 0 이하가 되면 엔트리 제거
+	for (int32 Index = 0; Index < AmmoCache.Num(); ++Index)
+	{
+		if (AmmoCache[Index].AmmoID == AmmoID)
+		{
+			AmmoCache[Index].Count += Delta;
+
+			if (AmmoCache[Index].Count <= 0)
+			{
+				UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent::ApplyAmmoDelta 소진 제거: %s"), *AmmoID.ToString());
+				AmmoCache.RemoveAtSwap(Index);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent::ApplyAmmoDelta 갱신: %s → %d (Δ%d)"), *AmmoID.ToString(), AmmoCache[Index].Count, Delta);
+			}
+
+			// authority는 OnRep이 호출되지 않으므로 직접 브로드캐스트
+			BroadcastAmmoCacheToUI();
+			return;
+		}
+	}
+
+	// 엔트리가 없으면 양수 델타일 때만 신규 추가 (음수는 반영할 대상 없음)
+	if (Delta <= 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent::ApplyAmmoDelta 무시(엔트리 없음, Δ%d): %s"), Delta, *AmmoID.ToString());
+		return;
+	}
+
+	FLSAmmoCacheEntry NewEntry;
+	NewEntry.AmmoID = AmmoID;
+	NewEntry.Count = Delta;
+	AmmoCache.Add(NewEntry);
+
+	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentComponent::ApplyAmmoDelta 신규: %s → %d"), *AmmoID.ToString(), Delta);
+
+	BroadcastAmmoCacheToUI();
+}
+
+void ULSEquipmentComponent::BroadcastAmmoCacheToUI()
+{
+	OnAmmoCacheUpdated.Broadcast();
+
+	// 로컬 플레이어 HUD에 예비 탄약 변경 전파 (데디 서버·원격·AI는 가드로 no-op)
+	if (ULSUIEventSubsystem* UISub = GetLocalPlayerUISubsystem())
+	{
+		UISub->ReserveAmmoChanged.Broadcast();
+	}
+}
+
+int32 ULSEquipmentComponent::GetAmmoCount(FName AmmoName) const
+{
+	for (const FLSAmmoCacheEntry& Entry : AmmoCache)
+	{
+		if (Entry.AmmoID == AmmoName)
+		{
+			return Entry.Count;
+		}
+	}
+	return 0;
+}
+
+void ULSEquipmentComponent::OnRep_AmmoCache()
+{
+	BroadcastAmmoCacheToUI();
 }
 
 void ULSEquipmentComponent::OnRepFocusEquipment(ALSWeaponBase* OldFocusEquipment)
@@ -299,6 +412,7 @@ void ULSEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 	DOREPLIFETIME(ULSEquipmentComponent, FocusEquipment);
 	DOREPLIFETIME(ULSEquipmentComponent, ReplicatedEquipments);
+	DOREPLIFETIME(ULSEquipmentComponent, AmmoCache);
 }
 
 void ULSEquipmentComponent::AimRelease()

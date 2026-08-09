@@ -22,7 +22,13 @@ protected:
 	// 포커스 무기 아이콘 pull
 	void RefreshIcon();
 
-	// AmmoEvent 수신 → 탄약 텍스트 갱신
+	// 포커스 무기의 예비 탄약(캐시 잔량) pull → MaxAmmoText 갱신
+	void RefreshReserveAmmo();
+
+	// 포커스 무기 변경 시: 아이콘 + 예비 탄약(탄약 종류 변경) 함께 갱신
+	void HandleFocusEquipmentChanged();
+
+	// AmmoEvent 수신 → 현재 탄창 텍스트 갱신
 	void HandleAmmoChanged(int32 Current, int32 Max);
 
 	UPROPERTY(meta = (BindWidget))
@@ -36,4 +42,5 @@ protected:
 
 	FDelegateHandle AmmoHandle;
 	FDelegateHandle FocusHandle;
+	FDelegateHandle ReserveAmmoHandle;
 };

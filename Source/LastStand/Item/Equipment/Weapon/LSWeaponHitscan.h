@@ -51,6 +51,9 @@ protected:
 	void Fire();
 	void FinishReload();
 
+	// 이 무기 탄약(WeaponData.AmmoName)의 예비 잔량 (owner EquipmentComponent 캐시). 없으면 0
+	int32 GetReserveAmmo() const;
+
 	// 로컬 연사 가드 (LaunchIntervalTime 동안 로컬 이펙트/몽타주 재실행 차단)
 	void OnLocalFireReady();
 

@@ -9,6 +9,9 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
+// 서버 권위 경로에서 인벤토리 아이템 수량이 변할 때 발화 (Delta 부호 있음). 탄알 캐싱 등 게임플레이 연동용
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryItemChanged, FName /*ItemID*/, int32 /*Delta*/);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LASTSTAND_API ULSInventoryComponent : public UActorComponent
 {
@@ -30,6 +33,9 @@ public:
 
 	// UI Delegate
 	FOnInventoryUpdated OnInventoryUpdated;
+
+	// 서버측 게임플레이 델리게이트 (아이템 수량 변경 시, Delta 부호 있음)
+	FOnInventoryItemChanged OnInventoryItemChanged;
 	
 	// Server RPC
 	UFUNCTION(Server, Reliable)

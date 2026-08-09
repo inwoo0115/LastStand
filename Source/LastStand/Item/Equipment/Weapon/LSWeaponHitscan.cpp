@@ -18,6 +18,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/LSUIEventSubsystem.h"
 #include "GameFramework/Pawn.h"
+#include "Character/Components/LSEquipmentComponent.h"
+#include "Character/Components/LSInventoryComponent.h"
+#include "Engine/Engine.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
@@ -44,6 +47,15 @@ void ALSWeaponHitscan::ReleaseWeapon()
 
 void ALSWeaponHitscan::UnEquipped()
 {
+	// 서버 권위: 탄창에 남은 탄약을 인벤토리로 반환 (파괴로 CurrentAmmo가 사라지기 전)
+	if (HasAuthority() && CurrentAmmo > 0 && WeaponData.AmmoName != NAME_None)
+	{
+		if (ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>())
+		{
+			IC->AddItemToInventory(WeaponData.AmmoName, static_cast<int32>(CurrentAmmo));
+		}
+	}
+
 	// 타이머 등 정리는 파괴 시 EndPlay → CleanupOnServer/LocalClient에서 넷 롤별로 처리
 	Super::UnEquipped();
 }
@@ -103,10 +115,17 @@ void ALSWeaponHitscan::CleanupOnLocalClient()
 
 void ALSWeaponHitscan::ReloadWeapon()
 {
-	// 소유 클라이언트 입력에 의해 호출됨
-	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo)
+	// 소유 클라이언트 입력에 의해 호출됨. 예비 탄약이 없으면 장전 불가
+	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
 	{
 		return;
+	}
+
+	// 로컬 화면 디버그 로그 (소유 클라 입력 경로에서만 실행)
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,
+			FString::Printf(TEXT("Reload: Current=%u/%u, Reserve=%d"), CurrentAmmo, MaxAmmo, GetReserveAmmo()));
 	}
 
 	// 장전 중에는 발사 정지
@@ -308,7 +327,8 @@ void ALSWeaponHitscan::PlayFireEffects(bool bHit, const FVector& ImpactPoint, co
 
 void ALSWeaponHitscan::ServerRPCReload_Implementation()
 {
-	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo)
+	// 서버 권위 가드: 예비 탄약이 없으면 장전 불가 (클라 예측과 desync 방지)
+	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
 	{
 		return;
 	}
@@ -323,8 +343,44 @@ void ALSWeaponHitscan::ServerRPCReload_Implementation()
 
 void ALSWeaponHitscan::FinishReload()
 {
-	CurrentAmmo = MaxAmmo;
 	bIsReloading = false;
+
+	// 부족분 계산 (uint32 언더플로 방지 위해 int32 캐스팅)
+	const int32 Needed = static_cast<int32>(MaxAmmo) - static_cast<int32>(CurrentAmmo);
+	if (Needed <= 0)
+	{
+		return;
+	}
+
+	// 보유 예비 탄약만큼만 장전 (부족하면 있는 개수만)
+	const FName AmmoName = WeaponData.AmmoName;
+	const int32 Available = GetReserveAmmo();
+	const int32 ReloadAmount = FMath::Min(Needed, Available);
+	if (ReloadAmount <= 0)
+	{
+		return;
+	}
+
+	// 탄창 충전 (Replicated → OnRep_CurrentAmmo → 탄창 HUD 자동 갱신)
+	CurrentAmmo += static_cast<uint32>(ReloadAmount);
+
+	// 인벤토리에서 소모 → 델리게이트가 캐시 차감 + 예비 HUD 갱신 처리
+	if (ULSInventoryComponent* IC = GetOwner()->GetComponentByClass<ULSInventoryComponent>())
+	{
+		IC->AddDeltaToItem(AmmoName, -ReloadAmount);
+	}
+}
+
+int32 ALSWeaponHitscan::GetReserveAmmo() const
+{
+	if (const AActor* OwnerActor = GetOwner())
+	{
+		if (const ULSEquipmentComponent* EC = OwnerActor->GetComponentByClass<ULSEquipmentComponent>())
+		{
+			return EC->GetAmmoCount(WeaponData.AmmoName);
+		}
+	}
+	return 0;
 }
 
 void ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVector& End)
@@ -365,7 +421,7 @@ void ALSWeaponHitscan::InitEquipment()
 
 	// 무기 정보 초기화
 	MaxAmmo = WeaponData.WeaponDataAsset->MaxAmmo;
-	CurrentAmmo = MaxAmmo;
+	CurrentAmmo = WeaponData.WeaponDataAsset->CurrentAmmo;
 	MaxRange = WeaponData.WeaponDataAsset->MaxRange;
 	Damage = WeaponData.WeaponDataAsset->Damage;
 	ShotGroupRadius = WeaponData.WeaponDataAsset->ShotGroupRadius;

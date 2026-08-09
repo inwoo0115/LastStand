@@ -33,6 +33,9 @@ struct FWeaponData : public FTableRowBase
     FName ItemName;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+    FName AmmoName;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
     FText Description;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
