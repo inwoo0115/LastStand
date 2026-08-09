@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Interface/LSStatComponentInterface.h"
+#include "Interface/LSHitboxInterface.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
-class LASTSTAND_API ALSEnemyBase : public APawn, public ILSStatComponentInterface
+class LASTSTAND_API ALSEnemyBase : public APawn, public ILSStatComponentInterface, public ILSHitboxInterface
 {
 	GENERATED_BODY()
 
@@ -19,6 +20,9 @@ public:
 	virtual class ULSStatComponent* GetStatComponent() override;
 
 	virtual void ApplyDamage(int32 Damage) override;
+
+	// 이 적이 보유한 모든 부위 히트박스를 반환
+	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const override;
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -36,6 +40,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSStatComponent> Stat;
 
+	// 서버 사이드 리와인드(히트박스 히스토리 기록) 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSServerSideRewindComponent> ServerSideRewind;
+
 	// 스탯 초기화에 사용할 데이터 테이블(FEnemyData) 행 이름
 	UPROPERTY(EditAnywhere, Category = Stat, meta = (AllowPrivateAccess = "true"))
 	FName EnemyName;
@@ -43,6 +51,28 @@ protected:
 	// 체력바 위젯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> HealthBarWidget;
+
+	// --- 부위별 히트박스 (본 소켓 재부착·크기 조정은 BP에서 마무리) ---
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> HeadHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> TorsoHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> LeftArmHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> RightArmHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> LeftLegHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> RightLegHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSHitboxComponent> WeakPointHitbox;
 
 	// 이 적이 실행할 비헤이비어 트리 (적 BP에서 지정)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
