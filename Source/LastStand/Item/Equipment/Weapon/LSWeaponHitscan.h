@@ -57,15 +57,15 @@ protected:
 	// 로컬 연사 가드 (LaunchIntervalTime 동안 로컬 이펙트/몽타주 재실행 차단)
 	void OnLocalFireReady();
 
-	// 이펙트, UI 등 로컬 실행 헬퍼 (예측 트레이스 구간 전달)
-	void PlayWeaponLocalEvent(const FVector& Start, const FVector& End);
+	// 이펙트, UI 등 로컬 실행 헬퍼 (예측 트레이스 구간 전달). 로컬 명중 시 피격 적 액터 반환(미명중 nullptr)
+	AActor* PlayWeaponLocalEvent(const FVector& Start, const FVector& End);
 
 	// 총구 + 착탄 이펙트/데칼을 실제로 스폰 (렌더링 머신에서만 실행)
 	void PlayFireEffects(bool bHit, const FVector& ImpactPoint, const FVector& ImpactNormal);
 
-	// Server RPC (소유 클라이언트 → 서버)
+	// Server RPC (소유 클라이언트 → 서버). HitActor: 로컬 명중 적(없으면 null), Timestamp: 발사 시 서버 시간 추정
 	UFUNCTION(Server, Reliable)
-	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd);
+	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor, float Timestamp);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCReload();
@@ -106,8 +106,12 @@ protected:
 	UPROPERTY(Replicated)
 	uint32 MaxRange;
 
-	// 발사 데미지 (서버 ServerRPCFire에서만 사용)
+	// 발사 데미지
 	int32 Damage = 0;
+
+	// 히트박스 판정용 트레이스 채널 (기본 Hitscan). BP에서 변경 가능
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Trace")
+	TEnumAsByte<ECollisionChannel> HitscanTraceChannel = ECC_GameTraceChannel1;
 	
 	UPROPERTY(Replicated)
 	float ShotGroupRadius;

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/Components/LSServerSideRewindComponent.h"
@@ -158,7 +158,7 @@ void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const 
 }
 
 
-bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const
+ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const
 {
 	AActor* Owner = GetOwner();
 	UWorld* World = GetWorld();
@@ -166,22 +166,22 @@ bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const F
 	// 판정은 서버에서만
 	if (!Owner || !Owner->HasAuthority() || !World)
 	{
-		return false;
+		return nullptr;
 	}
 	if (History.Num() == 0)
 	{
-		return false;
+		return nullptr;
 	}
 
 	const float Now = World->GetTimeSeconds();
 
-	// 리와인드 유효 구간 [Now-200ms, Now]로 쿼리 시간 클램프
+	// 리와인드 유효 구간
 	float QueryTime = Timestamp;
 	if (Now - QueryTime > HistoryEndOffset)
 	{
 		QueryTime = Now - HistoryEndOffset;   // 200ms 이상 차이 → 200ms로 비교
 	}
-	QueryTime = FMath::Min(QueryTime, Now);   // 미래 타임스탬프 방어
+	QueryTime = FMath::Min(QueryTime, Now);
 
 	// QueryTime을 감싸는 두 스냅샷을 찾는다 (History는 Time 오름차순, [0]=가장 오래됨)
 	int32 AfterIdx = INDEX_NONE;
@@ -226,9 +226,17 @@ bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const F
 
 		if (SegmentIntersectsBox(Box, TraceStart, TraceEnd))
 		{
-			return true;
+			// 교차한 스냅샷의 FName에 해당하는 라이브 히트박스를 반환
+			for (ULSHitboxComponent* Hitbox : CachedHitboxes)
+			{
+				if (Hitbox && Hitbox->GetFName() == Pair.Key)
+				{
+					return Hitbox;
+				}
+			}
+			return nullptr;
 		}
 	}
-	return false;
+	return nullptr;
 }
 

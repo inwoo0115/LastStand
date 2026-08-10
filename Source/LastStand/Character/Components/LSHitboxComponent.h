@@ -38,6 +38,12 @@ public:
 	// 소유 액터 생성자에서 부위/배율을 주입 (멤버가 protected라 외부 클래스가 직접 설정 불가)
 	void SetupHitbox(ELSHitboxType InType, float InMultiplier);
 
+	// 로컬 예측: RawDamage에 부위 배율을 곱해 owner StatComponent의 CalculateDamage로 전달
+	void ProcessLocalHit(int32 RawDamage);
+
+	// 서버 권위: RawDamage에 부위 배율을 곱해 owner StatComponent의 ApplyDamage로 전달
+	void ProcessServerHit(int32 RawDamage);
+
 protected:
 	// 이 히트박스가 대응하는 신체 부위
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))

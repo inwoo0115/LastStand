@@ -56,8 +56,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// 서버에서 발사 시점(Timestamp)으로 히트박스를 되돌려 트레이스 명중을 재검증.
-	// 명중이면 true, 스냅샷 없음/판정 실패/미명중이면 false.
-	bool ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const;
+	// 명중한 히트박스를 반환, 스냅샷 없음/판정 실패/미명중이면 nullptr.
+	class ULSHitboxComponent* ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const;
 
 	// 서버가 기록한 히트박스 스냅샷을 전 클라에서 디버그 박스로 그림
 	UFUNCTION(NetMulticast, Unreliable)

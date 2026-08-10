@@ -12,8 +12,9 @@
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimMontage.h"
-#include "Interface/LSStatComponentInterface.h"
-#include "Character/Components/LSStatComponent.h"
+#include "Character/Components/LSHitboxComponent.h"
+#include "Character/Components/LSServerSideRewindComponent.h"
+#include "GameFramework/GameStateBase.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/LSUIEventSubsystem.h"
@@ -162,11 +163,18 @@ void ALSWeaponHitscan::Fire()
 	const FVector ShotDir = FMath::VRandCone(AimDir, ConeHalfAngleRad);
 	const FVector End = Start + ShotDir * static_cast<float>(MaxRange);
 
-	// 반응성: 소유 클라에서 즉시 로컬 실행 (몽타주 + 예측 히트 데미지 UI)
-	PlayWeaponLocalEvent(Start, End);
+	// 반응성: 소유 클라에서 즉시 로컬 실행 (몽타주 + 예측 히트 데미지 UI). 로컬 명중 적 반환
+	AActor* LocalHit = PlayWeaponLocalEvent(Start, End);
 
-	// 서버에 발사 요청(권위적 판정)
-	ServerRPCFire(Start, End);
+	// 발사 시각(서버 시간 추정) — 서버 SSR 리와인드 기준
+	float FireTime = 0.0f;
+	if (AGameStateBase* GS = GetWorld()->GetGameState())
+	{
+		FireTime = GS->GetServerWorldTimeSeconds();
+	}
+
+	// 서버에 발사 요청: 로컬 명중 정보 + 발사 시각 전달 → 서버 SSR 재검증
+	ServerRPCFire(Start, End, LocalHit, FireTime);
 
 	// 로컬 연사 가드 시작 (연사 무기는 LaunchTimerHandle이 페이싱하므로 제외)
 	if (!bIsRapidFire)
@@ -181,7 +189,7 @@ void ALSWeaponHitscan::OnLocalFireReady()
 	bLocalFireReady = true;
 }
 
-void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd)
+void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor, float Timestamp)
 {
 	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
 	{
@@ -202,23 +210,24 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	// 타 머신으로 발사 몽타주 전파
 	MulticastRPCPlayMontage(EWeaponMontageType::Fire);
 
-	// 권위적 라인 트레이스
+	// 클라가 로컬 명중을 신고한 경우, 서버 리와인드(SSR)로 재검증 후 데미지
+	if (HitActor)
+	{
+		if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerSideRewindComponent>())
+		{
+			if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Timestamp))
+			{
+				Hitbox->ProcessServerHit(Damage);
+			}
+		}
+	}
+
+	// 시각 전용 트레이스(Visibility): 착탄점/이펙트/디버그 라인용 (데미지와 분리)
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	Params.AddIgnoredActor(GetOwner());
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params);
-
-	// 피격 대상이 stat 인터페이스를 가지면 데미지 적용
-	if (bHit)
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->Implements<ULSStatComponentInterface>())
-		{
-			ILSStatComponentInterface* Target = Cast<ILSStatComponentInterface>(HitActor);
-			Target->ApplyDamage(Damage);
-		}
-	}
 
 	// 시각화: 총구 → 착탄점(또는 최대 사거리) 디버그 라인. 전 머신에서 각자 그림
 	const FVector EndPoint = bHit ? Hit.ImpactPoint : TraceEnd;
@@ -383,36 +392,35 @@ int32 ALSWeaponHitscan::GetReserveAmmo() const
 	return 0;
 }
 
-void ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVector& End)
+AActor* ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVector& End)
 {
 	// 로컬에서만 실행 (소유 클라)
 
 	// 애니메이션 몽타주 실행 (항상)
 	PlayWeaponMontage(EWeaponMontageType::Fire);
 
-	// 로컬 예측 트레이스 (서버와 동일 채널/무시 규칙)
+	// 로컬 예측 트레이스: Hitscan 채널로 Enemy 프로파일 히트박스만 판정
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	Params.AddIgnoredActor(GetOwner());
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, HitscanTraceChannel, Params);
 
-	// stat 인터페이스 대상 명중 시, 대상 StatComponent가 데미지 계산 + 브로드캐스트
+	// 피격 컴포넌트가 히트박스면 부위 배율 적용 후 owner StatComponent->CalculateDamage로 연결
+	AActor* HitEnemy = nullptr;
 	if (bHit)
 	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->Implements<ULSStatComponentInterface>())
+		if (ULSHitboxComponent* Hitbox = Cast<ULSHitboxComponent>(Hit.GetComponent()))
 		{
-			ILSStatComponentInterface* Target = Cast<ILSStatComponentInterface>(HitActor);
-			if (ULSStatComponent* TargetStat = Target->GetStatComponent())
-			{
-				TargetStat->CalculateDamage(Damage);   // 무기 Damage(raw) 전달
-			}
+			Hitbox->ProcessLocalHit(Damage);   // 무기 Damage(raw) 전달
+			HitEnemy = Hitbox->GetOwner();      // 서버 SSR 검증용 피격 적
 		}
 	}
 
 	// 총구 발사 + 착탄 이펙트/데칼 로컬 재생 (반응성)
 	PlayFireEffects(bHit, Hit.ImpactPoint, Hit.ImpactNormal);
+
+	return HitEnemy;
 }
 
 void ALSWeaponHitscan::InitEquipment()
