@@ -48,14 +48,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MapGenerator")
 	FMapTileGrid GenerateTileGrid(FName MapName);
 
-	// MapAssetTable 행을 int-인덱스 타일 카탈로그로 변환 (소켓 FName→int 인터닝 포함)
-	void BuildTileSet(TArray<FWFCTile>& OutTiles) const;
+	// MapAssetTable 행 + 경계 소켓 2개를 같은 인터닝 맵으로 변환해 카탈로그/경계 마스크 반환
+	void BuildTileSet(FName EmptySocket, FName FloorSocket, TArray<FWFCTile>& OutTiles, uint64& OutEmptyMask, uint64& OutFloorMask) const;
 
 	// 양자화 높이에서 각 열의 층 수/Depth/버퍼를 계산해 채움 (WFC 아님)
 	void ComputeColumnLevels(const FMapGrid& HeightGrid, const FMapData& Data, FMapTileGrid& OutTiles) const;
 
-	// WFC 코어: int 카탈로그로 제약 전파/붕괴 → TileIndices 채움. [구현 예정 — 이번엔 stub]
-	void RunWFC(const FMapGrid& HeightGrid, const TArray<FWFCTile>& Tiles, FMapTileGrid& TileGrid, int32 Seed) const;
+	// WFC 코어: 경계 소켓 마스크를 받아 소켓 교집합 제약 전파/붕괴로 TileIndices 채움
+	void RunWFC(const FMapGrid& HeightGrid, const TArray<FWFCTile>& Tiles, uint64 EmptyMask, uint64 FloorMask, FMapTileGrid& TileGrid, int32 Seed) const;
 
 protected:
 	// FMapAssetData 행 테이블

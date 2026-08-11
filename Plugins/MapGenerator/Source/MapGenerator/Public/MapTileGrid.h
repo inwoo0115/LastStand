@@ -9,9 +9,9 @@
 // (UStruct 아님 — 런타임 solver 전용)
 struct FWFCTile
 {
-	FName RowName;                            // 카탈로그 인덱스 → 원본 행 (메쉬 조회 등 hot loop 밖)
+	FName RowName;                                  // 카탈로그 인덱스 → 원본 행 (메쉬 조회 등 hot loop 밖)
 	float Weight = 1.0f;
-	int32 Sockets[6] = { 0, 0, 0, 0, 0, 0 };  // 인터닝된 소켓 int id (+X,-X,+Y,-Y,+Z,-Z)
+	uint64 SocketMasks[6] = { 0, 0, 0, 0, 0, 0 };  // 면별 소켓 비트마스크 (+X,-X,+Y,-Y,+Z,-Z)
 };
 
 // WFC로 채운 3D 타일 그리드. TileIndices는 TileNames(=FMapAssetData RowName) 인덱스를 참조.

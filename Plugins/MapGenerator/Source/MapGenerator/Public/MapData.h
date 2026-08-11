@@ -73,9 +73,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
 	float CellSize = 100.0f;
 
-	// WFC 결정성 시드 (붕괴 선택에 사용). 구현 예정
+	// WFC 결정성 시드 (붕괴 선택에 사용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
 	int32 WFCSeed = 0;
+
+	// WFC 경계 소켓: 그리드 가장자리/공중 면이 호환돼야 하는 소켓 이름
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
+	FName EmptySocket = TEXT("Empty");
+
+	// WFC 바닥 소켓: z=0 셀의 -Z 면이 호환돼야 하는 소켓 이름
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
+	FName FloorSocket = TEXT("Floor");
 
 	// [임시/디버그] 인스턴싱할 메쉬 (기본: 엔진 큐브). 그리드 시각화 전용, 추후 제거 가능
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")

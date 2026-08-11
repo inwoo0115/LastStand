@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MapGridVisualizer.h"
 #include "MapGeneratorSubsystem.h"
-#include "MapGrid.h"
+#include "MapTileGrid.h"
+#include "MapAssetData.h"
 #include "Engine/StaticMesh.h"
 
 AMapGridVisualizer::AMapGridVisualizer()
@@ -11,8 +12,8 @@ AMapGridVisualizer::AMapGridVisualizer()
 	// 시각화 전용 액터라 매 프레임 갱신 불필요
 	PrimaryActorTick.bCanEverTick = false;
 
-	HISM = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("HISM"));
-	RootComponent = HISM;
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent = Root;
 }
 
 void AMapGridVisualizer::BeginPlay()
@@ -37,7 +38,7 @@ void AMapGridVisualizer::BuildVisualization()
 		return;
 	}
 
-	// 디버그 파라미터(셀 간격/높이 배율/메쉬)를 읽기 위한 행 조회
+	// 셀 크기(수직 공용)를 읽기 위한 행 조회
 	const FMapData* Data = Subsystem->FindMapData(MapName);
 	if (!Data)
 	{
@@ -45,39 +46,69 @@ void AMapGridVisualizer::BuildVisualization()
 		return;
 	}
 
-	// 높이 그리드 생성
-	const FMapGrid Grid = Subsystem->GenerateHeightGrid(MapName);
-
-	if (Grid.Width <= 0 || Grid.Height <= 0)
+	// WFC 3D 타일 그리드 생성
+	const FMapTileGrid Tiles = Subsystem->GenerateTileGrid(MapName);
+	if (Tiles.Width <= 0 || Tiles.Height <= 0 || Tiles.Depth <= 0)
 	{
 		return;
 	}
 
-	// 인스턴싱할 메쉬 로드 (미지정 시 엔진 큐브로 폴백)
-	UStaticMesh* Mesh = Data->DebugMesh.LoadSynchronous();
-	if (!Mesh)
-	{
-		Mesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	}
-	HISM->SetStaticMesh(Mesh);
-
-	// 각 셀을 XY 격자로 배치하고 양자화 층(level)만큼 Z를 올림 (타일 큐브 기준, 수직도 CellSize)
 	const float CellSize = Data->CellSize;
-	// 저장 높이는 정규화 값에 HeightMultiplier가 곱해진 상태 → 유효 스텝도 배율만큼 확대
-	const float EffStep = Data->HeightStep * Data->HeightMultiplier;
+	const int32 W = Tiles.Width;
+	const int32 H = Tiles.Height;
+	const int32 Area = W * H;
 
-	HISM->ClearInstances();
-	for (int32 Y = 0; Y < Grid.Height; ++Y)
+	// 폴백 메쉬 (타일에 메쉬 미지정 시)
+	UStaticMesh* FallbackMesh = Data->DebugMesh.LoadSynchronous();
+	if (!FallbackMesh)
 	{
-		for (int32 X = 0; X < Grid.Width; ++X)
+		FallbackMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	}
+
+	// 타일 인덱스별 HISM (지연 생성)
+	TileHISMs.Reset();
+	TileHISMs.SetNum(Tiles.TileNames.Num());
+
+	int32 InstanceCount = 0;
+	for (int32 Z = 0; Z < Tiles.Depth; ++Z)
+	{
+		for (int32 Y = 0; Y < H; ++Y)
 		{
-			const float H = Grid.HeightValues[Y * Grid.Width + X];
-			const int32 Level = (EffStep > KINDA_SMALL_NUMBER) ? FMath::Max(0, FMath::RoundToInt(H / EffStep)) : 0;
-			const FVector Location(X * CellSize, Y * CellSize, Level * CellSize);
-			HISM->AddInstance(FTransform(Location));
+			for (int32 X = 0; X < W; ++X)
+			{
+				const int32 TileIdx = Tiles.TileIndices[Z * Area + Y * W + X];
+				if (TileIdx < 0 || TileIdx >= TileHISMs.Num())
+				{
+					continue;   // 빈칸/미붕괴
+				}
+
+				// 해당 타일 인덱스의 HISM 지연 생성
+				UHierarchicalInstancedStaticMeshComponent* Comp = TileHISMs[TileIdx];
+				if (!Comp)
+				{
+					UStaticMesh* Mesh = FallbackMesh;
+					if (const FMapAssetData* Asset = Subsystem->FindAsset(Tiles.TileNames[TileIdx]))
+					{
+						if (UStaticMesh* Loaded = Asset->Mesh.LoadSynchronous())
+						{
+							Mesh = Loaded;
+						}
+					}
+
+					Comp = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
+					Comp->SetupAttachment(Root);
+					Comp->SetStaticMesh(Mesh);
+					Comp->RegisterComponent();
+					TileHISMs[TileIdx] = Comp;
+				}
+
+				const FVector Location(X * CellSize, Y * CellSize, Z * CellSize);
+				Comp->AddInstance(FTransform(Location));
+				++InstanceCount;
+			}
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("AMapGridVisualizer::BuildVisualization - %d개 인스턴스 배치 (%d x %d)."),
-		Grid.Width * Grid.Height, Grid.Width, Grid.Height);
+	UE_LOG(LogTemp, Log, TEXT("AMapGridVisualizer::BuildVisualization - 타일 인스턴스 %d개 배치 (%d x %d x %d)."),
+		InstanceCount, W, H, Tiles.Depth);
 }

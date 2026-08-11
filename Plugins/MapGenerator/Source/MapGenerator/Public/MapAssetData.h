@@ -27,22 +27,22 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
     float Weight = 1.0f;
 
-    // 6면 소켓 ID (맞닿는 면끼리 호환되면 인접 허용). 호환 판정은 이후 구현
+    // 6면 소켓 태그 목록. 맞닿는 두 면의 태그 집합이 교집합을 가지면 인접 허용
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketPosX;   // +X
+    TArray<FName> SocketPosX;   // +X
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketNegX;   // -X
+    TArray<FName> SocketNegX;   // -X
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketPosY;   // +Y
+    TArray<FName> SocketPosY;   // +Y
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketNegY;   // -Y
+    TArray<FName> SocketNegY;   // -Y
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketPosZ;   // +Z (위)
+    TArray<FName> SocketPosZ;   // +Z (위)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile|Sockets")
-    FName SocketNegZ;   // -Z (아래)
+    TArray<FName> SocketNegZ;   // -Z (아래)
 };
