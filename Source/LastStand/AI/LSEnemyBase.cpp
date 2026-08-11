@@ -26,7 +26,7 @@ ALSEnemyBase::ALSEnemyBase()
 	// 스켈레탈 메시 (애셋/애님 클래스는 BP에서 지정). 히트박스 생성 전에 만들어 부착 대상으로 사용
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Capsule);
-	// 캐릭터형 기본 배치(발이 캡슐 바닥에 오도록). BP에서 조정
+	// 캐릭터형 기본 배치, BP에서 조정
 	Mesh->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -88.0f), FRotator(0.0f, -90.0f, 0.0f));
 	// 데디 서버 포함 항상 포즈 평가 + 본 갱신 (렌더링 여부 무관) — SSR 정확도용
 	Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
@@ -60,13 +60,14 @@ ALSEnemyBase::ALSEnemyBase()
 		return Hitbox;
 	};
 
-	HeadHitbox     = CreateHitbox(TEXT("HeadHitbox"),     ELSHitboxType::Head,      2.0f, FVector(0.0f, 0.0f, 70.0f),   FVector(12.0f, 12.0f, 12.0f));
-	TorsoHitbox    = CreateHitbox(TEXT("TorsoHitbox"),    ELSHitboxType::Torso,     1.0f, FVector(0.0f, 0.0f, 20.0f),   FVector(20.0f, 16.0f, 35.0f));
-	LeftArmHitbox  = CreateHitbox(TEXT("LeftArmHitbox"),  ELSHitboxType::LeftArm,   0.7f, FVector(0.0f, -25.0f, 20.0f), FVector(10.0f, 8.0f, 30.0f));
-	RightArmHitbox = CreateHitbox(TEXT("RightArmHitbox"), ELSHitboxType::RightArm,  0.7f, FVector(0.0f, 25.0f, 20.0f),  FVector(10.0f, 8.0f, 30.0f));
-	LeftLegHitbox  = CreateHitbox(TEXT("LeftLegHitbox"),  ELSHitboxType::LeftLeg,   0.7f, FVector(0.0f, -10.0f, -45.0f),FVector(10.0f, 10.0f, 40.0f));
-	RightLegHitbox = CreateHitbox(TEXT("RightLegHitbox"), ELSHitboxType::RightLeg,  0.7f, FVector(0.0f, 10.0f, -45.0f), FVector(10.0f, 10.0f, 40.0f));
-	WeakPointHitbox= CreateHitbox(TEXT("WeakPointHitbox"),ELSHitboxType::WeakPoint, 3.0f, FVector(0.0f, 0.0f, 40.0f),   FVector(10.0f, 10.0f, 10.0f));
+	// 소켓 부착 시 본에 정렬되도록 상대 위치는 0(본 원점) 기본. Extent만 대략값 — 정밀 배치는 BP에서
+	HeadHitbox     = CreateHitbox(TEXT("HeadHitbox"),     ELSHitboxType::Head,      2.0f, FVector::ZeroVector, FVector(12.0f, 12.0f, 12.0f));
+	TorsoHitbox    = CreateHitbox(TEXT("TorsoHitbox"),    ELSHitboxType::Torso,     1.0f, FVector::ZeroVector, FVector(20.0f, 16.0f, 35.0f));
+	LeftArmHitbox  = CreateHitbox(TEXT("LeftArmHitbox"),  ELSHitboxType::LeftArm,   0.7f, FVector::ZeroVector, FVector(10.0f, 8.0f, 30.0f));
+	RightArmHitbox = CreateHitbox(TEXT("RightArmHitbox"), ELSHitboxType::RightArm,  0.7f, FVector::ZeroVector, FVector(10.0f, 8.0f, 30.0f));
+	LeftLegHitbox  = CreateHitbox(TEXT("LeftLegHitbox"),  ELSHitboxType::LeftLeg,   0.7f, FVector::ZeroVector, FVector(10.0f, 10.0f, 40.0f));
+	RightLegHitbox = CreateHitbox(TEXT("RightLegHitbox"), ELSHitboxType::RightLeg,  0.7f, FVector::ZeroVector, FVector(10.0f, 10.0f, 40.0f));
+	WeakPointHitbox= CreateHitbox(TEXT("WeakPointHitbox"),ELSHitboxType::WeakPoint, 3.0f, FVector::ZeroVector, FVector(10.0f, 10.0f, 10.0f));
 
 	// AI: 스폰/배치 시 커스텀 AIController가 자동 possess → OnPossess에서 BT 실행
 	AIControllerClass = ALSAIController::StaticClass();

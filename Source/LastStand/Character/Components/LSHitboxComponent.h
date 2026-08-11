@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -32,6 +32,12 @@ class LASTSTAND_API ULSHitboxComponent : public UBoxComponent
 public:
 	ULSHitboxComponent();
 
+	// BP에서 소켓을 못 바꾸는 상속 컴포넌트 제약 우회: 부모 메시의 SocketName에 코드로 재부착
+	virtual void OnRegister() override;
+
+	// 런타임 스폰 시 OnRegister가 SocketName 적용 전에 실행될 수 있어, 프로퍼티 확정 후 재부착
+	virtual void BeginPlay() override;
+
 	ELSHitboxType GetHitboxType() const { return HitboxType; }
 	float GetDamageMultiplier() const { return DamageMultiplier; }
 
@@ -45,6 +51,9 @@ public:
 	void ProcessServerHit(int32 RawDamage);
 
 protected:
+	// 소켓 부착
+	void AttachToOwnerMeshSocket();
+
 	// 이 히트박스가 대응하는 신체 부위
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
 	ELSHitboxType HitboxType = ELSHitboxType::Torso;
@@ -52,4 +61,8 @@ protected:
 	// 이 부위에 적중 시 곱해질 데미지 배율 (예: 머리/약점 고배율)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
 	float DamageMultiplier = 1.0f;
+
+	// 부착할 부모 메시의 소켓/본 이름. BP에서 편집(상속 컴포넌트의 어태치 트리 제약 우회용)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
+	FName SocketName;
 };

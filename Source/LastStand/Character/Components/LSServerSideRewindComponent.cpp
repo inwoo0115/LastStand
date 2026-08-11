@@ -5,6 +5,7 @@
 #include "Character/Components/LSHitboxComponent.h"
 #include "Interface/LSHitboxInterface.h"
 #include "DrawDebugHelpers.h"
+#include "Components/SkeletalMeshComponent.h"
 
 namespace
 {
