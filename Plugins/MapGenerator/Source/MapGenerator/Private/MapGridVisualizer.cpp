@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MapGridVisualizer.h"
@@ -71,8 +71,19 @@ void AMapGridVisualizer::BuildVisualization()
 		for (int32 X = 0; X < Grid.Width; ++X)
 		{
 			const float H = Grid.HeightValues[Y * Grid.Width + X];
-			const FVector Location(X * CellSize, Y * CellSize, H * HeightScale);
-			HISM->AddInstance(FTransform(Location));
+
+			if (H < 0)
+			{
+				const FVector Location(X * CellSize, Y * CellSize, 0);
+				HISM->AddInstance(FTransform(Location));
+
+			}
+			else
+			{
+				const FVector Location(X * CellSize, Y * CellSize, H * HeightScale);
+				HISM->AddInstance(FTransform(Location));
+			}
+			
 		}
 	}
 

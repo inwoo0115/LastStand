@@ -30,6 +30,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MapGenerator")
 	FMapGrid GenerateHeightGrid(FName MapName);
 
+	// 후처리 1: 8방향 극댓값을 찾아 보로노이 시드 포인트로 지정(인접 플래토는 첫 포인트로 병합).
+	//           Grid.VoronoiPoints를 채우고 시드 셀에 RegionIndices 초기 라벨 부여
+	void FindLocalMaxima(FMapGrid& Grid) const;
+
+	// 후처리 2: JFA(Jump Flooding)로 각 셀을 최근접 시드 포인트 영역으로 라벨링 → Grid.RegionIndices 완성
+	void BuildVoronoiRegions(FMapGrid& Grid) const;
+
+	// 후처리 3: 서로 다른 영역이 맞닿는 경계 셀(+주변 Thickness)을 경계로 표시 → 높이 0, RegionIndices = -2
+	void MarkRegionBoundaries(FMapGrid& Grid, int32 Thickness) const;
+
+	// 후처리 4: 높이 값을 Step 간격 최근접 배수로 반올림 후 [-1,1] 클램프 (Step<=0이면 무시)
+	void QuantizeHeights(FMapGrid& Grid, float Step) const;
+
 protected:
 	// FMapAssetData 행 테이블
 	UPROPERTY()

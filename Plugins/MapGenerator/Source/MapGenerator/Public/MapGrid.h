@@ -22,4 +22,12 @@ struct FMapGrid
 	// 각 셀의 높이 값 (row-major, 인덱스 = y * Width + x)
 	UPROPERTY(BlueprintReadOnly, Category = "MapGrid")
 	TArray<float> HeightValues;
+
+	// 보로노이 시드 포인트(극댓값 대표) 좌표 목록. 인덱스가 곧 영역 번호
+	UPROPERTY(BlueprintReadOnly, Category = "MapGrid")
+	TArray<FIntPoint> VoronoiPoints;
+
+	// 각 셀이 속한 보로노이 영역 번호(VoronoiPoints 인덱스). 미할당 = -1. (인덱스 = y * Width + x)
+	UPROPERTY(BlueprintReadOnly, Category = "MapGrid")
+	TArray<int32> RegionIndices;
 };

@@ -57,6 +57,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
 	FVector2D Offset = FVector2D::ZeroVector;
 
+	// 후처리: true면 노이즈의 음수 높이를 절댓값(양수)으로 반전 (능선/봉우리 강조)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing")
+	bool bUseAbsoluteValue = false;
+
+	// 후처리: 영역 경계 존 두께 비율(0~1). 실제 두께(셀) = round(값 × max(GridWidth,GridHeight))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float BoundaryThicknessRatio = 0.02f;
+
+	// 후처리: 높이 양자화 간격(0~1). 예) 0.2 → -1,-0.8,...,1 중 최근접으로 반올림. 0이면 비활성
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HeightStep = 0.2f;
+
 	// [임시/디버그] 인스턴스 간 XY 간격(cm). 그리드 시각화 전용, 추후 제거 가능
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")
 	float CellSize = 100.0f;
