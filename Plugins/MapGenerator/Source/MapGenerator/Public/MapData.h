@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -59,7 +59,7 @@ public:
 
 	// 후처리: true면 노이즈의 음수 높이를 절댓값(양수)으로 반전 (능선/봉우리 강조)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing")
-	bool bUseAbsoluteValue = false;
+	bool bUseAbsoluteValue = true;
 
 	// 후처리: 영역 경계 존 두께 비율(0~1). 실제 두께(셀) = round(값 × max(GridWidth,GridHeight))
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -69,13 +69,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HeightStep = 0.2f;
 
-	// [임시/디버그] 인스턴스 간 XY 간격(cm). 그리드 시각화 전용, 추후 제거 가능
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")
+	// 타일 한 칸의 크기(cm). XY 간격이자 수직 층 간격(큐브 타일)으로 공용
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
 	float CellSize = 100.0f;
 
-	// [임시/디버그] height값 → 월드 Z 변환 배율. 그리드 시각화 전용, 추후 제거 가능
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")
-	float HeightScale = 200.0f;
+	// WFC 결정성 시드 (붕괴 선택에 사용). 구현 예정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
+	int32 WFCSeed = 0;
 
 	// [임시/디버그] 인스턴싱할 메쉬 (기본: 엔진 큐브). 그리드 시각화 전용, 추후 제거 가능
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")

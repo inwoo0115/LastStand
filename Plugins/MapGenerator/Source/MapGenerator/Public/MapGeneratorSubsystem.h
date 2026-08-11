@@ -7,6 +7,7 @@
 #include "MapAssetData.h"
 #include "MapData.h"
 #include "MapGrid.h"
+#include "MapTileGrid.h"
 #include "MapGeneratorSubsystem.generated.h"
 
 /**
@@ -42,6 +43,19 @@ public:
 
 	// 후처리 4: 높이 값을 Step 간격 최근접 배수로 반올림 후 [-1,1] 클램프 (Step<=0이면 무시)
 	void QuantizeHeights(FMapGrid& Grid, float Step) const;
+
+	// 높이 그리드 → WFC로 3D 타일 그리드 생성 (오케스트레이터)
+	UFUNCTION(BlueprintCallable, Category = "MapGenerator")
+	FMapTileGrid GenerateTileGrid(FName MapName);
+
+	// MapAssetTable 행을 int-인덱스 타일 카탈로그로 변환 (소켓 FName→int 인터닝 포함)
+	void BuildTileSet(TArray<FWFCTile>& OutTiles) const;
+
+	// 양자화 높이에서 각 열의 층 수/Depth/버퍼를 계산해 채움 (WFC 아님)
+	void ComputeColumnLevels(const FMapGrid& HeightGrid, const FMapData& Data, FMapTileGrid& OutTiles) const;
+
+	// WFC 코어: int 카탈로그로 제약 전파/붕괴 → TileIndices 채움. [구현 예정 — 이번엔 stub]
+	void RunWFC(const FMapGrid& HeightGrid, const TArray<FWFCTile>& Tiles, FMapTileGrid& TileGrid, int32 Seed) const;
 
 protected:
 	// FMapAssetData 행 테이블

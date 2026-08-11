@@ -413,3 +413,133 @@ void UMapGeneratorSubsystem::QuantizeHeights(FMapGrid& Grid, float Step) const
 		H = FMath::Clamp(FMath::GridSnap(H, Step), -1.0f, 1.0f);
 	}
 }
+
+FMapTileGrid UMapGeneratorSubsystem::GenerateTileGrid(FName MapName)
+{
+	FMapTileGrid Tiles;
+
+	const FMapData* Data = FindMapData(MapName);
+	if (!Data)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UMapGeneratorSubsystem::GenerateTileGrid - MapData 행 '%s'을(를) 찾을 수 없습니다."), *MapName.ToString());
+		return Tiles;
+	}
+
+	// 입력 높이 그리드 생성
+	const FMapGrid Height = GenerateHeightGrid(MapName);
+
+	// 타일 카탈로그(int 인덱스) 구성
+	TArray<FWFCTile> TileSet;
+	BuildTileSet(TileSet);
+
+	// 각 열의 층 수/Depth/버퍼 계산
+	ComputeColumnLevels(Height, *Data, Tiles);
+
+	// 카탈로그 인덱스 → RowName 매핑을 결과에 복사(소비 측 메쉬 조회용)
+	Tiles.TileNames.Reset(TileSet.Num());
+	for (const FWFCTile& Tile : TileSet)
+	{
+		Tiles.TileNames.Add(Tile.RowName);
+	}
+
+	// WFC 코어 (현재 stub — TileIndices는 아직 -1)
+	RunWFC(Height, TileSet, Tiles, Data->WFCSeed);
+
+	// [로직 테스트] 데이터 흐름 확인 로그
+	int32 TotalCells = 0;
+	for (int32 Levels : Tiles.ColumnLevels)
+	{
+		TotalCells += Levels;
+	}
+	UE_LOG(LogTemp, Log, TEXT("UMapGeneratorSubsystem::GenerateTileGrid - 타일 종류 %d개, Depth %d, 총 타일 칸 %d (%d x %d)."),
+		Tiles.TileNames.Num(), Tiles.Depth, TotalCells, Tiles.Width, Tiles.Height);
+
+	return Tiles;
+}
+
+void UMapGeneratorSubsystem::BuildTileSet(TArray<FWFCTile>& OutTiles) const
+{
+	OutTiles.Reset();
+	if (!MapAssetTable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UMapGeneratorSubsystem::BuildTileSet - MapAssetTable이 로드되지 않았습니다."));
+		return;
+	}
+
+	// 소켓 FName → int id 인터닝 (NAME_None = 0). 이후 호환 판정을 정수 비교로 수행
+	TMap<FName, int32> SocketIds;
+	SocketIds.Add(NAME_None, 0);
+	auto InternSocket = [&SocketIds](FName Socket) -> int32
+	{
+		if (const int32* Found = SocketIds.Find(Socket))
+		{
+			return *Found;
+		}
+		const int32 NewId = SocketIds.Num();
+		SocketIds.Add(Socket, NewId);
+		return NewId;
+	};
+
+	const TArray<FName> RowNames = MapAssetTable->GetRowNames();
+	OutTiles.Reserve(RowNames.Num());
+	for (const FName& RowName : RowNames)
+	{
+		const FMapAssetData* Row = FindAsset(RowName);
+		if (!Row)
+		{
+			continue;
+		}
+
+		FWFCTile Tile;
+		Tile.RowName = RowName;
+		Tile.Weight = Row->Weight;
+		Tile.Sockets[0] = InternSocket(Row->SocketPosX);
+		Tile.Sockets[1] = InternSocket(Row->SocketNegX);
+		Tile.Sockets[2] = InternSocket(Row->SocketPosY);
+		Tile.Sockets[3] = InternSocket(Row->SocketNegY);
+		Tile.Sockets[4] = InternSocket(Row->SocketPosZ);
+		Tile.Sockets[5] = InternSocket(Row->SocketNegZ);
+		OutTiles.Add(Tile);
+	}
+}
+
+void UMapGeneratorSubsystem::ComputeColumnLevels(const FMapGrid& HeightGrid, const FMapData& Data, FMapTileGrid& OutTiles) const
+{
+	const int32 Width = HeightGrid.Width;
+	const int32 Height = HeightGrid.Height;
+	OutTiles.Width = Width;
+	OutTiles.Height = Height;
+	OutTiles.Depth = 0;
+	OutTiles.ColumnLevels.Reset();
+	OutTiles.TileIndices.Reset();
+
+	const int32 CellCount = Width * Height;
+	if (CellCount <= 0)
+	{
+		return;
+	}
+
+	// 저장 높이는 정규화 값에 HeightMultiplier가 곱해진 상태 → 유효 스텝도 배율만큼 확대
+	const float EffStep = Data.HeightStep * Data.HeightMultiplier;
+
+	OutTiles.ColumnLevels.SetNumUninitialized(CellCount);
+	for (int32 Index = 0; Index < CellCount; ++Index)
+	{
+		const float H = HeightGrid.HeightValues[Index];
+		// 양자화 높이 → 층 인덱스. 열의 층 수 = level + 1 (level 0 포함)
+		const int32 Level = (EffStep > KINDA_SMALL_NUMBER) ? FMath::Max(0, FMath::RoundToInt(H / EffStep)) : 0;
+		const int32 Levels = Level + 1;
+		OutTiles.ColumnLevels[Index] = Levels;
+		OutTiles.Depth = FMath::Max(OutTiles.Depth, Levels);
+	}
+
+	// 3D 타일 버퍼를 -1(빈칸/미붕괴)로 초기화
+	OutTiles.TileIndices.Init(-1, CellCount * OutTiles.Depth);
+}
+
+void UMapGeneratorSubsystem::RunWFC(const FMapGrid& HeightGrid, const TArray<FWFCTile>& Tiles, FMapTileGrid& TileGrid, int32 Seed) const
+{
+	// TODO: WFC 제약 전파/붕괴 구현 예정.
+	// 여기서 int 카탈로그(Tiles)의 소켓 id 정수 비교로 인접 제약을 전파하고,
+	// 최소 엔트로피 셀을 Seed 기반으로 붕괴시켜 TileGrid.TileIndices를 채운다.
+}

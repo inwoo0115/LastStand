@@ -61,9 +61,10 @@ void AMapGridVisualizer::BuildVisualization()
 	}
 	HISM->SetStaticMesh(Mesh);
 
-	// 각 셀을 XY 격자로 배치하고 높이값에 비례해 Z를 올림 (하이트맵)
+	// 각 셀을 XY 격자로 배치하고 양자화 층(level)만큼 Z를 올림 (타일 큐브 기준, 수직도 CellSize)
 	const float CellSize = Data->CellSize;
-	const float HeightScale = Data->HeightScale;
+	// 저장 높이는 정규화 값에 HeightMultiplier가 곱해진 상태 → 유효 스텝도 배율만큼 확대
+	const float EffStep = Data->HeightStep * Data->HeightMultiplier;
 
 	HISM->ClearInstances();
 	for (int32 Y = 0; Y < Grid.Height; ++Y)
@@ -71,19 +72,9 @@ void AMapGridVisualizer::BuildVisualization()
 		for (int32 X = 0; X < Grid.Width; ++X)
 		{
 			const float H = Grid.HeightValues[Y * Grid.Width + X];
-
-			if (H < 0)
-			{
-				const FVector Location(X * CellSize, Y * CellSize, 0);
-				HISM->AddInstance(FTransform(Location));
-
-			}
-			else
-			{
-				const FVector Location(X * CellSize, Y * CellSize, H * HeightScale);
-				HISM->AddInstance(FTransform(Location));
-			}
-			
+			const int32 Level = (EffStep > KINDA_SMALL_NUMBER) ? FMath::Max(0, FMath::RoundToInt(H / EffStep)) : 0;
+			const FVector Location(X * CellSize, Y * CellSize, Level * CellSize);
+			HISM->AddInstance(FTransform(Location));
 		}
 	}
 
