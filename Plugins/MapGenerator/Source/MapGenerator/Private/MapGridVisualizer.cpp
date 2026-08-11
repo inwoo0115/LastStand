@@ -53,7 +53,7 @@ void AMapGridVisualizer::BuildVisualization()
 		return;
 	}
 
-	const float CellSize = Data->CellSize;
+	const FVector CellSize = Data->CellSize;
 	const int32 W = Tiles.Width;
 	const int32 H = Tiles.Height;
 	const int32 Area = W * H;
@@ -102,7 +102,7 @@ void AMapGridVisualizer::BuildVisualization()
 					TileHISMs[TileIdx] = Comp;
 				}
 
-				const FVector Location(X * CellSize, Y * CellSize, Z * CellSize);
+				const FVector Location(X * CellSize.X, Y * CellSize.Y, Z * CellSize.Z);
 				Comp->AddInstance(FTransform(Location));
 				++InstanceCount;
 			}

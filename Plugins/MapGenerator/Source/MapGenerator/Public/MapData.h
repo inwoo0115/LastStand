@@ -69,9 +69,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HeightStep = 0.2f;
 
-	// 타일 한 칸의 크기(cm). XY 간격이자 수직 층 간격(큐브 타일)으로 공용
+	// 타일 한 칸의 크기(cm). X=가로, Y=세로, Z=높이(층 간격). 축별 지정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
-	float CellSize = 100.0f;
+	FVector CellSize = FVector(100.0f);
 
 	// WFC 결정성 시드 (붕괴 선택에 사용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
