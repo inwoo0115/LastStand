@@ -144,8 +144,3 @@ LastStand/
 - 엔진: 언리얼 엔진 5 소스 빌드
 - 모듈 의존성: Core / CoreUObject / Engine / InputCore / EnhancedInput / UMG / GameplayTags / NetCore / Slate / SlateCore, (Private) OnlineSubsystem
 - 게임플레이 관련 코드 주석은 한국어로 작성
-
-## 향후 작업
-
-- 세이브 시스템(`Save/LSSaveSubsystem`, `LSSaveGame`)은 아직 스캐폴드 상태로, 직렬화 로직을 구현할 예정입니다.
-- AI 행동트리는 현재 블루프린트/데이터 애셋 기반이며, 커스텀 C++ BT 노드로 확장할 여지가 있습니다.
