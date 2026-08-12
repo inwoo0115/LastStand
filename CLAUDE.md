@@ -56,3 +56,38 @@
 - **플랜 모드**를 적극 사용. 계획을 세밀히 검토하며, 변수명/로직 위치/설계를 자주 다듬음 → 기존 컨벤션에 맞추는 것을 선호.
 - 기능 구현 후 **빌드는 하지 않고** 사용자가 에디터에서 확인하는 경우가 많음. 구현 완료 후 "빌드/커밋할까요?"로 확인.
 - 사용자가 스캐폴드/변수를 직접 추가해두고 그 위에 구현을 요청하는 경우가 많음 → 되돌릴 때는 **사용자 추가분은 보존**하고 내 변경만 원복.
+
+## 시스템 인덱스 (코드베이스 맵)
+
+향후 작업의 진입점 빠른 조회용. 경로는 `Source/LastStand/` 기준(플러그인은 별도 명시). 파일명은 접두사 `LS` 생략 없이 표기.
+
+### WFC 절차적 맵 생성 — `Plugins/MapGenerator/Source/MapGenerator/`
+- `MapGeneratorSubsystem.*` (~900줄, 핵심): `UWorldSubsystem`. 파이프라인 오케스트레이션.
+  - `GenerateHeightGrid`(펄린 fBm) → `FindLocalMaxima`(극댓값 시드) → `BuildVoronoiRegions`(**JFA 보로노이**, 핑퐁 버퍼) → `MarkRegionBoundaries`(BFS 경계) → `QuantizeHeights`(계단화).
+  - `GenerateTileGrid` = Stage B 오케스트레이터: `BuildTileSet`(소켓 FName→비트인덱스 인터닝) → `ComputeColumnLevels`(3D 볼륨화) → `RunWFC`.
+  - `RunWFC`(line ~630): 소켓 비트마스크 교집합 인접, `Compatible[dir][tile]` 사전계산, 커스텀 `TArray<uint32>` 비트셋(익명 `WFCBits` ns), Observe(최소엔트로피+리저버샘플)→Collapse(최대 Weight)→Propagate(워크리스트), 모순 시 `MaxAttempts=20` 리시드 재시도, `FRandomStream`으로 결정성.
+- `MapGrid.h`(FMapGrid 높이/영역), `MapTileGrid.h`(FWFCTile 런타임 구조체 + FMapTileGrid 결과), `MapAssetData.h`(FMapAssetData 타일 행: 6면 소켓/Weight/Mesh), `MapData.h`(FMapData 노이즈·WFC 파라미터 행), `DataTableSettings.h`(UDeveloperSettings).
+- `MapGridVisualizer.*`(AMapGridVisualizer): 타일 타입별 **HISM** 지연 생성, per-axis `FVector CellSize` 인스턴싱.
+- 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
+
+### 네트워크 전투 (랙 보상)
+- `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,ts)` = 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집.
+- `Character/Components/LSHitboxComponent.*`: `UBoxComponent` 파생, `ELSHitboxType`+`DamageMultiplier`(Head 2.0/WeakPoint 3.0/사지 0.7), 소켓 재부착. `ProcessLocalHit`(예측) vs `ProcessServerHit`(권위).
+- `Item/Equipment/Weapon/LSWeaponHitscan.*`: 로컬 예측 트레이스 → `ServerRPCFire(Start,End,HitActor,Timestamp)` → 서버 연사가드(`Interval*0.9`)+리와인드 재검증+권위 데미지 → 멀티캐스트 연출(소유 클라 스킵). 커스텀 채널 `ECC_GameTraceChannel1`(Hitscan).
+
+### 캐릭터 / 컴포넌트
+- `Character/LSCharacterBase.*`(ACharacter, Stat/Inventory/Interact 인터페이스 구현, 컨트롤 회전 리플리케이트), `LSPlayerCharacter.*`(Enhanced Input, `bIsAim` `COND_SkipOwner` 예측, 다수 ServerRPC).
+- `Character/Components/`: `LSStatComponent`(권위 HP, `OnRep_CurrentHealth`+이중 브로드캐스트), `LSEquipmentComponent`(리플리 장비맵+탄약캐시, `OnRepFocusEquipment` 애님레이어 링크), `LSInventoryComponent`(FastArray, `OnInventoryItemChanged` 델타), `LSInteractionComponent`.
+- `AI/LSEnemyBase.*`(APawn, 7개 소켓 히트박스+리와인드+월드 HP바 위젯, 서버 애님 강제 틱), `AI/LSAIController.*`(BehaviorTree 구동).
+
+### 데이터 / 인터페이스 / UI
+- `Settings/LSGameDataSettings`(UDeveloperSettings, soft DataTable refs) → `DataTable/LSDataSubsystem`(`FindItem/FindWeapon/FindEnemy`) → 행 구조체 `LSItemData`/`LSWeaponData`/`LSEnemyData`(모두 FTableRowBase).
+- `Interface/`: `LSStatComponentInterface`(GetStatComponent+ApplyDamage), `LSHitboxInterface`(GetHitboxComponents), `LSInventoryComponentInterface`, `LSInteractComponentInterface`, `LSInteractableInterface`(Interact/GetItemName/GetInstanceID).
+- `UI/LSUISubsystem`(GameplayTag 레이어/슬롯, `PendingInjections` 지연 주입, 입력모드) + `UI/LSUIEventSubsystem`(이벤트 버스: Health/Ammo/Damage/Equipment/ReserveAmmo/InventoryInput). `UI/Widget/`(인벤/장비/스탯/상호작용), `UI/Operation/`(드래그드롭), 데미지넘버 오브젝트 풀링(`LSDamageLayerWidget`).
+- `Item/LSItemArray.h`: `FInventoryItemInfoArray`(FFastArraySerializer, WithNetDeltaSerializer).
+
+### 스캐폴드/미완 (건드릴 때 주의)
+- `Save/LSSaveSubsystem`·`LSSaveGame`: 빈 스텁. AI 행동트리: BP/데이터 애셋 기반(커스텀 C++ BT 노드 없음).
+
+### 포트폴리오 README
+- 루트 `README.md`은 **개발자 포트폴리오용**(한국어). WFC·리와인드·네트워킹·아키텍처 중심 서술 + WFC mermaid 다이어그램. 시스템 변경 시 README 해당 섹션도 함께 갱신 고려.
