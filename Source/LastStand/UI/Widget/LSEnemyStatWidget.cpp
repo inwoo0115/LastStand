@@ -21,6 +21,14 @@ void ULSEnemyStatWidget::InitializeWidget(ULSStatComponent* InStatComp)
 	StatComp->OnHealthChanged.AddUObject(this, &ULSEnemyStatWidget::HandleHealthChanged);
 }
 
+void ULSEnemyStatWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// 피해를 입기 전엔 숨겨둔다 (InitializeWidget/UpdateHealthBar에서 피격 시 표시)
+	SetVisibility(ESlateVisibility::Collapsed);
+}
+
 void ULSEnemyStatWidget::NativeDestruct()
 {
 	if (StatComp)
@@ -45,4 +53,8 @@ void ULSEnemyStatWidget::UpdateHealthBar(int32 Current, int32 Max)
 
 	const float Percent = (Max > 0) ? static_cast<float>(Current) / static_cast<float>(Max) : 0.0f;
 	HealthBar->SetPercent(Percent);
+
+	// 피해를 입기 전(풀피)엔 숨기고, 피해를 입은 뒤부터 표시 (비상호작용 월드 HUD)
+	const bool bDamaged = Current < Max;
+	SetVisibility(bDamaged ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }

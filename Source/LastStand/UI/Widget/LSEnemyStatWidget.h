@@ -19,6 +19,7 @@ public:
 	void InitializeWidget(class ULSStatComponent* InStatComp);
 
 protected:
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	// OnHealthChanged 델리게이트 콜백
