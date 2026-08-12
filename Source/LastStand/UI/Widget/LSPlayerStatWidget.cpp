@@ -5,7 +5,7 @@
 #include "UI/LSUIEventSubsystem.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "Character/Components/LSStatComponent.h"
-#include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
 #include "GameFramework/Pawn.h"
 
 void ULSPlayerStatWidget::NativeConstruct()
@@ -25,7 +25,7 @@ void ULSPlayerStatWidget::NativeConstruct()
 		{
 			if (ULSStatComponent* Stat = StatInterface->GetStatComponent())
 			{
-				UpdateHealthText(Stat->GetCurrentHealth(), Stat->GetMaxHealth());
+				UpdateHealthBar(Stat->GetCurrentHealth(), Stat->GetMaxHealth());
 			}
 		}
 	}
@@ -46,17 +46,16 @@ void ULSPlayerStatWidget::NativeDestruct()
 
 void ULSPlayerStatWidget::HandleHealthEvent(int32 Current, int32 Max)
 {
-	UpdateHealthText(Current, Max);
+	UpdateHealthBar(Current, Max);
 }
 
-void ULSPlayerStatWidget::UpdateHealthText(int32 Current, int32 Max)
+void ULSPlayerStatWidget::UpdateHealthBar(int32 Current, int32 Max)
 {
-	if (CurrentHealthText)
+	if (!HealthBar)
 	{
-		CurrentHealthText->SetText(FText::AsNumber(Current));
+		return;
 	}
-	if (MaxHealthText)
-	{
-		MaxHealthText->SetText(FText::AsNumber(Max));
-	}
+
+	const float Percent = (Max > 0) ? static_cast<float>(Current) / static_cast<float>(Max) : 0.0f;
+	HealthBar->SetPercent(Percent);
 }
