@@ -122,13 +122,6 @@ void ALSWeaponHitscan::ReloadWeapon()
 		return;
 	}
 
-	// 로컬 화면 디버그 로그 (소유 클라 입력 경로에서만 실행)
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,
-			FString::Printf(TEXT("Reload: Current=%u/%u, Reserve=%d"), CurrentAmmo, MaxAmmo, GetReserveAmmo()));
-	}
-
 	// 장전 중에는 발사 정지
 	GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
 
