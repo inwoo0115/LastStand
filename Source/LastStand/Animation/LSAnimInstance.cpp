@@ -4,7 +4,6 @@
 #include "Animation/LSAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/ArrowComponent.h"
 #include "Character/LSPlayerCharacter.h"
 
 ULSAnimInstance::ULSAnimInstance()
@@ -49,7 +48,7 @@ void ULSAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		}
 
 		// 캐릭터 트랜스폼(액터) 기준 상대 회전 = 조준 회전 - 액터 회전
-		const FRotator RefRotation = Owner->GetArrowComponent()->GetComponentRotation();
+		const FRotator RefRotation = Owner->GetActorRotation();
 		const FRotator DeltaRotation = (ControlRotation - RefRotation).GetNormalized();
 
 		Yaw = DeltaRotation.Yaw;
