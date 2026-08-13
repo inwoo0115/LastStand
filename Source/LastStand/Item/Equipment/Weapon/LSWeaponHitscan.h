@@ -93,6 +93,11 @@ protected:
 	UPROPERTY(Replicated)
 	bool bIsReloading = false;
 
+public:
+	virtual bool IsReloading() const override { return bIsReloading; }
+
+protected:
+
 	// 서버 연사속도 가드용 마지막 발사 시각
 	float LastFireServerTime = 0.0f;
 

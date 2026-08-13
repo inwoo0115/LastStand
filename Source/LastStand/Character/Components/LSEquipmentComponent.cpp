@@ -163,6 +163,12 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 		return;
 	}
 
+	// 재장전 중에는 무기 슬롯 전환 차단
+	if (FocusEquipment && FocusEquipment->IsReloading())
+	{
+		return;
+	}
+
 	// 기존 장비 해제
 	if (FocusEquipment)
 	{

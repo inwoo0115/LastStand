@@ -46,6 +46,9 @@ public:
 
 	const FWeaponData GetWeaponData();
 
+	// 재장전 진행 중 여부. 기본 false, 재장전 개념이 있는 파생(히트스캔)에서 override
+	virtual bool IsReloading() const { return false; }
+
 	void LinkWeaponAnimClassLayer(UClass* LayerClass);
 
 	void UnLinkWeaponAnimClassLayer();
