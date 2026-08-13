@@ -21,13 +21,13 @@ struct FEnemyData : public FTableRowBase
     FText Description;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
-    int32 MaxHealth;
+    int32 MaxHealth = 100;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
-    int32 CurrentHealth;
+    int32 CurrentHealth = 100;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
-    int32 AttackDamage;
+    int32 AttackDamage = 10;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     TSoftClassPtr<APawn> EnemyClass;

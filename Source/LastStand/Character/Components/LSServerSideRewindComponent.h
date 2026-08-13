@@ -33,7 +33,7 @@ struct FServerSideRewindSnapshot
 	GENERATED_BODY()
 
 	UPROPERTY()
-	float Time;
+	float Time = 0.0f;
 
 	UPROPERTY()
 	TMap<FName, FHitBoxSnapshot> HitBoxSnapshots;
