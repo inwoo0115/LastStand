@@ -31,7 +31,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UWidget> CompassStrip;
 
-	// 현재 방위+각도 텍스트 (예: "NE 47°"). 배치하지 않아도 동작.
+	// 현재 방위+각도 텍스트 배치하지 않아도 동작(디버깅 용).
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<class UTextBlock> HeadingText;
 
