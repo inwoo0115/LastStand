@@ -14,7 +14,7 @@
 
 맵 생성기는 독립 Runtime 플러그인 `MapGenerator`로 분리했습니다. 게임 모듈과 디커플되어 재사용과 독립 컴파일이 가능하고, `UWorldSubsystem`으로 레벨별 수명을 갖습니다.
 
-전체 흐름은 2D 높이 필드를 만든 뒤 3D 타일을 푸는 두 단계입니다.
+전체 흐름은 2D 높이 필드로 영역을 만드는 단계(Stage A)와, 그 위에서 3D 타일을 푸는 WFC 단계(Stage B)로 나뉩니다. **현재 런타임 루프는 Stage A(영역 생성)까지만 구동하고, Stage B(WFC)는 코드/데이터로만 보존된 dormant 상태**입니다 — 컴파일·API 호출은 가능하되 생성 루프에서는 제외되고, 관련 데이터 테이블(`DT_MapAssetData`/`DT_MapWFCData`)은 지연 로드됩니다.
 
 ```mermaid
 flowchart LR
@@ -22,9 +22,10 @@ flowchart LR
     B --> C["BuildVoronoiRegions<br/>JFA 보로노이"]
     C --> D["MarkRegionBoundaries<br/>BFS 경계"]
     D --> E["QuantizeHeights<br/>높이 계단화"]
-    E --> F["ComputeColumnLevels<br/>3D 볼륨화"]
-    F --> G["RunWFC<br/>제약 전파 솔버"]
-    G --> H["HISM 인스턴싱<br/>메쉬 시각화"]
+    E --> R["영역별 HISM 시각화<br/>(런타임 루프 종점)"]
+    E -.dormant.-> F["ComputeColumnLevels<br/>3D 볼륨화"]
+    F -.dormant.-> G["RunWFC<br/>제약 전파 솔버"]
+    G -.dormant.-> H["타일별 HISM 시각화"]
 ```
 
 ### Stage A — 높이 필드 생성과 후처리
@@ -34,7 +35,11 @@ flowchart LR
 - 경계 BFS: 서로 다른 영역이 맞닿는 경계를 다중 소스 거리 제한 BFS로 두께만큼 확장해 경계 존을 만듭니다.
 - 높이 양자화: `GridSnap`으로 높이를 이산 계단으로 만들어 타일 적층에 맞는 지형이 되게 합니다.
 
-### Stage B — WFC 솔버 (`RunWFC`)
+런타임 시각화는 높이 값을 데이터로만 유지하고, 각 셀을 평면에 배치하되 보로노이 영역별로 색을 구분합니다(`AMapGridVisualizer`).
+
+### Stage B — WFC 솔버 (`RunWFC`, dormant)
+
+> Stage B는 현재 생성 루프에서 제외된 보존 코드입니다. `UMapGeneratorSubsystem::GenerateTileGrid`로 직접 호출하거나 `AMapWFCVisualizer`로 시각화할 수 있습니다.
 
 - 소켓 비트마스크 인접: 모든 소켓 `FName`을 비트 인덱스(0–63)로 인터닝하고, 타일 6면을 각각 `uint64` 마스크로 표현합니다. 두 면은 마스크 교집합이 있으면 인접을 허용합니다(`(a & b) != 0`). 정확 일치보다 규칙을 유연하게 쓸 수 있습니다.
 - 사전계산 호환 테이블 `Compatible[dir][tile]`과 `TArray<uint32>` 워드 단위 비트셋을 써서 제약 검사를 비트 연산으로 처리합니다(`Bits &= Bits-1` 순회, `CountBits`/`CountTrailingZeros`).
@@ -54,7 +59,7 @@ struct FWFCTile
 
 시각화는 타일 타입별로 HISM(Hierarchical Instanced Static Mesh) 컴포넌트를 지연 생성합니다. per-axis `FVector CellSize`로 X/Y 풋프린트와 Z 층 높이를 따로 두어 다수의 타일을 인스턴싱으로 그립니다.
 
-관련 코드: `Plugins/MapGenerator/Source/MapGenerator/` — `MapGeneratorSubsystem`, `MapGrid`, `MapTileGrid`, `MapAssetData`, `MapData`, `MapGridVisualizer`
+관련 코드: `Plugins/MapGenerator/Source/MapGenerator/` — 영역 생성: `MapGeneratorSubsystem`(+`MapGeneratorSubsystem_WFC.cpp` dormant), `MapGrid`, `MapData`, `MapGridVisualizer`(영역 시각화). WFC(dormant): `MapTileGrid`, `MapAssetData`, `MapWFCData`, `MapWFCVisualizer`
 
 <!-- WFC 파이프라인 단계별 시각화 GIF 삽입 위치 (노이즈 → 보로노이 → 타일 솔브) -->
 
