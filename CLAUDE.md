@@ -62,12 +62,13 @@
 향후 작업의 진입점 빠른 조회용. 경로는 `Source/LastStand/` 기준(플러그인은 별도 명시). 파일명은 접두사 `LS` 생략 없이 표기.
 
 ### WFC 절차적 맵 생성 — `Plugins/MapGenerator/Source/MapGenerator/`
-- `MapGeneratorSubsystem.*` (~900줄, 핵심): `UWorldSubsystem`. 파이프라인 오케스트레이션.
-  - `GenerateHeightGrid`(펄린 fBm) → `FindLocalMaxima`(극댓값 시드) → `BuildVoronoiRegions`(**JFA 보로노이**, 핑퐁 버퍼) → `MarkRegionBoundaries`(BFS 경계) → `QuantizeHeights`(계단화).
-  - `GenerateTileGrid` = Stage B 오케스트레이터: `BuildTileSet`(소켓 FName→비트인덱스 인터닝) → `ComputeColumnLevels`(3D 볼륨화) → `RunWFC`.
-  - `RunWFC`(line ~630): 소켓 비트마스크 교집합 인접, `Compatible[dir][tile]` 사전계산, 커스텀 `TArray<uint32>` 비트셋(익명 `WFCBits` ns), Observe(최소엔트로피+리저버샘플)→Collapse(최대 Weight)→Propagate(워크리스트), 모순 시 `MaxAttempts=20` 리시드 재시도, `FRandomStream`으로 결정성.
-- `MapGrid.h`(FMapGrid 높이/영역), `MapTileGrid.h`(FWFCTile 런타임 구조체 + FMapTileGrid 결과), `MapAssetData.h`(FMapAssetData 타일 행: 6면 소켓/Weight/Mesh), `MapData.h`(FMapData 노이즈·WFC 파라미터 행), `DataTableSettings.h`(UDeveloperSettings).
-- `MapGridVisualizer.*`(AMapGridVisualizer): 타일 타입별 **HISM** 지연 생성, per-axis `FVector CellSize` 인스턴싱.
+- **런타임 루프는 영역 생성(Stage A)까지만.** WFC(Stage B)는 코드/데이터로만 보존된 dormant — 컴파일·API 호출 가능하되 루프에서 제외, WFC 테이블은 지연 로드.
+- `MapGeneratorSubsystem.*`: `UWorldSubsystem`. **영역 생성만** (`MapGeneratorSubsystem.cpp`): `Initialize`는 `MapDataTable`만 로드 → `GenerateHeightGrid`(펄린 fBm) → `FindLocalMaxima`(극댓값 시드) → `BuildVoronoiRegions`(**JFA 보로노이**, 핑퐁 버퍼) → `MarkRegionBoundaries`(BFS 경계) → `QuantizeHeights`(계단화).
+- `MapGeneratorSubsystem_WFC.cpp` (dormant, 같은 클래스 멤버): `FindAsset`/`FindWFCData`(WFC 테이블 지연 로드) + `GenerateTileGrid`(오케스트레이터: `BuildTileSet` 소켓 FName→비트인덱스 인터닝 → `ComputeColumnLevels` 3D 볼륨화 → `RunWFC`).
+  - `RunWFC`: 소켓 비트마스크 교집합 인접, `Compatible[dir][tile]` 사전계산, 커스텀 `TArray<uint32>` 비트셋(익명 `WFCBits` ns), Observe(최소엔트로피+리저버샘플)→Collapse(최대 Weight)→Propagate(워크리스트), 모순 시 `MaxAttempts=20` 리시드 재시도, `FRandomStream`으로 결정성.
+- `MapGrid.h`(FMapGrid 높이/영역), `MapData.h`(FMapData 노이즈+영역 시각화 파라미터: CellSize/DebugMesh/RegionMaterial/RegionColorParam), `DataTableSettings.h`(UDeveloperSettings: MapDataTable + dormant MapAssetTable/MapWFCTable).
+- **WFC dormant 데이터/시각화**: `MapTileGrid.h`(FWFCTile + FMapTileGrid), `MapAssetData.h`(FMapAssetData 타일 행: 6면 소켓/Weight/Mesh), `MapWFCData.h`(FMapWFCData: WFCSeed/Empty·FloorSocket/CellSize/DebugMesh), `MapWFCVisualizer.*`(AMapWFCVisualizer, 타일별 HISM — 활성 레벨 미배치).
+- `MapGridVisualizer.*`(AMapGridVisualizer): **영역 시각화**. `GenerateHeightGrid` 결과를 영역 번호별 HISM으로 평면(Z=0) 배치, 영역별 MID 색 구분(경계 -2 어두운색). 높이는 데이터로만 유지.
 - 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
 
 ### 네트워크 전투 (랙 보상)
