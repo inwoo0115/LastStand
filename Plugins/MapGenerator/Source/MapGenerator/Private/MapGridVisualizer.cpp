@@ -3,9 +3,13 @@
 
 #include "MapGridVisualizer.h"
 #include "MapGeneratorSubsystem.h"
-#include "MapTileGrid.h"
-#include "MapAssetData.h"
+#include "MapGrid.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+// RegionIndices 특수 값: -1 = 미할당, -2 = 영역 경계 존
+static constexpr int32 BoundaryRegion = -2;
 
 AMapGridVisualizer::AMapGridVisualizer()
 {
@@ -23,6 +27,20 @@ void AMapGridVisualizer::BeginPlay()
 	BuildVisualization();
 }
 
+namespace
+{
+	// 영역 번호 → 구분 가능한 색. 황금비 해시로 인접 번호도 색이 크게 갈리게 함
+	FLinearColor RegionColor(int32 RegionIndex)
+	{
+		if (RegionIndex == BoundaryRegion)
+		{
+			return FLinearColor(0.02f, 0.02f, 0.02f);   // 경계: 어두운 색
+		}
+		const float Hue01 = FMath::Frac(RegionIndex * 0.61803398875f);
+		return FLinearColor::MakeFromHSV8((uint8)(Hue01 * 255.0f), 200, 255);
+	}
+}
+
 void AMapGridVisualizer::BuildVisualization()
 {
 	UWorld* World = GetWorld();
@@ -38,7 +56,7 @@ void AMapGridVisualizer::BuildVisualization()
 		return;
 	}
 
-	// 셀 크기(수직 공용)를 읽기 위한 행 조회
+	// 셀 크기/메쉬/머티리얼을 읽기 위한 행 조회
 	const FMapData* Data = Subsystem->FindMapData(MapName);
 	if (!Data)
 	{
@@ -46,69 +64,71 @@ void AMapGridVisualizer::BuildVisualization()
 		return;
 	}
 
-	// WFC 3D 타일 그리드 생성
-	const FMapTileGrid Tiles = Subsystem->GenerateTileGrid(MapName);
-	if (Tiles.Width <= 0 || Tiles.Height <= 0 || Tiles.Depth <= 0)
+	// 영역 그리드 생성 (WFC 미호출 — 높이/영역까지만)
+	const FMapGrid Grid = Subsystem->GenerateHeightGrid(MapName);
+	if (Grid.Width <= 0 || Grid.Height <= 0)
 	{
 		return;
 	}
 
 	const FVector CellSize = Data->CellSize;
-	const int32 W = Tiles.Width;
-	const int32 H = Tiles.Height;
-	const int32 Area = W * H;
+	const int32 W = Grid.Width;
+	const int32 H = Grid.Height;
 
-	// 폴백 메쉬 (타일에 메쉬 미지정 시)
-	UStaticMesh* FallbackMesh = Data->DebugMesh.LoadSynchronous();
-	if (!FallbackMesh)
+	// 인스턴싱 메쉬 (미지정 시 엔진 큐브)
+	UStaticMesh* Mesh = Data->DebugMesh.LoadSynchronous();
+	if (!Mesh)
 	{
-		FallbackMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+		Mesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	}
 
-	// 타일 인덱스별 HISM (지연 생성)
-	TileHISMs.Reset();
-	TileHISMs.SetNum(Tiles.TileNames.Num());
+	// 영역 색 구분용 베이스 머티리얼 (선택)
+	UMaterialInterface* RegionMaterial = Data->RegionMaterial.LoadSynchronous();
+	if (!RegionMaterial)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AMapGridVisualizer::BuildVisualization - RegionMaterial 미지정. 영역이 색으로 구분되지 않습니다(메쉬 기본 머티리얼 사용)."));
+	}
+
+	RegionHISMs.Reset();
 
 	int32 InstanceCount = 0;
-	for (int32 Z = 0; Z < Tiles.Depth; ++Z)
+	for (int32 Y = 0; Y < H; ++Y)
 	{
-		for (int32 Y = 0; Y < H; ++Y)
+		for (int32 X = 0; X < W; ++X)
 		{
-			for (int32 X = 0; X < W; ++X)
+			const int32 Region = Grid.RegionIndices[Y * W + X];
+			if (Region == -1)
 			{
-				const int32 TileIdx = Tiles.TileIndices[Z * Area + Y * W + X];
-				if (TileIdx < 0 || TileIdx >= TileHISMs.Num())
-				{
-					continue;   // 빈칸/미붕괴
-				}
-
-				// 해당 타일 인덱스의 HISM 지연 생성
-				UHierarchicalInstancedStaticMeshComponent* Comp = TileHISMs[TileIdx];
-				if (!Comp)
-				{
-					UStaticMesh* Mesh = FallbackMesh;
-					if (const FMapAssetData* Asset = Subsystem->FindAsset(Tiles.TileNames[TileIdx]))
-					{
-						if (UStaticMesh* Loaded = Asset->Mesh.LoadSynchronous())
-						{
-							Mesh = Loaded;
-						}
-					}
-
-					Comp = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
-					Comp->SetupAttachment(Root);
-					Comp->SetStaticMesh(Mesh);
-					Comp->RegisterComponent();
-					TileHISMs[TileIdx] = Comp;
-				}
-
-				const FVector Location(X * CellSize.X, Y * CellSize.Y, Z * CellSize.Z);
-				Comp->AddInstance(FTransform(Location));
-				++InstanceCount;
+				continue;   // 미할당 셀은 스킵
 			}
+
+			// 영역 번호별 HISM 지연 생성
+			TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Slot = RegionHISMs.FindOrAdd(Region);
+			if (!Slot)
+			{
+				UHierarchicalInstancedStaticMeshComponent* Comp = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
+				Comp->SetupAttachment(Root);
+				Comp->SetStaticMesh(Mesh);
+				Comp->RegisterComponent();
+
+				// 영역 색 적용 (베이스 머티리얼이 있을 때만)
+				if (RegionMaterial)
+				{
+					UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(RegionMaterial, this);
+					MID->SetVectorParameterValue(Data->RegionColorParam, RegionColor(Region));
+					Comp->SetMaterial(0, MID);
+				}
+
+				Slot = Comp;
+			}
+
+			// 평면(Z=0) 배치 — 높이 값은 데이터로만 유지하고 시각화에는 반영하지 않음
+			const FVector Location(X * CellSize.X, Y * CellSize.Y, 0.0f);
+			Slot->AddInstance(FTransform(Location));
+			++InstanceCount;
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("AMapGridVisualizer::BuildVisualization - 타일 인스턴스 %d개 배치 (%d x %d x %d)."),
-		InstanceCount, W, H, Tiles.Depth);
+	UE_LOG(LogTemp, Log, TEXT("AMapGridVisualizer::BuildVisualization - 영역 %d개, 인스턴스 %d개 배치 (%d x %d)."),
+		RegionHISMs.Num(), InstanceCount, W, H);
 }

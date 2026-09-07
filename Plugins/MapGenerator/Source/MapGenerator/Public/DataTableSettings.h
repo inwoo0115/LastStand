@@ -16,12 +16,16 @@ class MAPGENERATOR_API UDataTableSettings : public UDeveloperSettings
 	
 	
 public:
-	// FMapAssetData 행 테이블 (WFC 등에 쓰일 맵 에셋)
+	// FMapAssetData 행 테이블 (WFC 타일 카탈로그, dormant — 지연 로드)
 	UPROPERTY(Config, EditAnywhere, Category = "Data Tables")
 	TSoftObjectPtr<UDataTable> MapAssetTable;
 
-	// FMapData 행 테이블 (맵 생성/노이즈 파라미터)
+	// FMapData 행 테이블 (맵 생성/노이즈 + 영역 시각화 파라미터)
 	UPROPERTY(Config, EditAnywhere, Category = "Data Tables")
 	TSoftObjectPtr<UDataTable> MapDataTable;
+
+	// FMapWFCData 행 테이블 (WFC 전용 파라미터, dormant — 지연 로드)
+	UPROPERTY(Config, EditAnywhere, Category = "Data Tables")
+	TSoftObjectPtr<UDataTable> MapWFCTable;
 
 };

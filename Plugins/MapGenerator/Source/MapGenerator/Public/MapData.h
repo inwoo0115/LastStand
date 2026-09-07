@@ -8,7 +8,10 @@
 
 class UStaticMesh;   // 소프트 포인터용 전방선언
 
-// 맵 생성(펄린 노이즈) 파라미터. 데이터 테이블 행으로 관리 (FMapAssetData 패턴).
+class UMaterialInterface;   // 소프트 포인터용 전방선언
+
+// 맵 생성(펄린 노이즈) + 영역 시각화 파라미터. 데이터 테이블 행으로 관리 (FMapAssetData 패턴).
+// WFC 전용 파라미터는 FMapWFCData(DT_MapWFCData)로 분리됨 (dormant).
 USTRUCT(BlueprintType)
 struct FMapData : public FTableRowBase
 {
@@ -69,23 +72,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HeightStep = 0.2f;
 
-	// 타일 한 칸의 크기(cm). X=가로, Y=세로, Z=높이(층 간격). 축별 지정
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
+	// 영역 시각화 셀 간격(cm). X=가로, Y=세로. 영역 그리드는 평면 배치(Z 미사용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
 	FVector CellSize = FVector(100.0f);
 
-	// WFC 결정성 시드 (붕괴 선택에 사용)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
-	int32 WFCSeed = 0;
-
-	// WFC 경계 소켓: 그리드 가장자리/공중 면이 호환돼야 하는 소켓 이름
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
-	FName EmptySocket = TEXT("Empty");
-
-	// WFC 바닥 소켓: z=0 셀의 -Z 면이 호환돼야 하는 소켓 이름
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFC")
-	FName FloorSocket = TEXT("Floor");
-
-	// [임시/디버그] 인스턴싱할 메쉬 (기본: 엔진 큐브). 그리드 시각화 전용, 추후 제거 가능
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Visualization")
+	// [디버그] 영역 시각화에 인스턴싱할 메쉬 (기본: 엔진 큐브)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
 	TSoftObjectPtr<UStaticMesh> DebugMesh;
+
+	// 영역별 색 구분용 베이스 머티리얼 (RegionColorParam 벡터 파라미터 보유). 미지정 시 메쉬 기본 머티리얼 사용
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
+	TSoftObjectPtr<UMaterialInterface> RegionMaterial;
+
+	// RegionMaterial에서 영역 색을 세팅할 벡터 파라미터 이름
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
+	FName RegionColorParam = TEXT("Color");
 };

@@ -6,6 +6,7 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "MapAssetData.h"
 #include "MapData.h"
+#include "MapWFCData.h"
 #include "MapGrid.h"
 #include "MapTileGrid.h"
 #include "MapGeneratorSubsystem.generated.h"
@@ -20,9 +21,6 @@ class MAPGENERATOR_API UMapGeneratorSubsystem : public UWorldSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-
-	const FMapAssetData* FindAsset(FName AssetID) const;
 
 	// MapData 테이블에서 행 조회 (RowName 기준)
 	const FMapData* FindMapData(FName MapName) const;
@@ -44,8 +42,17 @@ public:
 	// 후처리 4: 높이 값을 Step 간격 최근접 배수로 반올림 후 [-1,1] 클램프 (Step<=0이면 무시)
 	void QuantizeHeights(FMapGrid& Grid, float Step) const;
 
+	// === WFC (dormant: 런타임 루프 미사용, 코드 보존) ===
+	// 구현은 MapGeneratorSubsystem_WFC.cpp. 관련 데이터 테이블(MapAssetTable/MapWFCTable)은 지연 로드된다.
+
+	// WFC 타일 카탈로그 조회. 첫 호출 시 MapAssetTable을 지연 로드
+	const FMapAssetData* FindAsset(FName AssetID) const;
+
+	// WFC 파라미터 행 조회. 첫 호출 시 MapWFCTable을 지연 로드 (RowName 기준)
+	const FMapWFCData* FindWFCData(FName MapName) const;
+
 	// 높이 그리드 → WFC로 3D 타일 그리드 생성 (오케스트레이터)
-	UFUNCTION(BlueprintCallable, Category = "MapGenerator")
+	UFUNCTION(BlueprintCallable, Category = "MapGenerator|WFC")
 	FMapTileGrid GenerateTileGrid(FName MapName);
 
 	// MapAssetTable 행 + 경계 소켓 2개를 같은 인터닝 맵으로 변환해 카탈로그/경계 마스크 반환
@@ -58,12 +65,16 @@ public:
 	void RunWFC(const FMapGrid& HeightGrid, const TArray<FWFCTile>& Tiles, uint64 EmptyMask, uint64 FloorMask, FMapTileGrid& TileGrid, int32 Seed) const;
 
 protected:
-	// FMapAssetData 행 테이블
-	UPROPERTY()
-	TObjectPtr<UDataTable> MapAssetTable;
-
-	// FMapData 행 테이블 (맵 생성/노이즈 파라미터)
+	// FMapData 행 테이블 (맵 생성/노이즈 + 영역 시각화 파라미터). Initialize에서 로드
 	UPROPERTY()
 	TObjectPtr<UDataTable> MapDataTable;
+
+	// FMapAssetData 행 테이블 (WFC 타일 카탈로그, dormant). FindAsset 첫 호출 시 지연 로드
+	UPROPERTY()
+	mutable TObjectPtr<UDataTable> MapAssetTable;
+
+	// FMapWFCData 행 테이블 (WFC 전용 파라미터, dormant). FindWFCData 첫 호출 시 지연 로드
+	UPROPERTY()
+	mutable TObjectPtr<UDataTable> MapWFCTable;
 
 };
