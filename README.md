@@ -69,7 +69,7 @@ struct FWFCTile
 
 핑이 높은 클라이언트도 쏜 순간 화면에 보이던 위치로 명중 판정이 되도록, 히트박스 히스토리 기반 랙 보상을 구현했습니다.
 
-- 히스토리 기록(`ULSServerSideRewindComponent`, 서버 전용 틱): `RecordInterval = 20ms`마다 히트박스별 스냅샷(월드 위치/회전/스케일된 박스 크기)을 `TMap<FName, FHitBoxSnapshot>`으로 저장하고, `HistoryEndOffset = 200ms`를 넘긴 스냅샷은 FIFO로 제거합니다.
+- 히스토리 기록([`ULSServerSideRewindComponent`](Source/LastStand/Character/Components/LSServerSideRewindComponent.h), 서버 전용 틱): `RecordInterval = 20ms`마다 히트박스별 스냅샷(월드 위치/회전/스케일된 박스 크기)을 `TMap<FName, FHitBoxSnapshot>`으로 저장하고, `HistoryEndOffset = 200ms`를 넘긴 스냅샷은 FIFO로 제거합니다.
 - 되감기 판정(`ConfirmHit(start, end, timestamp)`): 발사 타임스탬프를 감싸는 두 스냅샷을 찾아 위치/크기는 `Lerp`, 회전은 `Slerp`로 보간하고(`InterpolateBox`), 레이를 박스 로컬 공간으로 변환해 세그먼트 vs OBB 판정을 합니다(`LineBoxIntersection`). 그 뒤 매칭되는 현재 히트박스를 반환합니다.
 - 제네릭 수집: `ILSHitboxInterface::GetHitboxComponents()`로 히트박스를 추상적으로 모으므로, 인터페이스만 구현하면 플레이어든 적이든 동일하게 동작합니다.
 - 정확도 관련: 데디케이티드 서버는 렌더링이 없어도 소켓 부착 히트박스가 정확해야 하므로 `VisibilityBasedAnimTickOption = AlwaysTickPoseAndRefreshBones`로 본을 항상 갱신합니다.
@@ -85,7 +85,7 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 }
 ```
 
-관련 코드: `Source/LastStand/Character/Components/LSServerSideRewindComponent.*`, `LSHitboxComponent.*`
+관련 코드: [LSServerSideRewindComponent.h](Source/LastStand/Character/Components/LSServerSideRewindComponent.h) · [.cpp](Source/LastStand/Character/Components/LSServerSideRewindComponent.cpp), [LSHitboxComponent.h](Source/LastStand/Character/Components/LSHitboxComponent.h) · [.cpp](Source/LastStand/Character/Components/LSHitboxComponent.cpp)
 
 ---
 
@@ -110,7 +110,7 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 | `Unreliable` Multicast | 고빈도 연출(발사/재장전 몽타주·FX) | `MulticastRPCPlayFireEffects` |
 | `FFastArraySerializer` | 인벤토리 배열 델타 리플리케이션 | `FInventoryItemInfoArray` |
 
-관련 코드: `Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.*`, `Character/LSPlayerCharacter.*`
+관련 코드: [LSWeaponHitscan.h](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.h) · [.cpp](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.cpp), [LSPlayerCharacter.h](Source/LastStand/Character/LSPlayerCharacter.h) · [.cpp](Source/LastStand/Character/LSPlayerCharacter.cpp)
 
 ---
 
@@ -121,6 +121,8 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 - 인벤토리/장비: `FFastArraySerializer` 델타 인벤토리, 리플리케이트 장비 맵(TMap는 배열로 우회 복제 후 클라에서 재구성), 인벤토리 델타를 구독하는 리플리케이트 탄약 캐시로 구성됩니다.
 - 태그 기반 레이어드 UI: `ULSUISubsystem`(`FGameplayTag` 키 레이어/슬롯, 미등록 슬롯용 지연 주입 큐, 입력 모드 관리)과 `ULSUIEventSubsystem`(멀티캐스트 이벤트 버스)으로 게임플레이와 HUD를 분리했습니다. 데미지 넘버는 오브젝트 풀링을 씁니다.
 - 무기 연출: 무기별 애님 레이어 링크(`LinkAnimClassLayers`), 런타임 커브 생성과 `FTimeline` 기반 ADS 줌, `EWeaponMontageType` 맵 기반 몽타주 디스패치(역재생 지원)를 구현했습니다.
+
+관련 코드: [LSCharacterBase.h](Source/LastStand/Character/LSCharacterBase.h) · [.cpp](Source/LastStand/Character/LSCharacterBase.cpp), [LSEnemyBase.h](Source/LastStand/AI/LSEnemyBase.h) · [.cpp](Source/LastStand/AI/LSEnemyBase.cpp), [LSGameDataSettings.h](Source/LastStand/Settings/LSGameDataSettings.h) · [.cpp](Source/LastStand/Settings/LSGameDataSettings.cpp), [LSDataSubsystem.h](Source/LastStand/DataTable/LSDataSubsystem.h) · [.cpp](Source/LastStand/DataTable/LSDataSubsystem.cpp), [LSUISubsystem.h](Source/LastStand/UI/LSUISubsystem.h) · [.cpp](Source/LastStand/UI/LSUISubsystem.cpp), [LSUIEventSubsystem.h](Source/LastStand/UI/LSUIEventSubsystem.h) · [.cpp](Source/LastStand/UI/LSUIEventSubsystem.cpp), [LSEquipmentComponent.h](Source/LastStand/Character/Components/LSEquipmentComponent.h) · [.cpp](Source/LastStand/Character/Components/LSEquipmentComponent.cpp), [LSInventoryComponent.h](Source/LastStand/Character/Components/LSInventoryComponent.h) · [.cpp](Source/LastStand/Character/Components/LSInventoryComponent.cpp)
 
 ---
 
@@ -141,6 +143,8 @@ LastStand/
 │  ├─ Player/ GameState/ Gamemode/ Props/ Animation/ Save/ Tags/
 └─ Plugins/MapGenerator/  WFC 절차적 맵 생성 (독립 Runtime 플러그인)
 ```
+
+바로가기: [Character](Source/LastStand/Character) · [Components](Source/LastStand/Character/Components) · [AI](Source/LastStand/AI) · [Weapon](Source/LastStand/Item/Equipment/Weapon) · [UI](Source/LastStand/UI) · [DataTable](Source/LastStand/DataTable) · [Interface](Source/LastStand/Interface) · [Settings](Source/LastStand/Settings)
 
 ---
 
