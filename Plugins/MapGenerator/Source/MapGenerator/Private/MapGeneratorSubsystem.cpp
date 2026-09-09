@@ -1,11 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MapGeneratorSubsystem.h"
 #include "DataTableSettings.h"
-
-// RegionIndices 특수 값: -1 = 미할당, -2 = 영역 경계 존
-static constexpr int32 BoundaryRegion = -2;
 
 void UMapGeneratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -124,6 +121,8 @@ FMapGrid UMapGeneratorSubsystem::GenerateHeightGrid(FName MapName)
 	}
 
 	// [로직 테스트] 후처리 결과 확인용 로그 (시드 개수 / 영역 배정 셀 / 경계 셀)
+	// RegionIndices 특수 값: -1 = 미할당, -2 = 영역 경계 존
+	const int32 BoundaryRegion = -2;
 	int32 AssignedCells = 0;
 	int32 BoundaryCells = 0;
 	for (int32 Region : Grid.RegionIndices)
@@ -250,7 +249,7 @@ void UMapGeneratorSubsystem::BuildVoronoiRegions(FMapGrid& Grid) const
 	int32 Step = FMath::RoundUpToPowerOfTwo(FMath::Max(Width, Height)) / 2;
 	for (; Step >= 1; Step /= 2)
 	{
-		// 한 패스 내 오염 방지를 위해 읽기 버퍼를 고정(핑퐁)
+		// 한 패스 내 읽기 버퍼를 고정
 		ReadBuffer = Nearest;
 
 		for (int32 Y = 0; Y < Height; ++Y)
@@ -380,6 +379,7 @@ void UMapGeneratorSubsystem::MarkRegionBoundaries(FMapGrid& Grid, int32 Thicknes
 	}
 
 	// (c) 적용: 경계 셀은 높이 0, 영역 번호 -2
+	const int32 BoundaryRegion = -2;
 	for (int32 Index = 0; Index < Num; ++Index)
 	{
 		if (Dist[Index] != -1)
@@ -401,5 +401,109 @@ void UMapGeneratorSubsystem::QuantizeHeights(FMapGrid& Grid, float Step) const
 	{
 		// Step 간격 최근접 배수로 스냅 후 [-1,1] 클램프
 		H = FMath::Clamp(FMath::GridSnap(H, Step), -1.0f, 1.0f);
+	}
+}
+
+namespace
+{
+	// 볼록 폴리곤을 반평면으로 클리핑(Sutherland–Hodgman). 유지 조건: dot(P - Plane, N) <= 0 (N은 단위 벡터).
+	// 결과 꼭짓점을 OutPoly에 채운다(입력/출력 버퍼는 서로 달라야 함).
+	void ClipConvexByHalfPlane(const TArray<FVector2D>& InPoly, const FVector2D& Plane, const FVector2D& N, TArray<FVector2D>& OutPoly)
+	{
+		OutPoly.Reset();
+		const int32 Count = InPoly.Num();
+		if (Count == 0)
+		{
+			return;
+		}
+
+		for (int32 i = 0; i < Count; ++i)
+		{
+			const FVector2D& A = InPoly[i];
+			const FVector2D& B = InPoly[(i + 1) % Count];
+			const double DA = FVector2D::DotProduct(A - Plane, N);
+			const double DB = FVector2D::DotProduct(B - Plane, N);
+			const bool bAInside = (DA <= 0.0);
+			const bool bBInside = (DB <= 0.0);
+
+			if (bAInside)
+			{
+				OutPoly.Add(A);
+			}
+			// 변이 평면을 가로지르면 교차점 삽입
+			if (bAInside != bBInside)
+			{
+				const double Denom = DA - DB;
+				const double T = (FMath::Abs(Denom) > SMALL_NUMBER) ? (DA / Denom) : 0.0;
+				OutPoly.Add(A + (B - A) * T);
+			}
+		}
+	}
+}
+
+void UMapGeneratorSubsystem::BuildRegionPolygons(const FMapGrid& Grid, float InsetCells, TArray<FRegionPolygon>& OutPolygons) const
+{
+	OutPolygons.Reset();
+
+	const TArray<FIntPoint>& Seeds = Grid.VoronoiPoints;
+	const int32 SeedCount = Seeds.Num();
+	if (SeedCount == 0 || Grid.Width <= 0 || Grid.Height <= 0)
+	{
+		return;
+	}
+
+	// 바운딩 박스(셀 좌표): 셀 인스턴스가 정수 좌표 중심에 ±0.5 셀을 차지하는 visualizer 배치와 정합
+	const double MinX = -0.5;
+	const double MinY = -0.5;
+	const double MaxX = Grid.Width - 0.5;
+	const double MaxY = Grid.Height - 0.5;
+
+	// 핑퐁 버퍼 재사용
+	TArray<FVector2D> PolyA;
+	TArray<FVector2D> PolyB;
+
+	for (int32 i = 0; i < SeedCount; ++i)
+	{
+		const FVector2D Pi(Seeds[i].X, Seeds[i].Y);
+
+		// 박스 사각형(CCW)으로 시작
+		PolyA.Reset();
+		PolyA.Add(FVector2D(MinX, MinY));
+		PolyA.Add(FVector2D(MaxX, MinY));
+		PolyA.Add(FVector2D(MaxX, MaxY));
+		PolyA.Add(FVector2D(MinX, MaxY));
+
+		TArray<FVector2D>* Cur = &PolyA;
+		TArray<FVector2D>* Next = &PolyB;
+
+		// 다른 모든 시드와의 수직이등분 반평면으로 클리핑(+ 경계 밴드 적용)
+		for (int32 j = 0; j < SeedCount && Cur->Num() >= 3; ++j)
+		{
+			if (j == i)
+			{
+				continue;
+			}
+
+			const FVector2D Pj(Seeds[j].X, Seeds[j].Y);
+			FVector2D N = Pj - Pi;
+			if (!N.Normalize())   // 시드가 겹치면(정상적으로 없음) 스킵
+			{
+				continue;
+			}
+
+			// 이등분선 중점을 시드 i 쪽으로 InsetCells만큼 이동 → 영역 i를 밴드 두께만큼 축소
+			const FVector2D Mid = (Pi + Pj) * 0.5;
+			const FVector2D Plane = Mid - N * InsetCells;
+
+			ClipConvexByHalfPlane(*Cur, Plane, N, *Next);
+			Swap(Cur, Next);
+		}
+
+		if (Cur->Num() >= 3)
+		{
+			FRegionPolygon& Out = OutPolygons.AddDefaulted_GetRef();
+			Out.RegionId = i;
+			Out.Points = *Cur;   // 볼록 폴리곤 꼭짓점(CCW)
+		}
 	}
 }

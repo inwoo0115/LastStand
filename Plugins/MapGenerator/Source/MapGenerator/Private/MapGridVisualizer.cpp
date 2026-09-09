@@ -8,9 +8,6 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-// RegionIndices 특수 값: -1 = 미할당, -2 = 영역 경계 존
-static constexpr int32 BoundaryRegion = -2;
-
 AMapGridVisualizer::AMapGridVisualizer()
 {
 	// 시각화 전용 액터라 매 프레임 갱신 불필요
@@ -32,6 +29,8 @@ namespace
 	// 영역 번호 → 구분 가능한 색. 황금비 해시로 인접 번호도 색이 크게 갈리게 함
 	FLinearColor RegionColor(int32 RegionIndex)
 	{
+		// RegionIndices 특수 값: -1 = 미할당, -2 = 영역 경계 존
+		const int32 BoundaryRegion = -2;
 		if (RegionIndex == BoundaryRegion)
 		{
 			return FLinearColor(0.02f, 0.02f, 0.02f);   // 경계: 어두운 색

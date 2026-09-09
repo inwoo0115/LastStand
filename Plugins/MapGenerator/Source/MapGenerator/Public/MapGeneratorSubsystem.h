@@ -11,9 +11,6 @@
 #include "MapTileGrid.h"
 #include "MapGeneratorSubsystem.generated.h"
 
-/**
- * 맵 생성 서브시스템. 레벨(월드)마다 독립적으로 관리.
- */
 UCLASS()
 class MAPGENERATOR_API UMapGeneratorSubsystem : public UWorldSubsystem
 {
@@ -41,6 +38,11 @@ public:
 
 	// 후처리 4: 높이 값을 Step 간격 최근접 배수로 반올림 후 [-1,1] 클램프 (Step<=0이면 무시)
 	void QuantizeHeights(FMapGrid& Grid, float Step) const;
+
+	// 시드(VoronoiPoints)들의 보로노이 셀을 해석적으로 계산해 영역별 볼록 폴리곤을 반환한다(반평면 교집합).
+	// InsetCells: 경계 밴드 반영. 각 이등분 반평면을 시드 안쪽으로 시프트해 폴리곤을 셀 단위로 축소(0=인셋 없음).
+	// 인셋은 이등분(영역 간) 평면에만 적용하고 그리드 외곽 변에는 미적용.
+	void BuildRegionPolygons(const FMapGrid& Grid, float InsetCells, TArray<FRegionPolygon>& OutPolygons) const;
 
 	// === WFC (dormant: 런타임 루프 미사용, 코드 보존) ===
 	// 구현은 MapGeneratorSubsystem_WFC.cpp. 관련 데이터 테이블(MapAssetTable/MapWFCTable)은 지연 로드된다.
