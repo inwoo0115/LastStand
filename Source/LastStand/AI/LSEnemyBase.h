@@ -28,6 +28,8 @@ public:
 
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
+	class UStateTree* GetStateTree() const { return StateTree; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -81,4 +83,8 @@ protected:
 	// 이 적이 실행할 비헤이비어 트리 (적 BP에서 지정)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UBehaviorTree> BehaviorTree;
+
+	// 이 적이 실행할 스테이트 트리 (적 BP에서 지정). 지정 시 BehaviorTree보다 우선 실행
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UStateTree> StateTree;
 };
