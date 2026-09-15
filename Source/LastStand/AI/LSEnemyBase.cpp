@@ -15,25 +15,14 @@
 
 ALSEnemyBase::ALSEnemyBase()
 {
-
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 루트: 캡슐 컴포넌트
-	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
-	SetRootComponent(Capsule);
-	Capsule->InitCapsuleSize(34.0f, 88.0f);
+	GetCapsuleComponent()->InitCapsuleSize(34.0f, 88.0f);
 
-	// 스켈레탈 메시 (애셋/애님 클래스는 BP에서 지정). 히트박스 생성 전에 만들어 부착 대상으로 사용
-	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(Capsule);
-	// 캐릭터형 기본 배치, BP에서 조정
-	Mesh->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -88.0f), FRotator(0.0f, -90.0f, 0.0f));
-	// 데디 서버 포함 항상 포즈 평가 + 본 갱신 (렌더링 여부 무관) — SSR 정확도용
-	Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-	// 업데이트 레이트 최적화(간헐 평가/보간) 비활성 — 정확한 본 위치
-	Mesh->bEnableUpdateRateOptimizations = false;
-	// 히트 판정은 히트박스가 담당 → 메시 자체는 충돌 없음
-	Mesh->SetCollisionProfileName(TEXT("NoCollision"));
+	USkeletalMeshComponent* EnemyMesh = GetMesh();
+	EnemyMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	EnemyMesh->bEnableUpdateRateOptimizations = false;
+	EnemyMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// Stat
 	Stat = CreateDefaultSubobject<ULSStatComponent>(TEXT("Stat"));
@@ -41,19 +30,18 @@ ALSEnemyBase::ALSEnemyBase()
 	// 서버 사이드 리와인드 (히트박스 히스토리 기록, 서버에서만 동작)
 	ServerSideRewind = CreateDefaultSubobject<ULSServerSideRewindComponent>(TEXT("ServerSideRewind"));
 
-	// 체력바 위젯 컴포넌트 (머리 위로 올려 몸통을 가리지 않게)
+	// 체력바 위젯 컴포넌트
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
 	HealthBarWidget->SetupAttachment(RootComponent);
 	HealthBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));
 	// World space: 3D 씬의 일부로 렌더 → 화면 최상단에 겹쳐 그려지지 않음
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
 
-	// 부위별 히트박스 생성. 메시에 부착하고, 실제 본 소켓(Parent Socket)·정밀 배치는 BP(BP_TestEnemy)에서 마무리한다.
 	auto CreateHitbox = [this](const TCHAR* Name, ELSHitboxType Type, float Multiplier,
 		const FVector& RelLocation, const FVector& BoxExtent) -> ULSHitboxComponent*
 	{
 		ULSHitboxComponent* Hitbox = CreateDefaultSubobject<ULSHitboxComponent>(Name);
-		Hitbox->SetupAttachment(Mesh);
+		Hitbox->SetupAttachment(GetMesh());
 		Hitbox->SetupHitbox(Type, Multiplier);
 		Hitbox->SetRelativeLocation(RelLocation);
 		Hitbox->SetBoxExtent(BoxExtent);

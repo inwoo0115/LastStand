@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "Interface/LSHitboxInterface.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
-class LASTSTAND_API ALSEnemyBase : public APawn, public ILSStatComponentInterface, public ILSHitboxInterface
+class LASTSTAND_API ALSEnemyBase : public ACharacter, public ILSStatComponentInterface, public ILSHitboxInterface
 {
 	GENERATED_BODY()
 
@@ -31,16 +31,7 @@ public:
 	class UStateTree* GetStateTree() const { return StateTree; }
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	// 루트 캡슐 컴포넌트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UCapsuleComponent> Capsule;
-
-	// 스켈레탈 메시 (애셋/애님 클래스는 BP에서 지정). 히트박스 소켓 부착 대상
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class USkeletalMeshComponent> Mesh;
 
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, meta = (AllowPrivateAccess = "true"))
@@ -80,11 +71,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSHitboxComponent> WeakPointHitbox;
 
-	// 이 적이 실행할 비헤이비어 트리 (적 BP에서 지정)
+	// 비헤이비어 트리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UBehaviorTree> BehaviorTree;
 
-	// 이 적이 실행할 스테이트 트리 (적 BP에서 지정). 지정 시 BehaviorTree보다 우선 실행
+	// 스테이트 트리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStateTree> StateTree;
 };
