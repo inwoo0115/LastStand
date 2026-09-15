@@ -15,7 +15,6 @@ class LASTSTAND_API ULSEnemyStatWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	// 소유 pawn의 stat 컴포넌트로 초기화 + 체력변경 구독 (클라에서 호출)
 	void InitializeWidget(class ULSStatComponent* InStatComp);
 
 protected:
