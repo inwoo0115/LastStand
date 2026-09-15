@@ -5,6 +5,7 @@
 #include "Character/Components/LSStatComponent.h"
 #include "Character/Components/LSHitboxComponent.h"
 #include "Character/Components/LSServerSideRewindComponent.h"
+#include "AI/Components/LSAIPerceptionComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -29,6 +30,10 @@ ALSEnemyBase::ALSEnemyBase()
 
 	// 서버 사이드 리와인드 (히트박스 히스토리 기록, 서버에서만 동작)
 	ServerSideRewind = CreateDefaultSubobject<ULSServerSideRewindComponent>(TEXT("ServerSideRewind"));
+
+	// AI 퍼셉션 캡슐 (가장 가까운 플레이어 탐지) — 루트 캡슐에 부착해 폰을 따라감
+	Perception = CreateDefaultSubobject<ULSAIPerceptionComponent>(TEXT("Perception"));
+	Perception->SetupAttachment(RootComponent);
 
 	// 체력바 위젯 컴포넌트
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));

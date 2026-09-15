@@ -30,6 +30,8 @@ public:
 
 	class UStateTree* GetStateTree() const { return StateTree; }
 
+	class ULSAIPerceptionComponent* GetPerceptionComponent() const { return Perception; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -40,6 +42,10 @@ protected:
 	// 서버 사이드 리와인드(히트박스 히스토리 기록) 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSServerSideRewindComponent> ServerSideRewind;
+
+	// AI 퍼셉션(가장 가까운 플레이어 탐지) 컴포넌트 — 서버 전용 계산
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSAIPerceptionComponent> Perception;
 
 	// 스탯 초기화에 사용할 데이터 테이블(FEnemyData) 행 이름
 	UPROPERTY(EditAnywhere, Category = Stat, meta = (AllowPrivateAccess = "true"))
