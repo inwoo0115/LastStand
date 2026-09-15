@@ -26,8 +26,6 @@ protected:
 	// yaw(0~360)를 8방위 문자열로 변환
 	static FString HeadingToCardinal(float Yaw);
 
-	// 스크롤되는 눈금/방위 스트립. RenderTranslation.X로 이동시킨다.
-	// 라벨은 0°~720°(두 주기) 반복으로 그려 랩어라운드가 끊기지 않게 한다.
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UWidget> CompassStrip;
 
@@ -35,14 +33,11 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<class UTextBlock> HeadingText;
 
-	// 스트립 위젯에 그려 넣은 360° 사이클 수 (끊김 없는 랩을 위해 보통 2 = 720°).
-	// 360°의 픽셀 폭(PixelsPer360)은 스트립 실제 폭 / StripCycles로 매 틱 자동 산출한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Compass")
 	int32 StripCycles = 2;
 
-	// 스트립 이미지의 왼쪽 끝이 나타내는 heading(도). 제공 이미지는 왼쪽 끝이 W=270°.
 	UPROPERTY(EditDefaultsOnly, Category = "Compass")
-	float StripLeftHeading = 270.0f;
+	int32 StripWidth = 1024;
 
 	// 월드 yaw → 방위 보정. 레벨에서 '북쪽'으로 삼을 축에 맞춘다.
 	UPROPERTY(EditDefaultsOnly, Category = "Compass")
