@@ -6,85 +6,62 @@
 #include "Engine/DataTable.h"
 #include "MapData.generated.h"
 
-class UStaticMesh;   // 소프트 포인터용 전방선언
+class UWorld;   // 소프트 포인터용 전방선언
 
-class UMaterialInterface;   // 소프트 포인터용 전방선언
+// 문이 향하는 방향 (방-방 연결 매칭용 4방위)
+UENUM(BlueprintType)
+enum class EDoorDirection : uint8
+{
+	North UMETA(DisplayName = "North"),
+	East  UMETA(DisplayName = "East"),
+	South UMETA(DisplayName = "South"),
+	West  UMETA(DisplayName = "West")
+};
 
-// 맵 생성(펄린 노이즈) + 영역 시각화 파라미터. 데이터 테이블 행으로 관리 (FMapAssetData 패턴).
-// WFC 전용 파라미터는 FMapWFCData(DT_MapWFCData)로 분리됨 (dormant).
+// 방 형태
+UENUM(BlueprintType)
+enum class ERoomType : uint8
+{
+	Start    UMETA(DisplayName = "Start"),     // 시작 지점
+	End      UMETA(DisplayName = "End"),       // 도착 지점
+	Normal   UMETA(DisplayName = "Normal"),    // 일반 방
+	Corridor UMETA(DisplayName = "Corridor")   // 통로
+};
+
+// 방의 문 하나 (좌표 + 방향)
+USTRUCT(BlueprintType)
+struct FRoomDoor
+{
+	GENERATED_BODY()
+
+	// 방 원점 기준 로컬 문 위치(cm)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	FVector Location = FVector::ZeroVector;
+
+	// 문이 향하는 방향 (연결 매칭용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	EDoorDirection Direction = EDoorDirection::North;
+};
+
+// 던전 방 한 칸의 정보. 데이터 테이블 행(RowName = 방 식별자).
 USTRUCT(BlueprintType)
 struct FMapData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-public:
-	FMapData();
+	// 방 서브레벨 (스트리밍 로드 대상).
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	TSoftObjectPtr<UWorld> RoomLevel;
 
-	// 맵 식별 이름 (데이터 필드; 행 조회 키(RowName)와 별개, FMapAssetData::AssetName 패턴)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
-	FName MapName;
+	// 방 형태 (시작/도착/일반/통로)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	ERoomType RoomType = ERoomType::Normal;
 
-	// 그리드 가로 셀 개수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	int32 GridWidth = 64;
+	// 문 개수 (명시 — Doors 배열 길이와 일치하도록 관리)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	int32 DoorCount = 0;
 
-	// 그리드 세로 셀 개수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	int32 GridHeight = 64;
-
-	// 랜덤 시드. 샘플 좌표 오프셋을 결정해 매번 다른 지형을 생성 (같은 시드는 항상 동일 결과)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	int32 Seed = 0;
-
-	// 노이즈 확대 비율. 클수록 지형이 완만하고 넓어짐 (0 나눗셈 방지를 위해 사용 시 클램프)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	float Scale = 32.0f;
-
-	// 겹칠 노이즈 레이어(옥타브) 수. 많을수록 디테일 증가
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise", meta = (ClampMin = "1"))
-	int32 Octaves = 4;
-
-	// 옥타브마다 진폭 감소율 [0~1]. 낮을수록 상위 옥타브 영향 감소
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float Persistence = 0.5f;
-
-	// 옥타브마다 주파수 증가율 (>1). 높을수록 촘촘한 디테일
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise", meta = (ClampMin = "1.0"))
-	float Lacunarity = 2.0f;
-
-	// 정규화된 노이즈에 곱하는 최종 높이 스케일
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	float HeightMultiplier = 1.0f;
-
-	// 샘플링 위치 이동. 맵 패닝/영역 선택용
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Perlin Noise")
-	FVector2D Offset = FVector2D::ZeroVector;
-
-	// 후처리: true면 노이즈의 음수 높이를 절댓값(양수)으로 반전 (능선/봉우리 강조)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing")
-	bool bUseAbsoluteValue = true;
-
-	// 후처리: 영역 경계 존 두께 비율(0~1). 실제 두께(셀) = round(값 × max(GridWidth,GridHeight))
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float BoundaryThicknessRatio = 0.02f;
-
-	// 후처리: 높이 양자화 간격(0~1). 예) 0.2 → -1,-0.8,...,1 중 최근접으로 반올림. 0이면 비활성
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Post Processing", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float HeightStep = 0.2f;
-
-	// 영역 시각화 셀 간격(cm). X=가로, Y=세로. 영역 그리드는 평면 배치(Z 미사용)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
-	FVector CellSize = FVector(100.0f);
-
-	// [디버그] 영역 시각화에 인스턴싱할 메쉬 (기본: 엔진 큐브)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
-	TSoftObjectPtr<UStaticMesh> DebugMesh;
-
-	// 영역별 색 구분용 베이스 머티리얼 (RegionColorParam 벡터 파라미터 보유). 미지정 시 메쉬 기본 머티리얼 사용
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
-	TSoftObjectPtr<UMaterialInterface> RegionMaterial;
-
-	// RegionMaterial에서 영역 색을 세팅할 벡터 파라미터 이름
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
-	FName RegionColorParam = TEXT("Color");
+	// 문 목록 (좌표 + 방향)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	TArray<FRoomDoor> Doors;
 };
