@@ -1,9 +1,8 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MapGeneratorSubsystem.h"
 #include "DataTableSettings.h"
-#include "MapGenerationData.h"
 #include "Engine/DataTable.h"
 #include "Engine/LevelStreamingDynamic.h"
 
@@ -27,33 +26,11 @@ const FMapData* UMapGeneratorSubsystem::FindMapData(FName RowName) const
 	return MapDataTable->FindRow<FMapData>(RowName, TEXT("UMapGeneratorSubsystem::FindMapData"));
 }
 
-bool UMapGeneratorSubsystem::GenerateLayout(int32 Seed, int32 TargetRoomCount, TArray<FPlacedRoom>& Out) const
-{
-	Out.Reset();
-
-	// TODO: 방-문 그래프 배치 알고리즘 (Start → 문 매칭 → 90° 회전 배치 → End).
-	//       문 방향 헬퍼(Opposite/Rotate90/YawOf)와 함께 다음 단계에서 구현.
-	return false;
-}
-
 bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out) const
 {
 	Out.Reset();
 
-	if (!Params)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UMapGeneratorSubsystem::GenerateLayout - GenerationData가 null입니다."));
-		return false;
-	}
-
-	UDataTable* Table = Params->MapDataTable.LoadSynchronous();
-	if (!Table)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UMapGeneratorSubsystem::GenerateLayout - GenerationData의 MapDataTable을 로드할 수 없습니다."));
-		return false;
-	}
-
-	// TODO: Table + Params->Seed / Params->RoomCount로 방-문 그래프 배치 알고리즘 구현.
+	// TODO: 배치 알고리즘 재작성 예정
 	return false;
 }
 
