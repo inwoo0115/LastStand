@@ -9,6 +9,7 @@
 
 class UDataTable;
 class ULevelStreaming;
+class UMapGenerationData;
 
 // 방 기반 던전 생성/스트리밍 서브시스템. 생성 로직은 서버 권위에서만 호출한다.
 UCLASS()
@@ -25,6 +26,9 @@ public:
 	// 방-문 그래프로 방 배치를 결정한다. (현재 스텁 — 추후 구현)
 	// 성공 시 Out에 배치 리스트를 채우고 true 반환.
 	bool GenerateLayout(int32 Seed, int32 TargetRoomCount, TArray<FPlacedRoom>& Out) const;
+
+	// 데이터 에셋 기반 생성 (에디터 액터 경로). 현재 스텁 — 알고리즘 추후 구현
+	bool GenerateLayout(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out) const;
 
 	// 배치 리스트의 각 방 서브레벨을 로컬로 스트리밍 로드 (서버·클라 각자 호출)
 	void LoadRoomInstances(const TArray<FPlacedRoom>& Rooms);
