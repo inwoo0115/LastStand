@@ -43,6 +43,21 @@ struct FRoomDoor
 	EDoorDirection Direction = EDoorDirection::North;
 };
 
+// 방 경계 박스 하나 (레벨 원점 기준 로컬 AABB, ABoxVolume에서 export)
+USTRUCT(BlueprintType)
+struct FRoomBox
+{
+	GENERATED_BODY()
+
+	// 박스 중심 (레벨 원점 기준 로컬)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounds")
+	FVector Center = FVector::ZeroVector;
+
+	// 박스 하프 익스텐트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounds")
+	FVector Extent = FVector::ZeroVector;
+};
+
 // 던전 방 한 칸의 정보. 데이터 테이블 행(RowName = 방 식별자).
 USTRUCT(BlueprintType)
 struct FMapData : public FTableRowBase
@@ -64,4 +79,23 @@ struct FMapData : public FTableRowBase
 	// 문 목록 (좌표 + 방향)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
 	TArray<FRoomDoor> Doors;
+
+	// 방 경계 박스 목록 (레벨의 ABoxVolume들에서 export). 여러 박스로 비사각 방 표현
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounds")
+	TArray<FRoomBox> BoundsBoxes;
+};
+
+// 생성기가 결정한 방 하나의 배치. GameState 컴포넌트가 이 배열을 리플리케이트한다.
+USTRUCT(BlueprintType)
+struct FPlacedRoom
+{
+	GENERATED_BODY()
+
+	// 배치할 방의 DataTable RowName
+	UPROPERTY(BlueprintReadOnly, Category = "Room")
+	FName RowName;
+
+	// 월드 배치 트랜스폼(위치 + 90° 단위 회전)
+	UPROPERTY(BlueprintReadOnly, Category = "Room")
+	FTransform Transform;
 };

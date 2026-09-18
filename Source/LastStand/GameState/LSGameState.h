@@ -26,5 +26,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class ULSGameModeInfoComponent> InfoComp;
-	
+
+	// 던전 배치 리플리케이션 + 서브레벨 스트리밍 (MapGenerator 플러그인)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UMapGeneratorComponent> MapGenComp;
+
 };

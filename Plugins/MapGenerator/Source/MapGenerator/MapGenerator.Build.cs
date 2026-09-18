@@ -28,7 +28,8 @@ public class MapGenerator : ModuleRules
 				"Core",
                 "CoreUObject",
 				"Engine",
-				"DeveloperSettings"
+				"DeveloperSettings",
+				"NetCore"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
