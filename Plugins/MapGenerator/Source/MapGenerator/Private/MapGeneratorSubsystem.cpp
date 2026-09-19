@@ -312,17 +312,44 @@ bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TA
 	return true;
 }
 
-void UMapGeneratorSubsystem::LoadRoomInstances(const TArray<FPlacedRoom>& Rooms)
+bool UMapGeneratorSubsystem::GenerateAndStream(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out)
+{
+	Out.Reset();
+
+	if (!Params)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GenerateAndStream - GenerationData가 null입니다."));
+		return false;
+	}
+
+	UDataTable* Table = Params->MapDataTable.LoadSynchronous();
+	if (!Table)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GenerateAndStream - MapDataTable을 로드할 수 없습니다."));
+		return false;
+	}
+
+	if (!GenerateLayout(Params, Out))
+	{
+		return false;
+	}
+
+	ClearRoomInstances();
+	LoadRoomInstances(Out, Table);
+	return true;
+}
+
+void UMapGeneratorSubsystem::LoadRoomInstances(const TArray<FPlacedRoom>& Rooms, UDataTable* Table)
 {
 	UWorld* World = GetWorld();
-	if (!World)
+	if (!World || !Table)
 	{
 		return;
 	}
 
 	for (const FPlacedRoom& Room : Rooms)
 	{
-		const FMapData* Data = FindMapData(Room.RowName);
+		const FMapData* Data = FindRow(Table, Room.RowName);
 		if (!Data || Data->RoomLevel.IsNull())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("UMapGeneratorSubsystem::LoadRoomInstances - 방 '%s'의 레벨을 찾을 수 없습니다."), *Room.RowName.ToString());

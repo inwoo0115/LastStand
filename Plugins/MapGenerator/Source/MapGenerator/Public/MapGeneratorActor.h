@@ -19,9 +19,13 @@ class MAPGENERATOR_API AMapGenerator : public AActor
 public:
 	AMapGenerator();
 
-	// [에디터] 서브시스템의 맵 생성 로직 호출 (현재: 계산 + 로그)
+	// [에디터] 맵 배치 계산 + 방 서브레벨 스트리밍
 	UFUNCTION(CallInEditor, Category = "MapGenerator")
 	void Generate();
+
+	// [에디터] 스트리밍한 방 인스턴스 모두 언로드
+	UFUNCTION(CallInEditor, Category = "MapGenerator")
+	void ClearRooms();
 
 protected:
 	// 생성 파라미터 데이터 에셋 (BP에서 편집)

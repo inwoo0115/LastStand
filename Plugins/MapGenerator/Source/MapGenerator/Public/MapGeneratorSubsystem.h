@@ -24,12 +24,14 @@ public:
 	// MapData 테이블에서 행 조회 (RowName 기준)
 	const FMapData* FindMapData(FName RowName) const;
 
-	// 데이터 에셋 기반 방 배치 생성. (현재 스텁 — 알고리즘 추후 구현)
-	// 성공 시 Out에 배치 리스트를 채우고 true 반환.
+	// 데이터 에셋 기반 방 배치 생성. 성공 시 Out에 배치 리스트를 채우고 true 반환.
 	bool GenerateLayout(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out) const;
 
-	// 배치 리스트의 각 방 서브레벨을 로컬로 스트리밍 로드 (서버·클라 각자 호출)
-	void LoadRoomInstances(const TArray<FPlacedRoom>& Rooms);
+	// 배치 계산 + 서브레벨 스트리밍 일괄 (에디터 액터 테스트 경로). 성공 시 Out에 배치 채움.
+	bool GenerateAndStream(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out);
+
+	// 배치 리스트의 각 방 서브레벨을 로컬로 스트리밍 로드 (Table로 RoomLevel 조회)
+	void LoadRoomInstances(const TArray<FPlacedRoom>& Rooms, UDataTable* Table);
 
 	// 로드한 방 인스턴스를 모두 언로드
 	void ClearRoomInstances();

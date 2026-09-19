@@ -27,7 +27,20 @@ void AMapGenerator::Generate()
 		return;
 	}
 
-	const bool bSuccess = Subsystem->GenerateLayout(GenerationData, LastResult);
+	const bool bSuccess = Subsystem->GenerateAndStream(GenerationData, LastResult);
 	UE_LOG(LogTemp, Log, TEXT("AMapGenerator::Generate - %s (방 %d개)"),
 		bSuccess ? TEXT("성공") : TEXT("실패"), LastResult.Num());
+}
+
+void AMapGenerator::ClearRooms()
+{
+	UWorld* World = GetWorld();
+	UMapGeneratorSubsystem* Subsystem = World ? World->GetSubsystem<UMapGeneratorSubsystem>() : nullptr;
+	if (!Subsystem)
+	{
+		return;
+	}
+
+	Subsystem->ClearRoomInstances();
+	LastResult.Reset();
 }
