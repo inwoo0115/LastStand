@@ -10,6 +10,7 @@
 class UDataTable;
 class ULevelStreaming;
 class UMapGenerationData;
+struct FRandomStream;
 
 // 방 기반 던전 생성/스트리밍 서브시스템. 생성 로직은 서버 권위에서만 호출한다.
 UCLASS()
@@ -34,6 +35,19 @@ public:
 	void ClearRoomInstances();
 
 protected:
+	// 부모 출구 문과 자식 입구 문(Doors[0])이 서로 반대 방향·월드 위치 일치하도록 자식 배치 트랜스폼 계산
+	FTransform ComputeChildTransform(const FMapData& Parent, const FTransform& ParentXform,
+		int32 ParentExitDoorIdx, const FMapData& Child) const;
+
+	// 후보 방(ChildXform 적용)의 박스볼륨이 이미 배치된 방들의 박스볼륨과 겹치지 않는지 검사
+	bool CanPlaceRoom(const FMapData& Child, const FTransform& ChildXform,
+		const TArray<FPlacedRoom>& Placed, UDataTable* Table) const;
+
+	// 단일 체인 백트래킹 DFS. 성공 시 OutChain에 자식 방들이 append됨
+	bool BuildChain(const FMapData& Current, int32 Count, int32 RoomCount,
+		const TArray<FName>& NormalRows, const TArray<FName>& EndRows,
+		UDataTable* Table, FRandomStream& Stream, TArray<FPlacedRoom>& OutChain) const;
+
 	// FMapData 행 테이블. Initialize에서 로드
 	UPROPERTY()
 	TObjectPtr<UDataTable> MapDataTable;
