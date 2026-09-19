@@ -2,11 +2,36 @@
 
 언리얼 엔진 5 · C++로 만든 서버 권위(Server-Authoritative) 멀티플레이 3인칭 슈터입니다. 개인 프로젝트로 설계와 C++ 게임플레이/네트워크/툴 구현을 전반적으로 진행했습니다.
 
-주로 다룬 부분은 랙 보상(서버사이드 리와인드), 서버 권위 + 클라이언트 예측 네트워킹입니다. 둘 다 UE 기본 제공 기능이 아니라 직접 구현했습니다.
+주로 다룬 부분은 절차적 던전 맵 생성, 랙 보상(서버사이드 리와인드), 서버 권위 + 클라이언트 예측 네트워킹입니다. 셋 다 UE 기본 제공 기능이 아니라 직접 구현했습니다.
 
 사용 기술: UE5(소스 빌드), C++, Enhanced Input, GameplayTags, Online Subsystem, UMG.
 
-<!-- 대표 GIF/스크린샷 삽입 위치 (인게임 플레이) -->
+<!-- 대표 GIF/스크린샷 삽입 위치 (생성된 던전 & 인게임 플레이) -->
+
+---
+
+## 절차적 던전 맵 생성
+
+여러 방(서브레벨)을 문으로 이어 붙여 던전을 만드는 절차적 생성기를 독립 Runtime 플러그인 `MapGenerator`로 분리했습니다. 게임 모듈과 디커플되어 재사용·독립 컴파일이 가능하고, 생성 로직은 `UWorldSubsystem`에 둡니다. 에디터 전용 툴링은 별도 Editor 모듈(`MapGeneratorEditor`)로 분리했습니다.
+
+- 데이터 드리븐 방 정의: 각 방은 `FMapData` 행(방 서브레벨 `TSoftObjectPtr<UWorld>`, `ERoomType` 시작/도착/일반/통로, 문 배열 — `Doors[0]`=입구·`Doors[1..]`=출구, 경계 박스 목록 `BoundsBoxes`)으로 기술합니다.
+- 백트래킹 DFS 배치(`BuildChain`): 시작 방을 원점에 두고, 각 출구 문에서 모든 방 후보를 랜덤 순서로 시도합니다. 배치 가능하면 그 방으로 내려가고(재귀), 막히면 다음 후보·다음 문으로 되돌아갑니다(백트래킹). 이어진 방 수가 `RoomCount`에 도달하면 마지막 방에서 도착 방을 배치하고 종료합니다. `FRandomStream(Seed)`로 같은 시드는 항상 같은 결과를 냅니다.
+- 문 맞물림 배치(`ComputeChildTransform`): 자식 입구 문이 부모 출구 문의 반대 방향을 향하도록 90° 단위로 회전하고, 두 문의 월드 위치가 일치하도록 평행이동해 방을 이어 붙입니다.
+- 박스볼륨 충돌 회피(`CanPlaceRoom`): 방 경계를 표시하는 `ABoxVolume`을 각 방 서브레벨에 배치하고, 그 바운즈를 데이터 테이블 행(`BoundsBoxes`)으로 미리 export합니다. 배치 시 후보 방의 world AABB가 기존 방들과 겹치면(접촉은 허용하는 Epsilon 여유) 거부해 백트래킹을 유도합니다.
+- 에디터 툴링: `AMapGenerator` 액터가 생성 파라미터 데이터 에셋(`UMapGenerationData`: 참조 테이블·방 개수·시드)을 멤버로 들고, `CallInEditor` 버튼(Generate·Clear Rooms)으로 생성·프리뷰합니다. 바운즈 export는 콘텐츠 브라우저의 DataTable 우클릭 메뉴로 실행합니다 — `UDeveloperSettings`의 CallInEditor 버튼은 편집 대상이 CDO(archetype)라 실행되지 않는 엔진 제약이 있어, 에디터 모듈에서 에셋 컨텍스트 메뉴로 우회했습니다.
+- 서브레벨 스트리밍: 결정된 배치를 `ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr`로 방 레벨별 인스턴스로 스트리밍해 배치합니다.
+
+```cpp
+// 자식 입구(Doors[0])가 부모 출구의 반대 방향을 향하고, 두 문의 월드 위치가 일치하도록 배치
+const float ChildYaw = YawOfDir(OppositeDir(ParentExitWorldDir)) - YawOfDir(ChildEntrance.Direction);
+const FRotator Rot(0.f, ChildYaw, 0.f);
+const FVector  T = ParentExitWorldPos - Rot.RotateVector(ChildEntrance.Location);
+return FTransform(Rot.Quaternion(), T);
+```
+
+관련 코드: [MapGeneratorSubsystem.h](Plugins/MapGenerator/Source/MapGenerator/Public/MapGeneratorSubsystem.h) · [.cpp](Plugins/MapGenerator/Source/MapGenerator/Private/MapGeneratorSubsystem.cpp), [MapData.h](Plugins/MapGenerator/Source/MapGenerator/Public/MapData.h), [MapGenerationData.h](Plugins/MapGenerator/Source/MapGenerator/Public/MapGenerationData.h), [MapGeneratorActor.h](Plugins/MapGenerator/Source/MapGenerator/Public/MapGeneratorActor.h) · [.cpp](Plugins/MapGenerator/Source/MapGenerator/Private/MapGeneratorActor.cpp), [BoxVolume.h](Plugins/MapGenerator/Source/MapGenerator/Public/BoxVolume.h), [MapGeneratorEditor.cpp](Plugins/MapGenerator/Source/MapGeneratorEditor/Private/MapGeneratorEditor.cpp)
+
+<!-- 생성 파이프라인 GIF 삽입 위치 (방 연결 → 충돌 회피 → 스트리밍) -->
 
 ---
 
@@ -86,10 +111,10 @@ LastStand/
 │  ├─ Interface/          Stat/Hitbox/Inventory/Interact/Interactable 인터페이스
 │  ├─ Settings/           GameDataSettings (UDeveloperSettings)
 │  ├─ Player/ GameState/ Gamemode/ Props/ Animation/ Save/ Tags/
-└─ Plugins/MapGenerator/  맵 생성기 (독립 Runtime 플러그인)
+└─ Plugins/MapGenerator/  방 기반 절차적 던전 생성 (독립 Runtime + Editor 모듈)
 ```
 
-바로가기: [Character](Source/LastStand/Character) · [Components](Source/LastStand/Character/Components) · [AI](Source/LastStand/AI) · [Weapon](Source/LastStand/Item/Equipment/Weapon) · [UI](Source/LastStand/UI) · [DataTable](Source/LastStand/DataTable) · [Interface](Source/LastStand/Interface) · [Settings](Source/LastStand/Settings)
+바로가기: [Character](Source/LastStand/Character) · [Components](Source/LastStand/Character/Components) · [AI](Source/LastStand/AI) · [Weapon](Source/LastStand/Item/Equipment/Weapon) · [UI](Source/LastStand/UI) · [DataTable](Source/LastStand/DataTable) · [Interface](Source/LastStand/Interface) · [Settings](Source/LastStand/Settings) · [MapGenerator](Plugins/MapGenerator/Source/MapGenerator)
 
 ---
 
