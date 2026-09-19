@@ -12,6 +12,16 @@ class ULevelStreaming;
 class UMapGenerationData;
 struct FRandomStream;
 
+// 생성 중 방 배치 상태 (내부용). 열린 문을 추적해 체인·사이드룸에서 공통 사용.
+struct FMapGenRoom
+{
+	FName Row;
+	const FMapData* Data = nullptr;
+	FTransform Xform = FTransform::Identity;
+	TArray<int32> OpenDoors;              // 아직 안 이어진 문 인덱스 (Doors[1..] 중)
+	bool bExcludeFromSideRooms = false;   // 끝방은 사이드룸 확장에서 제외
+};
+
 // 방 기반 던전 생성/스트리밍 서브시스템. 생성 로직은 서버 권위에서만 호출한다.
 UCLASS()
 class MAPGENERATOR_API UMapGeneratorSubsystem : public UWorldSubsystem
@@ -43,12 +53,16 @@ protected:
 
 	// 후보 방(ChildXform 적용)의 박스볼륨이 이미 배치된 방들의 박스볼륨과 겹치지 않는지 검사
 	bool CanPlaceRoom(const FMapData& Child, const FTransform& ChildXform,
-		const TArray<FPlacedRoom>& Placed, UDataTable* Table) const;
+		const TArray<FMapGenRoom>& Placed, UDataTable* Table) const;
 
-	// 단일 체인 백트래킹 DFS. 성공 시 OutChain에 자식 방들이 append됨
+	// 단일 체인 백트래킹 DFS. 성공 시 Chain에 자식 방들이 append됨
 	bool BuildChain(const FMapData& Current, int32 Count, int32 RoomCount,
 		const TArray<FName>& NormalRows, const TArray<FName>& EndRows,
-		UDataTable* Table, FRandomStream& Stream, TArray<FPlacedRoom>& OutChain) const;
+		UDataTable* Table, FRandomStream& Stream, TArray<FMapGenRoom>& Chain) const;
+
+	// 체인 완료 후 남은 문에 Normal 방을 붙여 사이드룸 확장 (Depth번 반복)
+	void GrowSideRooms(TArray<FMapGenRoom>& Rooms, const TArray<FName>& NormalRows,
+		UDataTable* Table, FRandomStream& Stream, int32 Depth) const;
 
 	// FMapData 행 테이블. Initialize에서 로드
 	UPROPERTY()

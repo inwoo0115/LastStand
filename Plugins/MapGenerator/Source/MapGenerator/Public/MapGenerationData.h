@@ -26,4 +26,8 @@ public:
 	// 생성 시드 (같은 시드 = 같은 던전)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
 	int32 Seed = 0;
+
+	// 사이드룸 확장 깊이 (0=없음, 1=체인에서 한 겹, N=반복)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map", meta = (ClampMin = "0"))
+	int32 SideRoomDepth = 1;
 };
