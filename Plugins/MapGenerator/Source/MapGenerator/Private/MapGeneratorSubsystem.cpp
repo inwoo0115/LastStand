@@ -10,11 +10,11 @@
 
 namespace
 {
-	// 출구 문 인덱스 목록 (Doors[0]=입구 제외, Doors[1..]=출구)
+	// 출구 문 인덱스 목록 (ExitDoors 전체 인덱스 — 입구는 별도 필드라 자동 제외)
 	TArray<int32> ExitDoorIndices(const FMapData& Room)
 	{
 		TArray<int32> Exits;
-		for (int32 i = 1; i < Room.Doors.Num(); ++i)
+		for (int32 i = 0; i < Room.ExitDoors.Num(); ++i)
 		{
 			Exits.Add(i);
 		}
@@ -93,18 +93,18 @@ namespace
 FTransform UMapGeneratorSubsystem::ComputeChildTransform(const FMapData& Parent, const FTransform& ParentXform,
 	int32 ParentExitDoorIdx, const FMapData& Child) const
 {
-	if (!Parent.Doors.IsValidIndex(ParentExitDoorIdx) || Child.Doors.Num() == 0)
+	if (!Parent.ExitDoors.IsValidIndex(ParentExitDoorIdx) || !Child.bHasEntrance)
 	{
 		return FTransform::Identity;   // 방어
 	}
 
 	// 부모 출구 문의 월드 위치/방향
-	const FRoomDoor& PDoor = Parent.Doors[ParentExitDoorIdx];
+	const FRoomDoor& PDoor = Parent.ExitDoors[ParentExitDoorIdx];
 	const FVector PWorldPos = ParentXform.TransformPosition(PDoor.Location);
 	const EDoorDirection PWorldDir = RotateDirByYaw(PDoor.Direction, ParentXform.Rotator().Yaw);
 
-	// 자식 입구 문(Doors[0])이 부모 출구의 반대 방향을 향하도록 자식 yaw 결정 (90° 배수)
-	const FRoomDoor& CDoor = Child.Doors[0];
+	// 자식 입구 문이 부모 출구의 반대 방향을 향하도록 자식 yaw 결정 (90° 배수)
+	const FRoomDoor& CDoor = Child.EntranceDoor;
 	const float ChildYaw = YawOfDir(OppositeDir(PWorldDir)) - YawOfDir(CDoor.Direction);
 	const FRotator Rot(0.f, ChildYaw, 0.f);
 
@@ -181,7 +181,7 @@ bool UMapGeneratorSubsystem::BuildChain(const FMapData& Current, int32 Count, in
 		for (const FName& Row : Candidates)
 		{
 			const FMapData* Data = FindRow(Table, Row);
-			if (!Data || Data->Doors.Num() == 0)   // 문이 없으면 연결 불가
+			if (!Data || !Data->bHasEntrance)   // 입구 문이 없으면 연결 불가
 			{
 				continue;
 			}
@@ -255,7 +255,7 @@ void UMapGeneratorSubsystem::GrowSideRooms(TArray<FMapGenRoom>& Rooms, const TAr
 				for (const FName& Row : Candidates)
 				{
 					const FMapData* Data = FindRow(Table, Row);
-					if (!Data || Data->Doors.Num() == 0)
+					if (!Data || !Data->bHasEntrance)
 					{
 						continue;
 					}
@@ -364,7 +364,7 @@ bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TA
 	StartRoom.Row = StartRow;
 	StartRoom.Data = StartData;
 	StartRoom.Xform = FTransform::Identity;
-	StartRoom.OpenDoors = ExitDoorIndices(*StartData);   // 시작 방 입구(Doors[0])는 자동 제외
+	StartRoom.OpenDoors = ExitDoorIndices(*StartData);   // 시작 방 입구(EntranceDoor)는 별도 필드라 자동 제외
 	Rooms.Add(StartRoom);
 
 	if (RoomCount > 1)

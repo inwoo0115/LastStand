@@ -72,13 +72,17 @@ struct FMapData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
 	ERoomType RoomType = ERoomType::Normal;
 
-	// 문 개수 (명시 — Doors 배열 길이와 일치하도록 관리)
+	// 입구 문 (방마다 1개, 부모 방의 출구와 매칭되어 연결). bHasEntrance가 true일 때만 유효
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
-	int32 DoorCount = 0;
+	FRoomDoor EntranceDoor;
 
-	// 문 목록 (좌표 + 방향)
+	// 출구 문 목록 (자식 방들이 연결되는 문)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
-	TArray<FRoomDoor> Doors;
+	TArray<FRoomDoor> ExitDoors;
+
+	// 입구 문 유효 여부 (export가 세팅 — 입구 볼륨이 정확히 1개일 때만 true)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	bool bHasEntrance = false;
 
 	// 방 경계 박스 목록 (레벨의 ABoxVolume들에서 export). 여러 박스로 비사각 방 표현
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounds")
