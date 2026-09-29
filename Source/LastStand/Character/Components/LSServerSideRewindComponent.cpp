@@ -118,7 +118,8 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		History.RemoveAt(0);
 	}
 
-	// 디버그: 0.5초마다 현재 히트박스 위치를 멀티캐스트로 전 클라에 전송해 그림 (저장 주기와 별개)
+#if WITH_EDITOR
+	// 디버그(에디터 전용): 0.5초마다 현재 히트박스 위치를 멀티캐스트로 전 클라에 전송해 그림 (저장 주기와 별개)
 	if (bDrawDebugSnapshot && Now - LastDebugDrawTime >= DebugDrawInterval)
 	{
 		LastDebugDrawTime = Now;
@@ -140,11 +141,14 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		}
 		MulticastDrawDebugBoxes(DebugBoxes);
 	}
+#endif
 }
 
 
 void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const TArray<FHitBoxSnapshot>& Boxes)
 {
+	// 에디터 전용 — 선언은 RPC 테이블 일치를 위해 모든 빌드에 유지하고 본문만 제외
+#if WITH_EDITOR
 	UWorld* World = GetWorld();
 	if (!bDrawDebugSnapshot || !World || GetNetMode() == NM_DedicatedServer)
 	{
@@ -156,6 +160,7 @@ void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const 
 		DrawDebugBox(World, Box.Location, Box.BoxExtent, Box.Rotation.Quaternion(),
 			FColor::Green, false, DebugDrawInterval, 0, 0.5f);   // 다음 전송까지 유지
 	}
+#endif
 }
 
 
