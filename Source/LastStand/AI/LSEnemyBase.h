@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "Interface/LSHitboxInterface.h"
+#include "GameplayTagContainer.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
@@ -84,4 +85,8 @@ protected:
 	// 스테이트 트리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStateTree> StateTree;
+
+	// State Tree에서 상태 분기에 사용하는 현재 AI 상태 태그 (서버 전용, 비복제)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI, meta = (AllowPrivateAccess = "true"))
+	FGameplayTagContainer StateTags;
 };
