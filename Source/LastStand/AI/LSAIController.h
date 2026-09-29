@@ -17,6 +17,8 @@ class LASTSTAND_API ALSAIController : public AAIController
 public:
 	ALSAIController();
 
+	virtual void Tick(float DeltaTime) override;
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 

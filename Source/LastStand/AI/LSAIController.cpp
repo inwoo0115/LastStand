@@ -6,12 +6,34 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "Components/StateTreeAIComponent.h"
 #include "StateTree.h"
+#include "AI/Components/LSAIPerceptionComponent.h"
 
 ALSAIController::ALSAIController()
 {
 	// StateTree AI 컴포넌트 생성
 	StateTreeComp = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
 	StateTreeComp->SetStartLogicAutomatically(false);
+}
+
+void ALSAIController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// TODO: 테스트용 — 퍼셉션 타깃을 포커스로 지정해 컨트롤 회전이 타깃을 향하게 함
+	if (ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetPawn()))
+	{
+		if (ULSAIPerceptionComponent* Perception = Enemy->GetPerceptionComponent())
+		{
+			if (AActor* Target = Perception->GetTargetActor())
+			{
+				SetFocus(Target);
+			}
+			else
+			{
+				ClearFocus(EAIFocusPriority::Gameplay);
+			}
+		}
+	}
 }
 
 void ALSAIController::OnPossess(APawn* InPawn)
