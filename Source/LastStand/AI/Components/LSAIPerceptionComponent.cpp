@@ -107,6 +107,13 @@ void ULSAIPerceptionComponent::UpdateTarget()
 
 	// 현재 타겟이 파괴/범위 이탈이면 딜레이 무시하고 즉시 재선정
 	const bool bTargetLost = !IsValid(TargetActor) || !PerceivedActors.Contains(TargetActor);
+
+	// 랜덤 후 고정: 타겟을 잃기 전(파괴/범위 이탈)까지 딜레이와 무관하게 유지
+	if (TargetSelectType == ELSTargetSelectType::RandomLocked && !bTargetLost)
+	{
+		return;
+	}
+
 	if (!bTargetLost && Now - LastTargetChangeTime < TargetChangeDelay)
 	{
 		return;
@@ -125,6 +132,9 @@ void ULSAIPerceptionComponent::UpdateTarget()
 		NewTarget = SelectRandomTarget();
 		// 랜덤은 딜레이마다 한 번만 굴림 (변경 여부와 무관하게 타임스탬프 갱신)
 		LastTargetChangeTime = Now;
+		break;
+	case ELSTargetSelectType::RandomLocked:
+		NewTarget = SelectRandomTarget();
 		break;
 	}
 

@@ -13,6 +13,7 @@ enum class ELSTargetSelectType : uint8
     Closest    UMETA(DisplayName = "Closest"),
     TopDamage  UMETA(DisplayName = "Top Damage"),
     Random     UMETA(DisplayName = "Random"),
+    RandomLocked UMETA(DisplayName = "Random Locked"),   // 랜덤 선정 후 타겟 상실 시에만 재선정
 };
 
 /**
@@ -41,7 +42,7 @@ struct FEnemyData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     TSoftClassPtr<APawn> EnemyClass;
 
-    // 타겟 선정 방식 (가장 가까운 대상 / 가장 많이 때린 대상 / 랜덤)
+    // 타겟 선정 방식 (가장 가까운 대상 / 가장 많이 때린 대상 / 랜덤 / 랜덤 후 고정)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Target")
     ELSTargetSelectType TargetSelectType = ELSTargetSelectType::Closest;
 
