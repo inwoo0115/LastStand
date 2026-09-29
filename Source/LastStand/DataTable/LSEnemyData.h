@@ -6,6 +6,15 @@
 #include "Engine/DataTable.h"
 #include "LSEnemyData.generated.h"
 
+// 적 AI 타겟 선정 방식
+UENUM(BlueprintType)
+enum class ELSTargetSelectType : uint8
+{
+    Closest    UMETA(DisplayName = "Closest"),
+    TopDamage  UMETA(DisplayName = "Top Damage"),
+    Random     UMETA(DisplayName = "Random"),
+};
+
 /**
  * 
  */
@@ -31,4 +40,12 @@ struct FEnemyData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     TSoftClassPtr<APawn> EnemyClass;
+
+    // 타겟 선정 방식 (가장 가까운 대상 / 가장 많이 때린 대상 / 랜덤)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Target")
+    ELSTargetSelectType TargetSelectType = ELSTargetSelectType::Closest;
+
+    // 타겟 변경 딜레이(초): 이 시간 동안은 현재 타겟 유지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Target")
+    float TargetChangeDelay = 2.0f;
 };
