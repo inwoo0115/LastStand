@@ -69,7 +69,7 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 
 ## 멀티플레이 보스 AI (작업 중)
 
-> 🚧 현재 개발 중인 시스템입니다. 타겟 선정(어그로), StateTree 연동, 조준·몸통 회전 분리 애니메이션까지 구현했고, 행동·공격 패턴은 계속 확장하고 있습니다.
+> 🚧 현재 개발 중인 시스템입니다. 타겟 선정(어그로)과 StateTree 연동까지 구현했고, 행동·공격 패턴은 계속 확장하고 있습니다.
 
 여러 플레이어가 동시에 상대하는 보스를 위해, 타겟 판단은 서버에서만 하고 선정 규칙은 데이터로 바꿀 수 있게 설계했습니다.
 
@@ -77,8 +77,6 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 - 데이터 드리븐 어그로: `FEnemyData` 행의 `ELSTargetSelectType`(`Closest` / `TopDamage` / `Random` / `RandomLocked`)과 `TargetChangeDelay`로 적마다 선정 방식을 정합니다. 딜레이 동안은 현재 타겟을 유지해 타겟이 떨리지 않게 하고, 타겟이 파괴되거나 범위를 벗어나면 딜레이를 무시하고 즉시 재선정합니다. `RandomLocked`는 한 번 고른 타겟을 잃기 전까지 고정합니다.
 - 누적 데미지 기반 어그로: `ULSStatComponent::ApplyDamage`가 데미지 주체별 누적량을 `TMap<TWeakObjectPtr<AActor>, int32>`에 기록하고, `GetTopDamageCauser()`로 가장 많이 때린 플레이어를 찾습니다. 아직 피격이 없거나 그 플레이어가 범위 밖이면 최근접으로 대체합니다.
 - StateTree 연동: 커스텀 Global Task(`FLSStateTreeCombatGlobalTask`)가 퍼셉션 컴포넌트를 캐싱하고 선정된 `TargetActor`를 Output으로 노출합니다. 하위 전투 상태는 이 값에 바인딩만 하면 되므로 타겟 선정 로직과 행동 로직이 분리됩니다. EQS 기반 위치 선정은 작업 중입니다.
-- 조준·몸통 회전 분리: AIController는 서버에만 존재하므로 클라 애님 블루프린트는 컨트롤 회전을 알 수 없습니다. `ALSEnemyBase`가 서버 Tick에서 컨트롤 회전을 복제 프로퍼티로 내려주고, 몸통(액터) Yaw는 `RInterpTo`로 컨트롤 Yaw를 뒤늦게 따라갑니다. 둘의 차이가 `TurnThresholdAngle`(기본 60°) 이상이면 서버가 복제 bool `bTurnLeft`/`bTurnRight`를 세워 턴 애니메이션을 구동합니다.
-- AI 애님 인스턴스([`ULSAIAnimInstance`](Source/LastStand/Animation/LSAIAnimInstance.h)): 서버는 컨트롤러에서, 클라는 복제값에서 컨트롤 회전을 읽어 에임오프셋(Yaw/Pitch)을 계산하고, 컨트롤 Yaw 기준 이동 방향 단위 벡터(`ControlAxis`)로 조준한 채 이동하는 스트레이프 블렌드스페이스를 구동합니다.
 
 ```cpp
 // 타겟 상실(파괴/범위 이탈)이면 딜레이와 무관하게 즉시 재선정
@@ -97,7 +95,7 @@ if (!bTargetLost && Now - LastTargetChangeTime < TargetChangeDelay)
 }
 ```
 
-관련 코드: [LSAIPerceptionComponent.h](Source/LastStand/AI/Components/LSAIPerceptionComponent.h) · [.cpp](Source/LastStand/AI/Components/LSAIPerceptionComponent.cpp), [LSStateTreeCombatGlobalTask.h](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.h) · [.cpp](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.cpp), [LSEnemyBase.h](Source/LastStand/AI/LSEnemyBase.h) · [.cpp](Source/LastStand/AI/LSEnemyBase.cpp), [LSAIAnimInstance.h](Source/LastStand/Animation/LSAIAnimInstance.h) · [.cpp](Source/LastStand/Animation/LSAIAnimInstance.cpp), [LSEnemyData.h](Source/LastStand/DataTable/LSEnemyData.h), [LSStatComponent.h](Source/LastStand/Character/Components/LSStatComponent.h) · [.cpp](Source/LastStand/Character/Components/LSStatComponent.cpp)
+관련 코드: [LSAIPerceptionComponent.h](Source/LastStand/AI/Components/LSAIPerceptionComponent.h) · [.cpp](Source/LastStand/AI/Components/LSAIPerceptionComponent.cpp), [LSStateTreeCombatGlobalTask.h](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.h) · [.cpp](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.cpp), [LSEnemyData.h](Source/LastStand/DataTable/LSEnemyData.h), [LSStatComponent.h](Source/LastStand/Character/Components/LSStatComponent.h) · [.cpp](Source/LastStand/Character/Components/LSStatComponent.cpp)
 
 ---
 
