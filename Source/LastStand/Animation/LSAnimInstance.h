@@ -14,7 +14,6 @@ class LASTSTAND_API ULSAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 	
-	
 public:
 	ULSAnimInstance();
 
@@ -23,7 +22,6 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSceonds) override;
 
 public:
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	TObjectPtr<class ALSPlayerCharacter> Owner;
 
