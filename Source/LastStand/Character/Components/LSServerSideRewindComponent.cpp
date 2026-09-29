@@ -6,6 +6,8 @@
 #include "Interface/LSHitboxInterface.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
 
 namespace
 {
@@ -164,7 +166,7 @@ void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const 
 }
 
 
-ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const
+ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter) const
 {
 	AActor* Owner = GetOwner();
 	UWorld* World = GetWorld();
@@ -181,13 +183,19 @@ ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& Trac
 
 	const float Now = World->GetTimeSeconds();
 
-	// 리와인드 유효 구간
-	float QueryTime = Timestamp;
-	if (Now - QueryTime > HistoryEndOffset)
+	// 서버가 패킷 ACK로 측정한 쏜 사람의 RTT(초, 최근 ~4초 평균). 클라 값은 신뢰하지 않음.
+	// 리슨 서버 호스트/정보 없음 → 0(현재 시점 판정)
+	float RewindTime = 0.0f;
+	if (Shooter)
 	{
-		QueryTime = Now - HistoryEndOffset;   // 200ms 이상 차이 → 200ms로 비교
+		if (const APlayerState* PS = Shooter->GetPlayerState())
+		{
+			RewindTime = PS->GetPingInMilliseconds() * 0.001f;
+		}
 	}
-	QueryTime = FMath::Min(QueryTime, Now);
+
+	// 클라 화면의 적은 RTT/2 과거 + 발사 RPC 도착까지 RTT/2 → 총 RTT만큼 되돌림. 200ms 상한
+	const float QueryTime = Now - FMath::Clamp(RewindTime, 0.0f, HistoryEndOffset);
 
 	// QueryTime을 감싸는 두 스냅샷을 찾는다 (History는 Time 오름차순, [0]=가장 오래됨)
 	int32 AfterIdx = INDEX_NONE;

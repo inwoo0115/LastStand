@@ -40,15 +40,17 @@ return FTransform(Rot.Quaternion(), T);
 핑이 높은 클라이언트도 쏜 순간 화면에 보이던 위치로 명중 판정이 되도록, 히트박스 히스토리 기반 랙 보상을 구현했습니다.
 
 - 히스토리 기록([`ULSServerSideRewindComponent`](Source/LastStand/Character/Components/LSServerSideRewindComponent.h), 서버 전용 틱): `RecordInterval = 20ms`마다 히트박스별 스냅샷(월드 위치/회전/스케일된 박스 크기)을 `TMap<FName, FHitBoxSnapshot>`으로 저장하고, `HistoryEndOffset = 200ms`를 넘긴 스냅샷은 FIFO로 제거합니다.
-- 되감기 판정(`ConfirmHit(start, end, timestamp)`): 발사 타임스탬프를 감싸는 두 스냅샷을 찾아 위치/크기는 `Lerp`, 회전은 `Slerp`로 보간하고(`InterpolateBox`), 레이를 박스 로컬 공간으로 변환해 세그먼트 vs OBB 판정을 합니다(`LineBoxIntersection`). 그 뒤 매칭되는 현재 히트박스를 반환합니다.
+- 되감기 시각은 서버가 결정: 클라이언트가 보낸 시간은 신뢰하지 않습니다. 서버의 `UNetConnection`이 자신이 보낸 패킷의 ACK 도착 시간으로 측정한 RTT(`PlayerState` 핑, 최근 ~4초 평균)를 사용하므로 클라가 값을 줄일 수 없고, 응답 지연으로 늘리는 것은 `HistoryEndOffset`(200ms)로 상한을 둡니다. 클라 화면의 적은 RTT/2 과거 상태이고 발사 RPC 도착까지 다시 RTT/2가 걸리므로 `Now - RTT`로 되감습니다.
+- 되감기 판정(`ConfirmHit(start, end, shooter)`): 되감기 시각을 감싸는 두 스냅샷을 찾아 위치/크기는 `Lerp`, 회전은 `Slerp`로 보간하고(`InterpolateBox`), 레이를 박스 로컬 공간으로 변환해 세그먼트 vs OBB 판정을 합니다(`LineBoxIntersection`). 그 뒤 매칭되는 현재 히트박스를 반환합니다.
 - 제네릭 수집: `ILSHitboxInterface::GetHitboxComponents()`로 히트박스를 추상적으로 모으므로, 인터페이스만 구현하면 플레이어든 적이든 동일하게 동작합니다.
 - 정확도 관련: 데디케이티드 서버는 렌더링이 없어도 소켓 부착 히트박스가 정확해야 하므로 `VisibilityBasedAnimTickOption = AlwaysTickPoseAndRefreshBones`로 본을 항상 갱신합니다.
 
 ```cpp
 // 서버: 클라가 보고한 피격 대상을 리와인드로 재검증한 뒤에만 권위 데미지 적용
+// 되감기 양은 쏜 사람의 서버 측정 RTT로 SSR 내부에서 계산 (클라 타임스탬프 없음)
 if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerSideRewindComponent>())
 {
-    if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Timestamp))
+    if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner())))
     {
         Hitbox->ProcessServerHit(Damage);   // 부위 배율 적용 + 권위 데미지
     }
@@ -66,7 +68,7 @@ if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerS
 히트스캔 발사 파이프라인:
 
 1. 로컬 예측(소유 클라): 카메라 기준 스프레드 콘 트레이스를 즉시 실행하고 발사 몽타주, 머즐/임팩트 FX, 예측 데미지 넘버 UI를 바로 반영합니다.
-2. 서버 RPC: `ServerRPCFire(Start, End, HitActor, Timestamp)`로 서버 월드 시간 타임스탬프를 함께 보냅니다.
+2. 서버 RPC: `ServerRPCFire(Start, End, HitActor)`로 트레이스 구간과 로컬 명중 대상만 보냅니다. 발사 시각은 보내지 않으며, 서버가 측정한 핑으로 되감기 시각을 계산합니다.
 3. 서버 검증: 연사 속도 가드(`Now - LastFire < Interval * 0.9`) 후 탄약을 차감하고, 서버사이드 리와인드로 재검증한 뒤 권위 데미지를 적용합니다.
 4. 멀티캐스트 연출: 몽타주와 FX를 `NetMulticast Unreliable`로 전파하되 소유 클라는 스킵합니다(이미 로컬에서 재생). 연출이 두 번 나오지 않게 합니다.
 

@@ -7,6 +7,7 @@
 #include "LSServerSideRewindComponent.generated.h"
 
 class ULSHitboxComponent;
+class APawn;
 
 // 특정 시점의 히트박스 하나에 대한 월드 공간 스냅샷 (리와인드 시 박스 재구성용)
 USTRUCT(BlueprintType)
@@ -55,9 +56,9 @@ protected:
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// 서버에서 발사 시점(Timestamp)으로 히트박스를 되돌려 트레이스 명중을 재검증.
+	// 서버가 측정한 쏜 사람(Shooter)의 RTT만큼 히트박스를 되돌려 트레이스 명중을 재검증.
 	// 명중한 히트박스를 반환, 스냅샷 없음/판정 실패/미명중이면 nullptr.
-	class ULSHitboxComponent* ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, float Timestamp) const;
+	class ULSHitboxComponent* ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter) const;
 
 	// 서버가 기록한 히트박스 스냅샷을 전 클라에서 디버그 박스로 그림
 	UFUNCTION(NetMulticast, Unreliable)

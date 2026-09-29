@@ -14,7 +14,6 @@
 #include "Animation/AnimMontage.h"
 #include "Character/Components/LSHitboxComponent.h"
 #include "Character/Components/LSServerSideRewindComponent.h"
-#include "GameFramework/GameStateBase.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/LSUIEventSubsystem.h"
@@ -159,15 +158,8 @@ void ALSWeaponHitscan::Fire()
 	// 반응성: 소유 클라에서 즉시 로컬 실행 (몽타주 + 예측 히트 데미지 UI). 로컬 명중 적 반환
 	AActor* LocalHit = PlayWeaponLocalEvent(Start, End);
 
-	// 발사 시각(서버 시간 추정) — 서버 SSR 리와인드 기준
-	float FireTime = 0.0f;
-	if (AGameStateBase* GS = GetWorld()->GetGameState())
-	{
-		FireTime = GS->GetServerWorldTimeSeconds();
-	}
-
-	// 서버에 발사 요청: 로컬 명중 정보 + 발사 시각 전달 → 서버 SSR 재검증
-	ServerRPCFire(Start, End, LocalHit, FireTime);
+	// 서버에 발사 요청: 로컬 명중 정보 전달 → 서버 SSR 재검증 (리와인드 시각은 서버가 측정한 핑 기준)
+	ServerRPCFire(Start, End, LocalHit);
 
 	// 로컬 연사 가드 시작 (연사 무기는 LaunchTimerHandle이 페이싱하므로 제외)
 	if (!bIsRapidFire)
@@ -182,7 +174,7 @@ void ALSWeaponHitscan::OnLocalFireReady()
 	bLocalFireReady = true;
 }
 
-void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor, float Timestamp)
+void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor)
 {
 	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
 	{
@@ -208,7 +200,7 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	{
 		if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerSideRewindComponent>())
 		{
-			if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Timestamp))
+			if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner())))
 			{
 				Hitbox->ProcessServerHit(Damage, GetOwner());   // 데미지 주체: 무기 소유 폰
 			}

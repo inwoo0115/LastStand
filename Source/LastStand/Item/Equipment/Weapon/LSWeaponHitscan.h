@@ -63,9 +63,9 @@ protected:
 	// 총구 + 착탄 이펙트/데칼을 실제로 스폰 (렌더링 머신에서만 실행)
 	void PlayFireEffects(bool bHit, const FVector& ImpactPoint, const FVector& ImpactNormal);
 
-	// Server RPC (소유 클라이언트 → 서버). HitActor: 로컬 명중 적(없으면 null), Timestamp: 발사 시 서버 시간 추정
+	// Server RPC (소유 클라이언트 → 서버). HitActor: 로컬 명중 적(없으면 null). 리와인드 시각은 서버가 측정한 핑으로 계산
 	UFUNCTION(Server, Reliable)
-	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor, float Timestamp);
+	void ServerRPCFire(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCReload();

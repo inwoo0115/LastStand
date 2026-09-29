@@ -72,9 +72,9 @@
 - 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
 
 ### 네트워크 전투 (랙 보상)
-- `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,ts)` = 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집.
+- `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,Shooter)` = 쏜 사람 `PlayerState` 서버측정 핑(RTT, 200ms 클램프)만큼 되감기 → 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집.
 - `Character/Components/LSHitboxComponent.*`: `UBoxComponent` 파생, `ELSHitboxType`+`DamageMultiplier`(Head 2.0/WeakPoint 3.0/사지 0.7), 소켓 재부착. `ProcessLocalHit`(예측) vs `ProcessServerHit`(권위).
-- `Item/Equipment/Weapon/LSWeaponHitscan.*`: 로컬 예측 트레이스 → `ServerRPCFire(Start,End,HitActor,Timestamp)` → 서버 연사가드(`Interval*0.9`)+리와인드 재검증+권위 데미지 → 멀티캐스트 연출(소유 클라 스킵). 커스텀 채널 `ECC_GameTraceChannel1`(Hitscan).
+- `Item/Equipment/Weapon/LSWeaponHitscan.*`: 로컬 예측 트레이스 → `ServerRPCFire(Start,End,HitActor)`(클라 타임스탬프 없음) → 서버 연사가드(`Interval*0.9`)+리와인드 재검증+권위 데미지 → 멀티캐스트 연출(소유 클라 스킵). 커스텀 채널 `ECC_GameTraceChannel1`(Hitscan).
 
 ### 캐릭터 / 컴포넌트
 - `Character/LSCharacterBase.*`(ACharacter, Stat/Inventory/Interact 인터페이스 구현, 컨트롤 회전 리플리케이트), `LSPlayerCharacter.*`(Enhanced Input, `bIsAim` `COND_SkipOwner` 예측, 다수 ServerRPC).
