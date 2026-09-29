@@ -73,11 +73,11 @@ ULSStatComponent* ALSEnemyBase::GetStatComponent()
 	return Stat;
 }
 
-void ALSEnemyBase::ApplyDamage(int32 Damage)
+void ALSEnemyBase::ApplyDamage(int32 Damage, AActor* DamageCauser)
 {
 	if (ULSStatComponent* StatComp = GetStatComponent())
 	{
-		StatComp->ApplyDamage(Damage);
+		StatComp->ApplyDamage(Damage, DamageCauser);
 	}
 }
 

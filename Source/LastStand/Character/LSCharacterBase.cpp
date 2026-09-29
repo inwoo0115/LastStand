@@ -65,11 +65,11 @@ ULSStatComponent* ALSCharacterBase::GetStatComponent()
 	return Stat;
 }
 
-void ALSCharacterBase::ApplyDamage(int32 Damage)
+void ALSCharacterBase::ApplyDamage(int32 Damage, AActor* DamageCauser)
 {
 	if (ULSStatComponent* StatComp = GetStatComponent())
 	{
-		StatComp->ApplyDamage(Damage);
+		StatComp->ApplyDamage(Damage, DamageCauser);
 	}
 }
 

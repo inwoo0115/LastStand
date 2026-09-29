@@ -26,7 +26,8 @@ public:
 	virtual class ULSStatComponent* GetStatComponent() = 0;
 
 	// 이 인터페이스를 가진 객체에 데미지 적용 — 실제 처리는 StatComponent가 담당
-	virtual void ApplyDamage(int32 Damage) = 0;
+	// DamageCauser: 데미지를 넣은 액터 (null 허용)
+	virtual void ApplyDamage(int32 Damage, class AActor* DamageCauser) = 0;
 
 
 };

@@ -48,7 +48,7 @@ void ULSStatComponent::InitializeStatByEnemyData(FName EnemyName)
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
-void ULSStatComponent::ApplyDamage(int32 Damage)
+void ULSStatComponent::ApplyDamage(int32 Damage, AActor* DamageCauser)
 {
 	// 서버 권위에서만 체력 변경 (리플리케이션으로 클라 반영)
 	if (!GetOwner()->HasAuthority())
@@ -60,6 +60,12 @@ void ULSStatComponent::ApplyDamage(int32 Damage)
 	if (Damage <= 0 || CurrentHealth <= 0)
 	{
 		return;
+	}
+
+	// 데미지 주체별 누적 (없으면 추가, 있으면 데미지만 더함)
+	if (DamageCauser)
+	{
+		DamageCauserMap.FindOrAdd(DamageCauser) += Damage;
 	}
 
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0, MaxHealth);
@@ -74,6 +80,25 @@ void ULSStatComponent::ApplyDamage(int32 Damage)
 	{
 		OnDeath.Broadcast();
 	}
+}
+
+AActor* ULSStatComponent::GetTopDamageCauser() const
+{
+	AActor* TopCauser = nullptr;
+	int32 TopDamage = 0;
+
+	for (const TPair<TWeakObjectPtr<AActor>, int32>& Pair : DamageCauserMap)
+	{
+		// 파괴된 주체는 건너뜀
+		AActor* Causer = Pair.Key.Get();
+		if (Causer && Pair.Value > TopDamage)
+		{
+			TopCauser = Causer;
+			TopDamage = Pair.Value;
+		}
+	}
+
+	return TopCauser;
 }
 
 void ULSStatComponent::CalculateDamage(int32 RawDamage)

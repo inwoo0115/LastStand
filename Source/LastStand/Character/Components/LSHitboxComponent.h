@@ -48,7 +48,8 @@ public:
 	void ProcessLocalHit(int32 RawDamage);
 
 	// 서버 권위: RawDamage에 부위 배율을 곱해 owner StatComponent의 ApplyDamage로 전달
-	void ProcessServerHit(int32 RawDamage);
+	// DamageCauser: 데미지를 넣은 액터 (ApplyDamage로 그대로 전달)
+	void ProcessServerHit(int32 RawDamage, AActor* DamageCauser);
 
 protected:
 	// 소켓 부착

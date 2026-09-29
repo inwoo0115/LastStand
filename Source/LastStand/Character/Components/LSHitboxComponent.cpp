@@ -49,7 +49,7 @@ void ULSHitboxComponent::ProcessLocalHit(int32 RawDamage)
 	}
 }
 
-void ULSHitboxComponent::ProcessServerHit(int32 RawDamage)
+void ULSHitboxComponent::ProcessServerHit(int32 RawDamage, AActor* DamageCauser)
 {
 	// 부위별 배율 적용
 	const int32 FinalDamage = FMath::RoundToInt(RawDamage * DamageMultiplier);
@@ -60,7 +60,7 @@ void ULSHitboxComponent::ProcessServerHit(int32 RawDamage)
 	{
 		if (ULSStatComponent* Stat = Cast<ILSStatComponentInterface>(Owner)->GetStatComponent())
 		{
-			Stat->ApplyDamage(FinalDamage);
+			Stat->ApplyDamage(FinalDamage, DamageCauser);
 		}
 	}
 }

@@ -32,7 +32,7 @@ public:
 
 	virtual ULSStatComponent* GetStatComponent() override;
 
-	virtual void ApplyDamage(int32 Damage) override;
+	virtual void ApplyDamage(int32 Damage, AActor* DamageCauser) override;
 
 	class USpringArmComponent* GetSpringArmComponent();
 

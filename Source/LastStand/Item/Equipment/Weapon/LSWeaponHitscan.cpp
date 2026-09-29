@@ -210,7 +210,7 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 		{
 			if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Timestamp))
 			{
-				Hitbox->ProcessServerHit(Damage);
+				Hitbox->ProcessServerHit(Damage, GetOwner());   // 데미지 주체: 무기 소유 폰
 			}
 		}
 	}

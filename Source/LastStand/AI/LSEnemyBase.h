@@ -19,7 +19,7 @@ public:
 
 	virtual class ULSStatComponent* GetStatComponent() override;
 
-	virtual void ApplyDamage(int32 Damage) override;
+	virtual void ApplyDamage(int32 Damage, AActor* DamageCauser) override;
 
 	// 이 적이 보유한 모든 부위 히트박스를 반환
 	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const override;

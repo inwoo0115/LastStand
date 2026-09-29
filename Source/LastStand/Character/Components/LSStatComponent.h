@@ -24,7 +24,8 @@ public:
 	void InitializeStatByEnemyData(FName EnemyName);
 
 	// 데미지 적용 (서버 권위) — 체력 감소/클램프/사망 처리
-	void ApplyDamage(int32 Damage);
+	// DamageCauser: 데미지를 넣은 액터 (추후 어그로/타겟 선정용, null 허용)
+	void ApplyDamage(int32 Damage, AActor* DamageCauser);
 
 	// 받은 데미지를 계산(추후 방어력 등 반영)하고 데미지 UI 이벤트를 브로드캐스트
 	void CalculateDamage(int32 RawDamage);
@@ -32,6 +33,9 @@ public:
 	int32 GetMaxHealth() const { return MaxHealth; }
 	int32 GetCurrentHealth() const { return CurrentHealth; }
 	int32 GetAttackDamage() const { return AttackDamage; }
+
+	// 서버: 누적 데미지가 가장 큰 유효 주체 반환 (없거나 모두 파괴됐으면 nullptr)
+	AActor* GetTopDamageCauser() const;
 
 	// 체력 변경 시 브로드캐스트 (UI/AI 연동)
 	FOnHealthChanged OnHealthChanged;
@@ -58,4 +62,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	int32 AttackDamage = 0;
+
+	// 서버: 데미지 주체별 누적 데미지 (주체 파괴 대비 약참조)
+	TMap<TWeakObjectPtr<AActor>, int32> DamageCauserMap;
 };
