@@ -31,6 +31,10 @@ public:
 
 	FRotator GetCurrentControllerRotation() const { return CurrentControllerRotation; }
 
+	bool GetTurnLeft() const { return bTurnLeft; }
+
+	bool GetTurnRight() const { return bTurnRight; }
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -97,4 +101,19 @@ protected:
 	// AI 컨트롤러(서버 전용)의 컨트롤 회전 — 클라 애님 블루프린트용 복제
 	UPROPERTY(Replicated)
 	FRotator CurrentControllerRotation = FRotator::ZeroRotator;
+
+	// 액터(몸통)가 컨트롤 회전을 따라가는 보간 속도
+	UPROPERTY(EditAnywhere, Category = "Rotation", meta = (AllowPrivateAccess = "true"))
+	float TurnInterpSpeed = 3.0f;
+
+	// 턴 플래그 활성화 각도 차이(도)
+	UPROPERTY(EditAnywhere, Category = "Rotation", meta = (AllowPrivateAccess = "true"))
+	float TurnThresholdAngle = 60.0f;
+
+	// 컨트롤 회전이 액터보다 왼쪽/오른쪽으로 TurnThresholdAngle 이상 차이 (서버 계산, 클라 복제)
+	UPROPERTY(Replicated)
+	bool bTurnLeft = false;
+
+	UPROPERTY(Replicated)
+	bool bTurnRight = false;
 };

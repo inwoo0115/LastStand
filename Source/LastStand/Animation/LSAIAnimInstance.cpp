@@ -34,6 +34,8 @@ void ULSAIAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		bIsFalling = Movement->IsFalling();
 		Axis = Owner->GetActorTransform().InverseTransformVector(Owner->GetVelocity().GetSafeNormal(0.0001));
 		bIsMontagePlaying = Montage_IsPlaying(nullptr);
+		bTurnLeft = Owner->GetTurnLeft();
+		bTurnRight = Owner->GetTurnRight();
 
 		// 조준(컨트롤) 회전 가져오기
 		FRotator ControlRotation;

@@ -42,6 +42,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	FVector ControlAxis;
 
+	// 컨트롤 회전이 액터보다 왼쪽/오른쪽으로 임계각 이상 차이 (턴 애니메이션용)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bTurnLeft;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bTurnRight;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Yaw;
 

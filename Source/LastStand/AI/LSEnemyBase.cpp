@@ -14,6 +14,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "AI/LSAIController.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ALSEnemyBase::ALSEnemyBase()
 {
@@ -66,6 +67,11 @@ ALSEnemyBase::ALSEnemyBase()
 	// AI: 스폰/배치 시 커스텀 AIController가 자동 possess → OnPossess에서 BT 실행
 	AIControllerClass = ALSAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// 회전: 컨트롤러/이동 방향 자동 회전을 끄고 Tick에서 컨트롤 회전으로 직접 보간
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 
 }
 
@@ -134,6 +140,15 @@ void ALSEnemyBase::Tick(float DeltaTime)
 	if (HasAuthority() && Controller)
 	{
 		CurrentControllerRotation = Controller->GetControlRotation();
+
+		// 액터 Yaw를 컨트롤 Yaw로 뒤늦게 보간 (액터 회전은 ReplicatedMovement로 클라 전파)
+		const FRotator TargetRotation(0.0f, CurrentControllerRotation.Yaw, 0.0f);
+		SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TurnInterpSpeed));
+
+		// 턴 플래그 (서버 계산 → 복제)
+		const float DeltaYaw = FRotator::NormalizeAxis(CurrentControllerRotation.Yaw - GetActorRotation().Yaw);
+		bTurnRight = DeltaYaw >= TurnThresholdAngle;   // UE Yaw +는 시계방향(오른쪽)
+		bTurnLeft = DeltaYaw <= -TurnThresholdAngle;
 	}
 
 	// 체력바가 각 클라의 로컬 카메라를 바라보도록 (데디 서버는 카메라 없음 → 스킵)
@@ -158,4 +173,6 @@ void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALSEnemyBase, CurrentControllerRotation);
+	DOREPLIFETIME(ALSEnemyBase, bTurnLeft);
+	DOREPLIFETIME(ALSEnemyBase, bTurnRight);
 }
