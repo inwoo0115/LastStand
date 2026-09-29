@@ -79,7 +79,9 @@
 ### 캐릭터 / 컴포넌트
 - `Character/LSCharacterBase.*`(ACharacter, Stat/Inventory/Interact 인터페이스 구현, 컨트롤 회전 리플리케이트), `LSPlayerCharacter.*`(Enhanced Input, `bIsAim` `COND_SkipOwner` 예측, 다수 ServerRPC).
 - `Character/Components/`: `LSStatComponent`(권위 HP, `OnRep_CurrentHealth`+이중 브로드캐스트), `LSEquipmentComponent`(리플리 장비맵+탄약캐시, `OnRepFocusEquipment` 애님레이어 링크), `LSInventoryComponent`(FastArray, `OnInventoryItemChanged` 델타), `LSInteractionComponent`.
-- `AI/LSEnemyBase.*`(APawn, 7개 소켓 히트박스+리와인드+월드 HP바 위젯, 서버 애님 강제 틱), `AI/LSAIController.*`(BehaviorTree 구동).
+- `AI/LSEnemyBase.*`(ACharacter, 7개 소켓 히트박스+리와인드+월드 HP바 위젯, 서버 애님 강제 틱). AI 컨트롤러가 서버 전용이라 `CurrentControllerRotation`을 서버 Tick에서 복제. 자동 회전 끄고 액터 Yaw를 컨트롤 Yaw로 `RInterpTo`(`TurnInterpSpeed`) 지연 추적, 차이 ≥ `TurnThresholdAngle`(60°)이면 복제 bool `bTurnLeft`/`bTurnRight`(서버 계산).
+- `AI/LSAIController.*`(StateTree 우선, 없으면 BehaviorTree 폴백. **테스트용** `Tick`에서 퍼셉션 타깃 `SetFocus`/`ClearFocus`), `AI/Components/LSAIPerceptionComponent`(서버 전용 캡슐 감지 + 데이터 드리븐 타깃 선정), `AI/StateTree/`(Combat Global Task).
+- `Animation/LSAnimInstance`(플레이어), `Animation/LSAIAnimInstance`(적: 컨트롤러 없으면 복제 컨트롤 회전 사용 → Yaw/Pitch 에임오프셋, `Axis`(액터 기준)·`ControlAxis`(컨트롤 Yaw 기준) 이동 방향, 턴 플래그).
 
 ### 데이터 / 인터페이스 / UI
 - `Settings/LSGameDataSettings`(UDeveloperSettings, soft DataTable refs) → `DataTable/LSDataSubsystem`(`FindItem/FindWeapon/FindEnemy`) → 행 구조체 `LSItemData`/`LSWeaponData`/`LSEnemyData`(모두 FTableRowBase).
@@ -89,6 +91,7 @@
 
 ### 스캐폴드/미완 (건드릴 때 주의)
 - `Save/LSSaveSubsystem`·`LSSaveGame`: 빈 스텁. AI 행동트리: BP/데이터 애셋 기반(커스텀 C++ BT 노드 없음).
+- 보스 AI는 작업 중: README "멀티플레이 보스 AI" 섹션은 **기능 구현 완료 후에 갱신**(진행 중 변경은 README에 추가하지 않음).
 
 ### 포트폴리오 README
 - 루트 `README.md`은 **개발자 포트폴리오용**(한국어). WFC·리와인드·네트워킹·아키텍처 중심 서술 + WFC mermaid 다이어그램. 시스템 변경 시 README 해당 섹션도 함께 갱신 고려.
