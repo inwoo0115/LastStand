@@ -27,6 +27,10 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FRotator GetCurrentControllerRotation() const { return CurrentControllerRotation; }
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -89,4 +93,8 @@ protected:
 	// State Tree에서 상태 분기에 사용하는 현재 AI 상태 태그 (서버 전용, 비복제)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI, meta = (AllowPrivateAccess = "true"))
 	FGameplayTagContainer StateTags;
+
+	// AI 컨트롤러(서버 전용)의 컨트롤 회전 — 클라 애님 블루프린트용 복제
+	UPROPERTY(Replicated)
+	FRotator CurrentControllerRotation = FRotator::ZeroRotator;
 };

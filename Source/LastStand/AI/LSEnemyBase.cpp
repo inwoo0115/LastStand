@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/PlayerCameraManager.h"
 #include "AI/LSAIController.h"
+#include "Net/UnrealNetwork.h"
 
 ALSEnemyBase::ALSEnemyBase()
 {
@@ -129,6 +130,12 @@ void ALSEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 컨트롤 회전 갱신 (서버에서만 컨트롤러 존재)
+	if (HasAuthority() && Controller)
+	{
+		CurrentControllerRotation = Controller->GetControlRotation();
+	}
+
 	// 체력바가 각 클라의 로컬 카메라를 바라보도록 (데디 서버는 카메라 없음 → 스킵)
 	if (HealthBarWidget)
 	{
@@ -144,4 +151,11 @@ void ALSEnemyBase::Tick(float DeltaTime)
 			HealthBarWidget->SetWorldRotation(LookAt);
 		}
 	}
+}
+
+void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALSEnemyBase, CurrentControllerRotation);
 }
