@@ -6,11 +6,12 @@
 #include "GameFramework/Character.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "Interface/LSHitboxInterface.h"
+#include "Interface/LSAIEventHubInterface.h"
 #include "GameplayTagContainer.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
-class LASTSTAND_API ALSEnemyBase : public ACharacter, public ILSStatComponentInterface, public ILSHitboxInterface
+class LASTSTAND_API ALSEnemyBase : public ACharacter, public ILSStatComponentInterface, public ILSHitboxInterface, public ILSAIEventHubInterface
 {
 	GENERATED_BODY()
 
@@ -24,6 +25,9 @@ public:
 
 	// 이 적이 보유한 모든 부위 히트박스를 반환
 	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const override;
+
+	// StateTree 이벤트 전달 허브 반환
+	virtual class ULSAIEventHubComponent* GetAIEventHubComponent() override;
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -55,6 +59,10 @@ protected:
 	// AI 퍼셉션(가장 가까운 플레이어 탐지) 컴포넌트 — 서버 전용 계산
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSAIPerceptionComponent> Perception;
+
+	// AI 이벤트 허브(게임플레이 → StateTree 이벤트 전달 통로) — 서버 전용
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSAIEventHubComponent> EventHub;
 
 	// 스탯 초기화에 사용할 데이터 테이블(FEnemyData) 행 이름
 	UPROPERTY(EditAnywhere, Category = Stat, meta = (AllowPrivateAccess = "true"))

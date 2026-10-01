@@ -6,6 +6,7 @@
 #include "Character/Components/LSHitboxComponent.h"
 #include "Character/Components/LSServerSideRewindComponent.h"
 #include "AI/Components/LSAIPerceptionComponent.h"
+#include "AI/Components/LSAIEventHubComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -36,6 +37,9 @@ ALSEnemyBase::ALSEnemyBase()
 	// AI 퍼셉션 캡슐 (플레이어 탐지·타겟 선정) — 루트 캡슐에 부착해 폰을 따라감
 	Perception = CreateDefaultSubobject<ULSAIPerceptionComponent>(TEXT("Perception"));
 	Perception->SetupAttachment(RootComponent);
+
+	// AI 이벤트 허브 (StateTree 이벤트 전달 통로)
+	EventHub = CreateDefaultSubobject<ULSAIEventHubComponent>(TEXT("EventHub"));
 
 	// 체력바 위젯 컴포넌트
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
@@ -86,6 +90,11 @@ void ALSEnemyBase::ApplyDamage(int32 Damage, AActor* DamageCauser)
 	{
 		StatComp->ApplyDamage(Damage, DamageCauser);
 	}
+}
+
+ULSAIEventHubComponent* ALSEnemyBase::GetAIEventHubComponent()
+{
+	return EventHub;
 }
 
 void ALSEnemyBase::GetHitboxComponents(TArray<ULSHitboxComponent*>& OutHitboxes) const

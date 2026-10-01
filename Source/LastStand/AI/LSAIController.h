@@ -19,6 +19,8 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	class UStateTreeAIComponent* GetStateTreeComponent() const { return StateTreeComp; }
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
