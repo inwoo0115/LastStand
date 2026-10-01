@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
 #include "LSEnemyData.generated.h"
+
+class UStateTree;
 
 // 적 AI 타겟 선정 방식
 UENUM(BlueprintType)
@@ -49,4 +52,8 @@ struct FEnemyData : public FTableRowBase
     // 타겟 변경 딜레이(초): 이 시간 동안은 현재 타겟 유지
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Target")
     float TargetChangeDelay = 2.0f;
+
+    // 서브트리 슬롯(AI.Subtree.*) → 교체할 Linked StateTree. 비어 있는 슬롯은 Base 트리의 기본 에셋 사용
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|AI", meta = (ForceInlineRow, Categories = "AI.Subtree"))
+    TMap<FGameplayTag, TSoftObjectPtr<UStateTree>> SubtreeOverrides;
 };

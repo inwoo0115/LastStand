@@ -7,6 +7,9 @@
 #include "Components/StateTreeAIComponent.h"
 #include "StateTree.h"
 #include "AI/Components/LSAIPerceptionComponent.h"
+#include "DataTable/LSDataSubsystem.h"
+#include "DataTable/LSEnemyData.h"
+#include "StateTreeReference.h"
 
 ALSAIController::ALSAIController()
 {
@@ -52,6 +55,8 @@ void ALSAIController::OnPossess(APawn* InPawn)
 		if (StateTreeComp)
 		{
 			StateTreeComp->SetStateTree(ST);
+			// 스키마 검증이 설정된 StateTree 기준이라 SetStateTree 이후에 적용
+			ApplySubtreeOverrides(Enemy);
 			StateTreeComp->StartLogic();
 		}
 	}
@@ -59,4 +64,43 @@ void ALSAIController::OnPossess(APawn* InPawn)
 	{
 		RunBehaviorTree(BT);
 	}
+}
+
+void ALSAIController::ApplySubtreeOverrides(ALSEnemyBase* Enemy)
+{
+	if (!Enemy || !StateTreeComp)
+	{
+		return;
+	}
+
+	ULSDataSubsystem* Sub = GetGameInstance() ? GetGameInstance()->GetSubsystem<ULSDataSubsystem>() : nullptr;
+	if (!Sub)
+	{
+		return;
+	}
+
+	const FEnemyData* Data = Sub->FindEnemy(Enemy->GetEnemyName());
+	if (!Data)
+	{
+		return;
+	}
+
+	// 슬롯 태그 → 서브트리 매핑을 모아 한 번에 교체 (재possess 시 이전 오버라이드 잔존 방지)
+	FStateTreeReferenceOverrides Overrides;
+	for (const TPair<FGameplayTag, TSoftObjectPtr<UStateTree>>& Pair : Data->SubtreeOverrides)
+	{
+		UStateTree* Subtree = Pair.Value.LoadSynchronous();
+		if (!Pair.Key.IsValid() || !Subtree)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[%s] SubtreeOverrides: invalid slot '%s' or subtree, skipped"), *Enemy->GetEnemyName().ToString(), *Pair.Key.ToString());
+			continue;
+		}
+
+		// SetStateTree가 서브트리 기본 파라미터를 동기화
+		FStateTreeReference Ref;
+		Ref.SetStateTree(Subtree);
+		Overrides.AddOverride(FStateTreeReferenceOverrideItem(Pair.Key, MoveTemp(Ref)));
+	}
+
+	StateTreeComp->SetLinkedStateTreeOverrides(MoveTemp(Overrides));
 }

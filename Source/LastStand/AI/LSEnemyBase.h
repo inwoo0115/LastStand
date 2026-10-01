@@ -45,6 +45,8 @@ public:
 
 	class ULSAIPerceptionComponent* GetPerceptionComponent() const { return Perception; }
 
+	FName GetEnemyName() const { return EnemyName; }
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -24,6 +24,9 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
+	// EnemyData의 SubtreeOverrides로 Linked Asset 서브트리 교체 (SetStateTree 이후, StartLogic 이전)
+	void ApplySubtreeOverrides(class ALSEnemyBase* Enemy);
+
 	// StateTree AI 실행 컴포넌트 (StateTreeAIComponentSchema 사용, AIController/Pawn 컨텍스트)
 	UPROPERTY(VisibleAnywhere, Category = AI)
 	TObjectPtr<class UStateTreeAIComponent> StateTreeComp;
