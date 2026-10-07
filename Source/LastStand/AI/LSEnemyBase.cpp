@@ -8,6 +8,8 @@
 #include "AI/Components/LSAIPerceptionComponent.h"
 #include "AI/Components/LSAIEventHubComponent.h"
 #include "AI/Components/LSAIActionComponent.h"
+#include "DataTable/LSDataSubsystem.h"
+#include "Tags/LSGameplayTags.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -146,6 +148,9 @@ void ALSEnemyBase::BeginPlay()
 		ActionComp->InitializeActionsByEnemyData(EnemyName);
 	}
 
+	// 체력 임계치 페이즈 전환 — 스탯 초기화 이후 구독 (초기 브로드캐스트로 발동 방지)
+	InitializePhaseByEnemyData();
+
 	// 체력바 위젯 초기화 (위젯이 생성된 머신=클라에서만. 데디 서버는 위젯 미생성)
 	if (HealthBarWidget)
 	{
@@ -201,6 +206,70 @@ void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ALSEnemyBase, bTurnRight);
 	DOREPLIFETIME(ALSEnemyBase, bIsRangeAttacking);
 	DOREPLIFETIME(ALSEnemyBase, bHasDetectedTarget);
+	DOREPLIFETIME(ALSEnemyBase, CurrentPhase);
+}
+
+void ALSEnemyBase::InitializePhaseByEnemyData()
+{
+	// 페이즈 판정/이벤트 전송은 서버 전용
+	if (!HasAuthority() || !Stat)
+	{
+		return;
+	}
+
+	ULSDataSubsystem* Sub = GetGameInstance()->GetSubsystem<ULSDataSubsystem>();
+	const FEnemyData* Data = Sub ? Sub->FindEnemy(EnemyName) : nullptr;
+	if (!Data || Data->HealthThresholdEvents.IsEmpty())
+	{
+		return;
+	}
+
+	// 높은 비율부터 순서대로 통과하도록 내림차순 정렬
+	HealthThresholdEvents = Data->HealthThresholdEvents;
+	HealthThresholdEvents.Sort([](const FLSHealthThresholdEvent& A, const FLSHealthThresholdEvent& B)
+	{
+		return A.HealthRatio > B.HealthRatio;
+	});
+	NextHealthThresholdIndex = 0;
+
+	Stat->OnHealthChanged.AddUObject(this, &ALSEnemyBase::HandleHealthChanged);
+}
+
+void ALSEnemyBase::HandleHealthChanged(int32 NewCurrentHealth, int32 NewMaxHealth)
+{
+	// 사망(0)은 Death 흐름이 처리
+	if (!HasAuthority() || NewMaxHealth <= 0 || NewCurrentHealth <= 0)
+	{
+		return;
+	}
+
+	const float Ratio = static_cast<float>(NewCurrentHealth) / static_cast<float>(NewMaxHealth);
+
+	// 이번 피격으로 넘은 임계치 중 가장 낮은 것 하나만 발동 (나머지는 소비)
+	int32 CrossedIndex = INDEX_NONE;
+	while (HealthThresholdEvents.IsValidIndex(NextHealthThresholdIndex)
+		&& Ratio <= HealthThresholdEvents[NextHealthThresholdIndex].HealthRatio)
+	{
+		CrossedIndex = NextHealthThresholdIndex;
+		++NextHealthThresholdIndex;
+	}
+
+	if (CrossedIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	const FLSHealthThresholdEvent& Threshold = HealthThresholdEvents[CrossedIndex];
+	CurrentPhase = Threshold.Phase;
+
+	if (EventHub)
+	{
+		FLSPhaseChangePayload Payload;
+		Payload.Phase = CurrentPhase;
+
+		const FGameplayTag EventTag = Threshold.EventTag.IsValid() ? Threshold.EventTag : LSAITags::Event_PhaseChange;
+		EventHub->SendEvent(EventTag, FConstStructView::Make(Payload));
+	}
 }
 
 void ALSEnemyBase::SetHasDetectedTarget(bool bInHasDetectedTarget)

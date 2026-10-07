@@ -19,6 +19,7 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Event_Reaction, "AI.Event.Reaction");
 	UE_DEFINE_GAMEPLAY_TAG(Event_AdditionalAction, "AI.Event.AdditionalAction");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Death, "AI.Event.Death");
+	UE_DEFINE_GAMEPLAY_TAG(Event_PhaseChange, "AI.Event.PhaseChange");
 
 	UE_DEFINE_GAMEPLAY_TAG(Subtree, "AI.Subtree");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Idle, "AI.Subtree.Idle");
@@ -33,4 +34,5 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Melee, "AI.Action.Attack.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Ranged, "AI.Action.Attack.Ranged");
 	UE_DEFINE_GAMEPLAY_TAG(Action_Initialization, "AI.Action.Initialization");
+	UE_DEFINE_GAMEPLAY_TAG(Action_PhaseChange, "AI.Action.PhaseChange");
 }

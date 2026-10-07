@@ -21,6 +21,7 @@ namespace LSAITags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Reaction);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_AdditionalAction);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Death);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_PhaseChange);
 
 	// 서브트리 슬롯 (Base 트리의 Linked Asset 상태 Tag — EnemyData로 교체)
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Subtree);
@@ -37,4 +38,5 @@ namespace LSAITags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Melee);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Ranged);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Initialization);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_PhaseChange);
 }

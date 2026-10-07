@@ -9,6 +9,7 @@
 #include "Interface/LSAIEventHubInterface.h"
 #include "Interface/LSAIActionComponentInterface.h"
 #include "GameplayTagContainer.h"
+#include "DataTable/LSEnemyData.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
@@ -53,6 +54,8 @@ public:
 	// 생애 최초 감지 플래그 세팅 (서버 전용 — 클라는 복제로 수신)
 	void SetHasDetectedTarget(bool bInHasDetectedTarget);
 
+	int32 GetCurrentPhase() const { return CurrentPhase; }
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -63,6 +66,12 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	// EnemyData의 체력 임계치 이벤트 로드 + 체력 변경 구독 (서버 전용)
+	void InitializePhaseByEnemyData();
+
+	// 체력 변경 → 임계치 통과 시 페이즈 갱신 + StateTree 이벤트 전송 (서버)
+	void HandleHealthChanged(int32 NewCurrentHealth, int32 NewMaxHealth);
 
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, meta = (AllowPrivateAccess = "true"))
@@ -152,4 +161,14 @@ protected:
 	// 생애 최초 타깃 감지 여부 (서버 세팅, 클라 복제 — 애님용 / Initialization 이벤트 1회 게이트)
 	UPROPERTY(Replicated)
 	bool bHasDetectedTarget = false;
+
+	// 현재 페이즈 (0 = 시작, 임계치 발동 시 해당 항목의 Phase) — 서버 세팅, 클라 복제
+	UPROPERTY(Replicated)
+	int32 CurrentPhase = 0;
+
+	// 체력 비율 내림차순으로 정렬한 임계치 이벤트 (서버 전용)
+	TArray<FLSHealthThresholdEvent> HealthThresholdEvents;
+
+	// 다음에 검사할 임계치 인덱스 (이전 항목은 발동/소비됨)
+	int32 NextHealthThresholdIndex = 0;
 };

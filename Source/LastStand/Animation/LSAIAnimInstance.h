@@ -57,6 +57,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	uint8 bHasDetectedTarget;
 
+	// 현재 페이즈 (복제 — 페이즈별 로코모션/포즈)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	int32 CurrentPhase;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Yaw;
 
