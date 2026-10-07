@@ -8,6 +8,7 @@
 struct FStateTreeExecutionContext;
 struct FStateTreeTransitionResult;
 class ULSAIPerceptionComponent;
+class ALSEnemyBase;
 
 // Combat Global Task가 StateTree에 노출/보관할 인스턴스 데이터.
 USTRUCT()
@@ -19,9 +20,17 @@ struct FLSStateTreeCombatGlobalTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Output")
 	TObjectPtr<AActor> TargetActor = nullptr;
 
+	// 출력: 소유 적의 현재 페이즈 (0 = 시작, 체력 임계치 발동 시 갱신) — 조건 바인딩 소스
+	UPROPERTY(EditAnywhere, Category = "Output")
+	int32 CurrentPhase = 0;
+
 	// 런타임 캐시: 소유 폰의 퍼셉션 컴포넌트 (EnterState에서 해석)
 	UPROPERTY()
 	TObjectPtr<ULSAIPerceptionComponent> Perception = nullptr;
+
+	// 런타임 캐시: 소유 폰 (EnterState에서 해석)
+	UPROPERTY()
+	TObjectPtr<ALSEnemyBase> Enemy = nullptr;
 };
 
 // Root에서 타겟 선정·엄폐 후보 선정 등을 담당하는 전투 Global Task.
@@ -38,4 +47,7 @@ protected:
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+
+	// 캐시로부터 Output(TargetActor, CurrentPhase) 갱신 — EnterState/Tick 공용
+	static void UpdateOutputs(FInstanceDataType& InstanceData);
 };
