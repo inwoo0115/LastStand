@@ -48,6 +48,11 @@ public:
 	// 원거리 공격 중 플래그 세팅 (서버 전용 — 클라는 복제로 수신)
 	void SetIsRangeAttacking(bool bInIsRangeAttacking);
 
+	bool GetHasDetectedTarget() const { return bHasDetectedTarget; }
+
+	// 생애 최초 감지 플래그 세팅 (서버 전용 — 클라는 복제로 수신)
+	void SetHasDetectedTarget(bool bInHasDetectedTarget);
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -143,4 +148,8 @@ protected:
 	// 원거리 공격(Hitscan 액션) 실행 중 (서버 세팅, 클라 복제 — 애님용)
 	UPROPERTY(Replicated)
 	bool bIsRangeAttacking = false;
+
+	// 생애 최초 타깃 감지 여부 (서버 세팅, 클라 복제 — 애님용 / Initialization 이벤트 1회 게이트)
+	UPROPERTY(Replicated)
+	bool bHasDetectedTarget = false;
 };

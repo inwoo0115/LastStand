@@ -60,6 +60,4 @@ protected:
 
 	// 마지막 타겟 교체 시각 (GetWorld()->GetTimeSeconds())
 	float LastTargetChangeTime = 0.0f;
-
-	
 };

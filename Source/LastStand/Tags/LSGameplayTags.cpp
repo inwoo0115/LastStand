@@ -32,4 +32,5 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Action_Attack, "AI.Action.Attack");
 	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Melee, "AI.Action.Attack.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Ranged, "AI.Action.Attack.Ranged");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Initialization, "AI.Action.Initialization");
 }

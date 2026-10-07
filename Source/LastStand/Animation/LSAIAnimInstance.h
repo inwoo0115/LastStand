@@ -53,6 +53,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	uint8 bIsRangeAttacking;
 
+	// 생애 최초 타깃 감지 여부 (복제 플래그 — 감지 전 대기 / 등장 후 포즈 구분)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bHasDetectedTarget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Yaw;
 

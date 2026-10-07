@@ -6,6 +6,10 @@
 #include "Character/Components/LSStatComponent.h"
 #include "Interface/LSStatComponentInterface.h"
 #include "DataTable/LSDataSubsystem.h"
+#include "AI/LSEnemyBase.h"
+#include "Interface/LSAIEventHubInterface.h"
+#include "AI/Components/LSAIEventHubComponent.h"
+#include "Tags/LSGameplayTags.h"
 #include "GameFramework/Actor.h"
 
 ULSAIPerceptionComponent::ULSAIPerceptionComponent()
@@ -143,6 +147,21 @@ void ULSAIPerceptionComponent::UpdateTarget()
 	{
 		TargetActor = NewTarget;
 		LastTargetChangeTime = Now;
+
+		// 생애 최초 감지 → 복제 플래그 세팅(애님용) + StateTree에 Initialization 이벤트 (1회)
+		ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetOwner());
+		if (TargetActor && Enemy && !Enemy->GetHasDetectedTarget())
+		{
+			Enemy->SetHasDetectedTarget(true);
+
+			if (Enemy->Implements<ULSAIEventHubInterface>())
+			{
+				if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Enemy)->GetAIEventHubComponent())
+				{
+					EventHub->SendEvent(LSAITags::Event_Initialization);
+				}
+			}
+		}
 	}
 }
 

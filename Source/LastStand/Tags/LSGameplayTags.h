@@ -36,4 +36,5 @@ namespace LSAITags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Melee);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Ranged);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Initialization);
 }

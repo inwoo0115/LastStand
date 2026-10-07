@@ -200,6 +200,15 @@ void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ALSEnemyBase, bTurnLeft);
 	DOREPLIFETIME(ALSEnemyBase, bTurnRight);
 	DOREPLIFETIME(ALSEnemyBase, bIsRangeAttacking);
+	DOREPLIFETIME(ALSEnemyBase, bHasDetectedTarget);
+}
+
+void ALSEnemyBase::SetHasDetectedTarget(bool bInHasDetectedTarget)
+{
+	if (HasAuthority())
+	{
+		bHasDetectedTarget = bInHasDetectedTarget;
+	}
 }
 
 void ALSEnemyBase::SetIsRangeAttacking(bool bInIsRangeAttacking)
