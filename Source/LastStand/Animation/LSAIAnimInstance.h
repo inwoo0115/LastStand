@@ -61,6 +61,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	int32 CurrentPhase;
 
+	// 사망 여부 (복제 플래그)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsDead;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Yaw;
 

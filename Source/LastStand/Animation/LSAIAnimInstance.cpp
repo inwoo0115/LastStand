@@ -39,6 +39,7 @@ void ULSAIAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		bIsRangeAttacking = Owner->GetIsRangeAttacking();
 		bHasDetectedTarget = Owner->GetHasDetectedTarget();
 		CurrentPhase = Owner->GetCurrentPhase();
+		bIsDead = Owner->GetIsDead();
 
 		// 조준(컨트롤) 회전 가져오기
 		FRotator ControlRotation;

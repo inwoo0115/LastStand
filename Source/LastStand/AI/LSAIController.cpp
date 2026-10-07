@@ -25,6 +25,13 @@ void ALSAIController::Tick(float DeltaTime)
 	// TODO: 테스트용 — 퍼셉션 타깃을 포커스로 지정해 컨트롤 회전이 타깃을 향하게 함
 	if (ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetPawn()))
 	{
+		// 사망 후에는 타깃을 바라보지 않음
+		if (Enemy->GetIsDead())
+		{
+			ClearFocus(EAIFocusPriority::Gameplay);
+			return;
+		}
+
 		if (ULSAIPerceptionComponent* Perception = Enemy->GetPerceptionComponent())
 		{
 			if (AActor* Target = Perception->GetTargetActor())

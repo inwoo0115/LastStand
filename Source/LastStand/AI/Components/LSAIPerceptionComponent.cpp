@@ -70,6 +70,17 @@ void ULSAIPerceptionComponent::InitializePerceptionByEnemyData(FName EnemyName)
 	TargetChangeDelay = Data->TargetChangeDelay;
 }
 
+void ULSAIPerceptionComponent::StopPerception()
+{
+	SetComponentTickEnabled(false);
+
+	OnComponentBeginOverlap.RemoveDynamic(this, &ULSAIPerceptionComponent::OnCapsuleBeginOverlap);
+	OnComponentEndOverlap.RemoveDynamic(this, &ULSAIPerceptionComponent::OnCapsuleEndOverlap);
+
+	PerceivedActors.Reset();
+	TargetActor = nullptr;
+}
+
 void ULSAIPerceptionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);

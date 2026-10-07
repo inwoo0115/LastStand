@@ -20,6 +20,9 @@ public:
 
 	AActor* GetTargetActor() const { return TargetActor; }
 
+	// 감지/타깃 선정 중지 (사망 시, 서버 전용) — 틱·오버랩 해제 + 타깃/후보 초기화
+	void StopPerception();
+
 	// 선정 방식에 따라 고른 현재 타깃 (서버 전용, 복제 안 함)
 	UPROPERTY()
 	TObjectPtr<AActor> TargetActor = nullptr;

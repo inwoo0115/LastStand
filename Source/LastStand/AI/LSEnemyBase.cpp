@@ -152,6 +152,12 @@ void ALSEnemyBase::BeginPlay()
 	// 체력 임계치 페이즈 전환 — 스탯 초기화 이후 구독 (초기 브로드캐스트로 발동 방지)
 	InitializePhaseByEnemyData();
 
+	// 사망 → StateTree Death 이벤트 (서버 전용)
+	if (HasAuthority() && Stat)
+	{
+		Stat->OnDeath.AddUObject(this, &ALSEnemyBase::HandleDeath);
+	}
+
 	// 체력바 위젯 초기화 (위젯이 생성된 머신=클라에서만. 데디 서버는 위젯 미생성)
 	if (HealthBarWidget)
 	{
@@ -171,9 +177,9 @@ void ALSEnemyBase::Tick(float DeltaTime)
 	{
 		CurrentControllerRotation = Controller->GetControlRotation();
 
-		// 몽타주 재생 중에는 몸 회전 고정 (루트 모션/공격 방향 유지)
+		// 사망 또는 몽타주 재생 중에는 몸 회전 고정 (루트 모션/공격 방향 유지)
 		const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-		const bool bLockRotation = AnimInstance && AnimInstance->IsAnyMontagePlaying();
+		const bool bLockRotation = bIsDead || (AnimInstance && AnimInstance->IsAnyMontagePlaying());
 
 		if (!bLockRotation)
 		{
@@ -221,6 +227,30 @@ void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ALSEnemyBase, bIsRangeAttacking);
 	DOREPLIFETIME(ALSEnemyBase, bHasDetectedTarget);
 	DOREPLIFETIME(ALSEnemyBase, CurrentPhase);
+	DOREPLIFETIME(ALSEnemyBase, bIsDead);
+}
+
+void ALSEnemyBase::HandleDeath()
+{
+	// 서버에서 1회만 처리
+	if (!HasAuthority() || bIsDead)
+	{
+		return;
+	}
+
+	bIsDead = true;
+
+	// 타깃 선정 중지 → 컨트롤러 포커스도 해제됨
+	if (Perception)
+	{
+		Perception->StopPerception();
+	}
+
+	// 진행 중 액션은 Death 전이로 상태 이탈 시 Run AI Action의 ExitState에서 취소됨
+	if (EventHub)
+	{
+		EventHub->SendEvent(LSAITags::Event_Death);
+	}
 }
 
 void ALSEnemyBase::InitializePhaseByEnemyData()

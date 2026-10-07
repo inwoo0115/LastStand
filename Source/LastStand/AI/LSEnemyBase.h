@@ -56,6 +56,8 @@ public:
 
 	int32 GetCurrentPhase() const { return CurrentPhase; }
 
+	bool GetIsDead() const { return bIsDead; }
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -72,6 +74,9 @@ protected:
 
 	// 체력 변경 → 임계치 통과 시 페이즈 갱신 + StateTree 이벤트 전송 (서버)
 	void HandleHealthChanged(int32 NewCurrentHealth, int32 NewMaxHealth);
+
+	// 체력 0 → 사망 플래그 + StateTree에 Death 이벤트 (서버, 1회)
+	void HandleDeath();
 
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, meta = (AllowPrivateAccess = "true"))
@@ -165,6 +170,10 @@ protected:
 	// 현재 페이즈 (0 = 시작, 임계치 발동 시 해당 항목의 Phase) — 서버 세팅, 클라 복제
 	UPROPERTY(Replicated)
 	int32 CurrentPhase = 0;
+
+	// 사망 여부 (서버 세팅, 클라 복제 — 애님용)
+	UPROPERTY(Replicated)
+	bool bIsDead = false;
 
 	// 체력 비율 내림차순으로 정렬한 임계치 이벤트 (서버 전용)
 	TArray<FLSHealthThresholdEvent> HealthThresholdEvents;
