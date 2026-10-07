@@ -22,6 +22,7 @@ namespace LSAITags
 
 	UE_DEFINE_GAMEPLAY_TAG(Subtree, "AI.Subtree");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Idle, "AI.Subtree.Idle");
+	UE_DEFINE_GAMEPLAY_TAG(Subtree_Initialization, "AI.Subtree.Initialization");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Combat, "AI.Subtree.Combat");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Reaction, "AI.Subtree.Reaction");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_AdditionalAction, "AI.Subtree.AdditionalAction");
