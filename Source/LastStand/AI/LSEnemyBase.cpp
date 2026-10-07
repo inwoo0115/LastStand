@@ -12,6 +12,7 @@
 #include "Tags/LSGameplayTags.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Components/WidgetComponent.h"
 #include "UI/Widget/LSEnemyStatWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -170,14 +171,27 @@ void ALSEnemyBase::Tick(float DeltaTime)
 	{
 		CurrentControllerRotation = Controller->GetControlRotation();
 
-		// 액터 Yaw를 컨트롤 Yaw로 뒤늦게 보간 (액터 회전은 ReplicatedMovement로 클라 전파)
-		const FRotator TargetRotation(0.0f, CurrentControllerRotation.Yaw, 0.0f);
-		SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TurnInterpSpeed));
+		// 몽타주 재생 중에는 몸 회전 고정 (루트 모션/공격 방향 유지)
+		const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+		const bool bLockRotation = AnimInstance && AnimInstance->IsAnyMontagePlaying();
 
-		// 턴 플래그 (서버 계산 → 복제)
-		const float DeltaYaw = FRotator::NormalizeAxis(CurrentControllerRotation.Yaw - GetActorRotation().Yaw);
-		bTurnRight = DeltaYaw >= TurnThresholdAngle;   // UE Yaw +는 시계방향(오른쪽)
-		bTurnLeft = DeltaYaw <= -TurnThresholdAngle;
+		if (!bLockRotation)
+		{
+			// 액터 Yaw를 컨트롤 Yaw로 뒤늦게 보간 (액터 회전은 ReplicatedMovement로 클라 전파)
+			const FRotator TargetRotation(0.0f, CurrentControllerRotation.Yaw, 0.0f);
+			SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TurnInterpSpeed));
+
+			// 턴 플래그 (서버 계산 → 복제)
+			const float DeltaYaw = FRotator::NormalizeAxis(CurrentControllerRotation.Yaw - GetActorRotation().Yaw);
+			bTurnRight = DeltaYaw >= TurnThresholdAngle;   // UE Yaw +는 시계방향(오른쪽)
+			bTurnLeft = DeltaYaw <= -TurnThresholdAngle;
+		}
+		else
+		{
+			// 고정 중엔 턴 애니메이션도 끔 (컨트롤 Yaw와 차이가 벌어져도 제자리 턴 방지)
+			bTurnLeft = false;
+			bTurnRight = false;
+		}
 	}
 
 	// 체력바가 각 클라의 로컬 카메라를 바라보도록 (데디 서버는 카메라 없음 → 스킵)
