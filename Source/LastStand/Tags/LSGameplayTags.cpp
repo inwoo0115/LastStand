@@ -27,4 +27,9 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Reaction, "AI.Subtree.Reaction");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_AdditionalAction, "AI.Subtree.AdditionalAction");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Death, "AI.Subtree.Death");
+
+	UE_DEFINE_GAMEPLAY_TAG(Action, "AI.Action");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Attack, "AI.Action.Attack");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Melee, "AI.Action.Attack.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Attack_Ranged, "AI.Action.Attack.Ranged");
 }

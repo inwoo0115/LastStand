@@ -30,4 +30,10 @@ namespace LSAITags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Subtree_Reaction);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Subtree_AdditionalAction);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Subtree_Death);
+
+	// 행동 (AI Action 컴포넌트가 실행 — EnemyData의 Actions 키)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Melee);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Attack_Ranged);
 }

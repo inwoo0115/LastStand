@@ -8,6 +8,7 @@
 #include "LSEnemyData.generated.h"
 
 class UStateTree;
+class ULSAIActionBase;
 
 // 적 AI 타겟 선정 방식
 UENUM(BlueprintType)
@@ -56,4 +57,8 @@ struct FEnemyData : public FTableRowBase
     // 서브트리 슬롯(AI.Subtree.*) → 교체할 Linked StateTree. 비어 있는 슬롯은 Base 트리의 기본 에셋 사용
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|AI", meta = (ForceInlineRow, Categories = "AI.Subtree"))
     TMap<FGameplayTag, TSoftObjectPtr<UStateTree>> SubtreeOverrides;
+
+    // 행동 태그(AI.Action.*) → 액션 클래스 (파라미터는 BP 서브클래스 기본값). 런타임에 적마다 인스턴스 생성
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|AI", meta = (ForceInlineRow, Categories = "AI.Action"))
+    TMap<FGameplayTag, TSoftClassPtr<ULSAIActionBase>> Actions;
 };

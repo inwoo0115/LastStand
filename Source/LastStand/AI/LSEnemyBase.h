@@ -7,11 +7,12 @@
 #include "Interface/LSStatComponentInterface.h"
 #include "Interface/LSHitboxInterface.h"
 #include "Interface/LSAIEventHubInterface.h"
+#include "Interface/LSAIActionComponentInterface.h"
 #include "GameplayTagContainer.h"
 #include "LSEnemyBase.generated.h"
 
 UCLASS()
-class LASTSTAND_API ALSEnemyBase : public ACharacter, public ILSStatComponentInterface, public ILSHitboxInterface, public ILSAIEventHubInterface
+class LASTSTAND_API ALSEnemyBase : public ACharacter, public ILSStatComponentInterface, public ILSHitboxInterface, public ILSAIEventHubInterface, public ILSAIActionComponentInterface
 {
 	GENERATED_BODY()
 
@@ -28,6 +29,9 @@ public:
 
 	// StateTree 이벤트 전달 허브 반환
 	virtual class ULSAIEventHubComponent* GetAIEventHubComponent() override;
+
+	// 행동(공격 등) 실행기 반환
+	virtual class ULSAIActionComponent* GetAIActionComponent() override;
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -65,6 +69,10 @@ protected:
 	// AI 이벤트 허브(게임플레이 → StateTree 이벤트 전달 통로) — 서버 전용
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSAIEventHubComponent> EventHub;
+
+	// AI 행동 실행기(StateTree Task가 태그로 실행) — 서버 실행, 몽타주만 멀티캐스트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSAIActionComponent> ActionComp;
 
 	// 스탯 초기화에 사용할 데이터 테이블(FEnemyData) 행 이름
 	UPROPERTY(EditAnywhere, Category = Stat, meta = (AllowPrivateAccess = "true"))

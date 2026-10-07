@@ -7,6 +7,7 @@
 #include "Character/Components/LSServerSideRewindComponent.h"
 #include "AI/Components/LSAIPerceptionComponent.h"
 #include "AI/Components/LSAIEventHubComponent.h"
+#include "AI/Components/LSAIActionComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -40,6 +41,9 @@ ALSEnemyBase::ALSEnemyBase()
 
 	// AI 이벤트 허브 (StateTree 이벤트 전달 통로)
 	EventHub = CreateDefaultSubobject<ULSAIEventHubComponent>(TEXT("EventHub"));
+
+	// AI 행동 실행기
+	ActionComp = CreateDefaultSubobject<ULSAIActionComponent>(TEXT("ActionComp"));
 
 	// 체력바 위젯 컴포넌트
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
@@ -97,6 +101,11 @@ ULSAIEventHubComponent* ALSEnemyBase::GetAIEventHubComponent()
 	return EventHub;
 }
 
+ULSAIActionComponent* ALSEnemyBase::GetAIActionComponent()
+{
+	return ActionComp;
+}
+
 void ALSEnemyBase::GetHitboxComponents(TArray<ULSHitboxComponent*>& OutHitboxes) const
 {
 	OutHitboxes.Reset();
@@ -129,6 +138,12 @@ void ALSEnemyBase::BeginPlay()
 	if (Perception)
 	{
 		Perception->InitializePerceptionByEnemyData(EnemyName);
+	}
+
+	// 행동 목록(EnemyData Actions) 로드 — 서버 전용
+	if (ActionComp)
+	{
+		ActionComp->InitializeActionsByEnemyData(EnemyName);
 	}
 
 	// 체력바 위젯 초기화 (위젯이 생성된 머신=클라에서만. 데디 서버는 위젯 미생성)
