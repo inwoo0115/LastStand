@@ -19,6 +19,9 @@ public:
 protected:
 	virtual bool OnActivate() override;
 
+	// 원거리 공격 중 플래그 해제
+	virtual void OnEnd(bool bSucceeded) override;
+
 	// 몽타주가 끝나거나 끊겨도 발사 유지
 	virtual void OnMontageEnded(bool bInterrupted) override {}
 

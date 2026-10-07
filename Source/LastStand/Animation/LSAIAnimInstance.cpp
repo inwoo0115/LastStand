@@ -36,6 +36,7 @@ void ULSAIAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		bIsMontagePlaying = Montage_IsPlaying(nullptr);
 		bTurnLeft = Owner->GetTurnLeft();
 		bTurnRight = Owner->GetTurnRight();
+		bIsRangeAttacking = Owner->GetIsRangeAttacking();
 
 		// 조준(컨트롤) 회전 가져오기
 		FRotator ControlRotation;

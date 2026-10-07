@@ -26,7 +26,24 @@ bool ULSAIAction_Hitscan::OnActivate()
 	bStartedWithTarget = GetTargetActor() != nullptr;
 	NextFireTime = World->GetTimeSeconds() + FirstFireDelay;
 
+	// 원거리 공격 중 플래그 (애님용, 클라 복제)
+	if (ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetOwnerCharacter()))
+	{
+		Enemy->SetIsRangeAttacking(true);
+	}
+
 	return true;
+}
+
+void ULSAIAction_Hitscan::OnEnd(bool bSucceeded)
+{
+	// 상태 이탈(Cancel)·파괴 모두 이 경로 → 항상 해제
+	if (ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetOwnerCharacter()))
+	{
+		Enemy->SetIsRangeAttacking(false);
+	}
+
+	Super::OnEnd(bSucceeded);
 }
 
 void ULSAIAction_Hitscan::TickAction(float DeltaTime)

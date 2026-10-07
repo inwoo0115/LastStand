@@ -49,6 +49,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	uint8 bTurnRight;
 
+	// 원거리 공격(Hitscan 액션) 실행 중 (복제 플래그)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsRangeAttacking;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Yaw;
 

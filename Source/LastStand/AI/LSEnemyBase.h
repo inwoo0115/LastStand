@@ -43,6 +43,11 @@ public:
 
 	bool GetTurnRight() const { return bTurnRight; }
 
+	bool GetIsRangeAttacking() const { return bIsRangeAttacking; }
+
+	// 원거리 공격 중 플래그 세팅 (서버 전용 — 클라는 복제로 수신)
+	void SetIsRangeAttacking(bool bInIsRangeAttacking);
+
 	class UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
 
 	class UStateTree* GetStateTree() const { return StateTree; }
@@ -134,4 +139,8 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bTurnRight = false;
+
+	// 원거리 공격(Hitscan 액션) 실행 중 (서버 세팅, 클라 복제 — 애님용)
+	UPROPERTY(Replicated)
+	bool bIsRangeAttacking = false;
 };

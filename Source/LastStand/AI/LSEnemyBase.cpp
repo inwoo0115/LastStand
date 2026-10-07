@@ -199,4 +199,13 @@ void ALSEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ALSEnemyBase, CurrentControllerRotation);
 	DOREPLIFETIME(ALSEnemyBase, bTurnLeft);
 	DOREPLIFETIME(ALSEnemyBase, bTurnRight);
+	DOREPLIFETIME(ALSEnemyBase, bIsRangeAttacking);
+}
+
+void ALSEnemyBase::SetIsRangeAttacking(bool bInIsRangeAttacking)
+{
+	if (HasAuthority())
+	{
+		bIsRangeAttacking = bInIsRangeAttacking;
+	}
 }
