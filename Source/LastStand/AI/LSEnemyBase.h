@@ -175,6 +175,10 @@ protected:
 	UPROPERTY(Replicated)
 	bool bIsDead = false;
 
+	// 사망 후 액터 파괴까지 대기 시간(초). 0 이하면 자동 파괴 안 함
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death", meta = (AllowPrivateAccess = "true"))
+	float DestroyDelayAfterDeath = 5.0f;
+
 	// 체력 비율 내림차순으로 정렬한 임계치 이벤트 (서버 전용)
 	TArray<FLSHealthThresholdEvent> HealthThresholdEvents;
 

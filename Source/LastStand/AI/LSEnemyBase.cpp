@@ -251,6 +251,12 @@ void ALSEnemyBase::HandleDeath()
 	{
 		EventHub->SendEvent(LSAITags::Event_Death);
 	}
+
+	// 일정 시간 후 파괴 (서버 → 액터 파괴가 클라로 복제). SetLifeSpan(0)은 무제한이라 0 이하는 미적용
+	if (DestroyDelayAfterDeath > 0.0f)
+	{
+		SetLifeSpan(DestroyDelayAfterDeath);
+	}
 }
 
 void ALSEnemyBase::InitializePhaseByEnemyData()
