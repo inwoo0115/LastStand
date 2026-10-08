@@ -37,6 +37,10 @@ void ULSAIPerceptionComponent::BeginPlay()
 		OnComponentBeginOverlap.AddUniqueDynamic(this, &ULSAIPerceptionComponent::OnCapsuleBeginOverlap);
 		OnComponentEndOverlap.AddUniqueDynamic(this, &ULSAIPerceptionComponent::OnCapsuleEndOverlap);
 
+		// 어그로 해제 시 롤백할 원래 감지 범위
+		DefaultRadius = GetUnscaledCapsuleRadius();
+		DefaultHalfHeight = GetUnscaledCapsuleHalfHeight();
+
 		// 스폰 시점에 이미 겹쳐 있는 액터 초기 반영
 		UpdateOverlaps();
 	}
@@ -87,6 +91,9 @@ void ULSAIPerceptionComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 
 	// 플레이어가 이동하므로 매 틱 타겟 재평가 (딜레이 내에선 유지)
 	UpdateTarget();
+
+	// 감지 후보가 오래 비면 어그로 해제
+	UpdateAggroReset();
 }
 
 void ULSAIPerceptionComponent::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -165,12 +172,59 @@ void ULSAIPerceptionComponent::UpdateTarget()
 		{
 			Enemy->SetHasDetectedTarget(true);
 
+			// 첫 감지 → 감지 범위를 어그로 범위로 확장 (경계 들락날락 시 어그로 해제 방지)
+			SetCapsuleSize(AggroRadius, AggroHalfHeight);
+			EmptyStartTime = -1.0f;
+
 			if (Enemy->Implements<ULSAIEventHubInterface>())
 			{
 				if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Enemy)->GetAIEventHubComponent())
 				{
 					EventHub->SendEvent(LSAITags::Event_Initialization);
 				}
+			}
+		}
+	}
+}
+
+void ULSAIPerceptionComponent::UpdateAggroReset()
+{
+	ALSEnemyBase* Enemy = Cast<ALSEnemyBase>(GetOwner());
+	if (!Enemy || !Enemy->GetHasDetectedTarget())
+	{
+		EmptyStartTime = -1.0f;
+		return;
+	}
+
+	// 후보가 있으면 타이머 리셋
+	if (!PerceivedActors.IsEmpty())
+	{
+		EmptyStartTime = -1.0f;
+		return;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	// 비기 시작한 시각 기록
+	if (EmptyStartTime < 0.0f)
+	{
+		EmptyStartTime = Now;
+		return;
+	}
+
+	if (Now - EmptyStartTime >= AggroResetDelay)
+	{
+		// n초 이상 무감지 → 어그로 해제 + 감지 범위 원복
+		Enemy->SetHasDetectedTarget(false);
+		SetCapsuleSize(DefaultRadius, DefaultHalfHeight);
+		EmptyStartTime = -1.0f;
+
+		// StateTree를 Idle로 복귀
+		if (Enemy->Implements<ULSAIEventHubInterface>())
+		{
+			if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Enemy)->GetAIEventHubComponent())
+			{
+				EventHub->SendEvent(LSAITags::Event_Idle);
 			}
 		}
 	}

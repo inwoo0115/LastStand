@@ -44,12 +44,33 @@ protected:
 	AActor* SelectTopDamageTarget() const;
 	AActor* SelectRandomTarget() const;
 
+	// 무감지 지속 판정 → bHasDetectedTarget 해제 + 캡슐 롤백 (서버 전용)
+	void UpdateAggroReset();
+
 	// 감지 볼륨 크기 (에디터 조정)
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float DetectionRadius = 800.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float DetectionHalfHeight = 200.0f;
+
+	// 첫 감지 이후 확장되는 어그로 유지 범위 (에디터 조정)
+	UPROPERTY(EditAnywhere, Category = "Perception")
+	float AggroRadius = 1500.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Perception")
+	float AggroHalfHeight = 400.0f;
+
+	// 감지 후보가 이 시간(초) 이상 비어 있으면 어그로 해제 + 캡슐 롤백
+	UPROPERTY(EditAnywhere, Category = "Perception")
+	float AggroResetDelay = 5.0f;
+
+	// 롤백용 원래 캡슐 크기 (BeginPlay에서 캡처 — BP에서 캡슐 크기를 직접 바꿔도 반영)
+	float DefaultRadius = 0.0f;
+	float DefaultHalfHeight = 0.0f;
+
+	// 후보가 비기 시작한 시각 (< 0 이면 비어있지 않음)
+	float EmptyStartTime = -1.0f;
 
 	// 캡슐 안의 ALSCharacterBase 후보들 (서버 전용)
 	UPROPERTY()
