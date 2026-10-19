@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/LSCharacterBase.h"
 #include "InputActionValue.h"
+#include "Character/Components/LSCharacterMovementComponent.h"
 #include "LSPlayerCharacter.generated.h"
 
 /**
@@ -16,7 +17,7 @@ class LASTSTAND_API ALSPlayerCharacter : public ALSCharacterBase
 	GENERATED_BODY()
 	
 public:
-	ALSPlayerCharacter();
+	ALSPlayerCharacter(const FObjectInitializer& ObjectInitializer);
 
 	virtual void BeginPlay() override;
 
@@ -25,6 +26,10 @@ public:
 	bool GetIsAim();
 
 	bool GetIsRun();
+
+	// 서버(CMC PerformDash) → 타 클라 대시 몽타주. 소유 클라는 로컬 재생했으므로 스킵
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlayDashMontage(ELSDashDirection Direction);
 
 protected:
 	void Move(const FInputActionValue& Value);
@@ -35,7 +40,10 @@ protected:
 
 	void Interact(const FInputActionValue& Value);
 
-	void Crouching(const FInputActionValue& Value);
+	void Dash();
+
+	// 방향별 대시 몽타주 재생 (캐릭터 메시)
+	void PlayDashMontage(ELSDashDirection Direction);
 
 	void Jump();
 
@@ -69,7 +77,11 @@ protected:
 	TObjectPtr<class UInputAction> InteractAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> CrouchAction;
+	TObjectPtr<class UInputAction> DashAction;
+
+	// 방향별 대시 몽타주 (이동은 CMC 루트모션 소스가 담당 → 애님 루트모션 끄기)
+	UPROPERTY(EditDefaultsOnly, Category = "Dash")
+	TMap<ELSDashDirection, TSoftObjectPtr<class UAnimMontage>> DashMontages;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> AttackAction;
@@ -89,14 +101,12 @@ protected:
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 토글 결과를 서버에 전달 (애님용 bIsRun 동기화, 이동 속도는 CMC 플래그)
 	UFUNCTION(Server, Reliable)
-	void ServerRPCRun();
+	void ServerRPCRun(bool bNewRun);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCInteract();
-
-	UFUNCTION(Server, Reliable)
-	void ServerRPCCrouch();
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCAim(bool bNewAim);
@@ -107,19 +117,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCFocusSubWeapon();
 
-	// Character State flag
-	UPROPERTY(ReplicatedUsing = OnRepIsRun)
+	// Character State flag (소유 클라는 로컬 세팅 → COND_SkipOwner)
+	UPROPERTY(Replicated)
 	bool bIsRun = false;
-
-	// Character State flag
-	UPROPERTY(ReplicatedUsing = OnRepIsCrouch)
-	bool bIsCrouch = false;
-
-	UFUNCTION()
-	void OnRepIsRun();
-
-	UFUNCTION()
-	void OnRepIsCrouch();
 
 	UPROPERTY(Replicated)
 	bool bIsAim = false;

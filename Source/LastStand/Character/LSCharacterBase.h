@@ -24,7 +24,7 @@ class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComp
 
 public:
 	// Sets default values for this character's properties
-	ALSCharacterBase();
+	ALSCharacterBase(const FObjectInitializer& ObjectInitializer);
 
 	virtual ULSInteractionComponent* GetInteractionComponent() override;
 
@@ -35,6 +35,9 @@ public:
 	virtual void ApplyDamage(int32 Damage, AActor* DamageCauser) override;
 
 	class USpringArmComponent* GetSpringArmComponent();
+
+	// 커스텀 무브먼트 (달리기/대시)
+	class ULSCharacterMovementComponent* GetLSCharacterMovement() const;
 
 	FTransform GetCurrentCameraTransform() const;
 

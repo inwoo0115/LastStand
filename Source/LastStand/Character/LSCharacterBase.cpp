@@ -13,11 +13,13 @@
 #include "Components/LSInventoryComponent.h"
 #include "Components/LSInteractionComponent.h"
 #include "Components/LSStatComponent.h"
+#include "Components/LSCharacterMovementComponent.h"
 #include "GameState/LSGameState.h"
 
 
 // Sets default values
-ALSCharacterBase::ALSCharacterBase()
+ALSCharacterBase::ALSCharacterBase(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<ULSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -48,6 +50,11 @@ ALSCharacterBase::ALSCharacterBase()
 
 	// Stat
 	Stat = CreateDefaultSubobject<ULSStatComponent>(TEXT("Stat"));
+}
+
+ULSCharacterMovementComponent* ALSCharacterBase::GetLSCharacterMovement() const
+{
+	return Cast<ULSCharacterMovementComponent>(GetCharacterMovement());
 }
 
 ULSInteractionComponent* ALSCharacterBase::GetInteractionComponent()

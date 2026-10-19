@@ -7,8 +7,10 @@
 #include "Components/LSInteractionComponent.h"
 #include "Components/LSEquipmentComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Animation/AnimMontage.h"
 
-ALSPlayerCharacter::ALSPlayerCharacter()
+ALSPlayerCharacter::ALSPlayerCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 }
 
@@ -29,7 +31,7 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALSPlayerCharacter::Look);
 	EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Walk);
 	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Interact);
-	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Crouching);
+	EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Dash);
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Attack);
 	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Aim);
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ALSPlayerCharacter::Release);
@@ -75,7 +77,10 @@ void ALSPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ALSPlayerCharacter::Walk(const FInputActionValue& Value)
 {
-	ServerRPCRun();
+	// 로컬 즉시 토글 → CMC 플래그로 이동 속도 예측, 서버엔 애님용 상태 전달
+	bIsRun = !bIsRun;
+	GetLSCharacterMovement()->SetWantsToRun(bIsRun);
+	ServerRPCRun(bIsRun);
 }
 
 void ALSPlayerCharacter::Interact(const FInputActionValue& Value)
@@ -83,9 +88,47 @@ void ALSPlayerCharacter::Interact(const FInputActionValue& Value)
 	ServerRPCInteract();
 }
 
-void ALSPlayerCharacter::Crouching(const FInputActionValue& Value)
+void ALSPlayerCharacter::Dash()
 {
-	ServerRPCCrouch();
+	ULSCharacterMovementComponent* CMC = GetLSCharacterMovement();
+	if (!CMC || !CMC->CanDash())   // 지상/입력 없음/대시 중/쿨다운
+	{
+		return;
+	}
+
+	// 해당 방향 대시 몽타주가 지정돼 있어야 대시 가능
+	const ELSDashDirection Direction = CMC->GetDashDirectionType(CMC->GetDashDirection());
+	const TSoftObjectPtr<UAnimMontage>* Found = DashMontages.Find(Direction);
+	if (!Found || Found->IsNull())
+	{
+		return;
+	}
+
+	// 반응성: 로컬 즉시 몽타주 → 다음 이동 틱에 CMC가 루트모션 적용(서버 재현)
+	PlayDashMontage(Direction);
+	CMC->RequestDash();
+}
+
+void ALSPlayerCharacter::PlayDashMontage(ELSDashDirection Direction)
+{
+	if (const TSoftObjectPtr<UAnimMontage>* Found = DashMontages.Find(Direction))
+	{
+		if (UAnimMontage* Montage = Found->LoadSynchronous())
+		{
+			PlayAnimMontage(Montage);
+		}
+	}
+}
+
+void ALSPlayerCharacter::MulticastRPCPlayDashMontage_Implementation(ELSDashDirection Direction)
+{
+	// 소유 클라는 입력 시 이미 재생 → 중복 방지
+	if (IsLocallyControlled())
+	{
+		return;
+	}
+
+	PlayDashMontage(Direction);
 }
 
 void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -94,6 +137,7 @@ void ALSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	// 로컬 제외 나머지 클라이언트에게만 리플리케이트 (COND_SkipOwner)
 	DOREPLIFETIME_CONDITION(ALSPlayerCharacter, bIsAim, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(ALSPlayerCharacter, bIsRun, COND_SkipOwner);
 }
 
 void ALSPlayerCharacter::ServerRPCInteract_Implementation()
@@ -101,56 +145,10 @@ void ALSPlayerCharacter::ServerRPCInteract_Implementation()
 	Interaction->Interact();
 }
 
-void ALSPlayerCharacter::ServerRPCCrouch_Implementation()
+void ALSPlayerCharacter::ServerRPCRun_Implementation(bool bNewRun)
 {
-	if (bIsCrouch)
-	{
-		bIsCrouch = false;
-		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
-	}
-	else
-	{
-		bIsCrouch = true;
-		GetCharacterMovement()->MaxWalkSpeed += 100.0f;
-	}
-}
-
-void ALSPlayerCharacter::OnRepIsRun()
-{
-	if (bIsRun)
-	{
-		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
-	}
-	else
-	{
-		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
-	}
-}
-
-void ALSPlayerCharacter::OnRepIsCrouch()
-{
-	if (bIsCrouch)
-	{
-		GetCharacterMovement()->MaxWalkSpeed -= 100.0f;
-	}
-	else
-	{
-		GetCharacterMovement()->MaxWalkSpeed += 100.0f;
-	}
-}
-
-void ALSPlayerCharacter::ServerRPCRun_Implementation()
-{
-	if (bIsRun)
-	{
-		bIsRun = false;
-		GetCharacterMovement()->MaxWalkSpeed -= 300.0f;
-	}
-	else
-	{
-		bIsRun = true;
-		GetCharacterMovement()->MaxWalkSpeed += 300.0f;
-	}
+	// 이동 속도는 CMC가 처리 → 여기선 타 클라 애님용 상태만
+	bIsRun = bNewRun;
 }
 
 void ALSPlayerCharacter::Jump()
