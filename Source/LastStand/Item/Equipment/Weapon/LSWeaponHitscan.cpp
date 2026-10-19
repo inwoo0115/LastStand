@@ -278,19 +278,7 @@ void ALSWeaponHitscan::PlayFireEffects(bool bHit, const FVector& ImpactPoint, co
 		return;
 	}
 
-	// 총구 발사 이펙트 — 총구 소켓에 부착 (반동/이동 따라감). 명중 여부 무관하게 재생
-	if (MuzzleEffect && WeaponMesh)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAttached(
-			MuzzleEffect,
-			WeaponMesh,
-			MuzzleName,
-			FVector::ZeroVector,
-			FRotator(0.f, 0.f, 0.f),
-			EAttachLocation::SnapToTarget,
-			true);
-	}
-
+	// 총구 발사 이펙트는 발사 몽타주의 LS Weapon Fire 노티파이에서 재생
 	if (!bHit)
 	{
 		return;
@@ -402,7 +390,7 @@ AActor* ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVect
 		}
 	}
 
-	// 총구 발사 + 착탄 이펙트/데칼 로컬 재생 (반응성)
+	// 착탄 이펙트/데칼 로컬 재생 (반응성)
 	PlayFireEffects(bHit, Hit.ImpactPoint, Hit.ImpactNormal);
 
 	return HitEnemy;
@@ -423,10 +411,9 @@ void ALSWeaponHitscan::InitEquipment()
 	bIsRapidFire = WeaponData.WeaponDataAsset->bIsRapidFire;
 	MuzzleName = WeaponData.WeaponDataAsset->MuzzleName;
 
-	// 발사 이펙트 로드 — 데디 서버는 렌더링 안 하므로 스킵
+	// 착탄 이펙트 로드 — 데디 서버는 렌더링 안 하므로 스킵
 	if (GetNetMode() != NM_DedicatedServer)
 	{
-		MuzzleEffect = WeaponData.MuzzleEffect.LoadSynchronous();
 		ImpactEffect = WeaponData.ImpactEffect.LoadSynchronous();
 		ImpactDecal = WeaponData.ImpactDecal.LoadSynchronous();
 	}

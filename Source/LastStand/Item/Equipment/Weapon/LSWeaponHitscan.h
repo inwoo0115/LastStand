@@ -78,7 +78,7 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayMontage(EWeaponMontageType MontageType);
 
-	// 서버 → 전 머신, 발사 이펙트(총구/착탄/데칼). 소유 클라는 로컬 재생했으므로 스킵
+	// 서버 → 전 머신, 발사 이펙트(착탄/데칼). 소유 클라는 로컬 재생했으므로 스킵
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayFireEffects(bool bHit, FVector_NetQuantize ImpactPoint, FVector_NetQuantizeNormal ImpactNormal);
 
@@ -133,10 +133,7 @@ protected:
 	UPROPERTY()
 	FName MuzzleName;
 
-	// 발사 이펙트 캐시 (InitEquipment에서 로드, 데디 서버는 스킵)
-	UPROPERTY()
-	TObjectPtr<UNiagaraSystem> MuzzleEffect;
-
+	// 착탄 이펙트 캐시 (InitEquipment에서 로드, 데디 서버는 스킵)
 	UPROPERTY()
 	TObjectPtr<UNiagaraSystem> ImpactEffect;
 

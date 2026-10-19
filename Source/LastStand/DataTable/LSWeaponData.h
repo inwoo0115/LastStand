@@ -55,10 +55,6 @@ struct FWeaponData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     TSoftObjectPtr<UTexture2D> Icon;
 
-    // 총구 발사 이펙트 (Niagara)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-    TSoftObjectPtr<UNiagaraSystem> MuzzleEffect;
-
     // 탄착 지점 이펙트 (Niagara)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
     TSoftObjectPtr<UNiagaraSystem> ImpactEffect;
