@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,7 +6,6 @@
 #include "AI/Action/LSAIActionBase.h"
 #include "LSAIAction_Hitscan.generated.h"
 
-// 원거리 공격: 상태 유지 중 FireInterval마다 타깃 중심 방향을 축으로 한 원뿔 범위 안에 랜덤 탄퍼짐 히트스캔 (펠릿마다 데미지)
 // 스스로 끝나지 않음 → StateTree 상태 이탈(Cancel)로만 종료. 몽타주는 선택(루프 사격 몽타주 권장)
 UCLASS(meta = (DisplayName = "Hitscan"))
 class LASTSTAND_API ULSAIAction_Hitscan : public ULSAIActionBase
