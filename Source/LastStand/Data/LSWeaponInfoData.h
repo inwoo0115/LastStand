@@ -15,7 +15,13 @@ enum class EWeaponMontageType : uint8
 {
 	Fire      UMETA(DisplayName = "Fire"),
 	Reload    UMETA(DisplayName = "Reload"),
-	Equip     UMETA(DisplayName = "Equip")
+	Equip     UMETA(DisplayName = "Equip"),
+
+	// 대시 방향별 (기존 에셋 값 유지를 위해 맨 뒤에 추가)
+	DashForward   UMETA(DisplayName = "Dash Forward"),
+	DashBackward  UMETA(DisplayName = "Dash Backward"),
+	DashLeft      UMETA(DisplayName = "Dash Left"),
+	DashRight     UMETA(DisplayName = "Dash Right")
 };
 
 // 무기 애님 노티파이가 무기에 넘기는 재생 정보 (노티파이에 직접 지정)
