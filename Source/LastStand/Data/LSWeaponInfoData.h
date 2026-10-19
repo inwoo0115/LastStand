@@ -7,6 +7,8 @@
 #include "LSWeaponInfoData.generated.h"
 
 class UAnimMontage;
+class USoundBase;
+class UNiagaraSystem;
 
 UENUM(BlueprintType)
 enum class EWeaponMontageType : uint8
@@ -14,6 +16,23 @@ enum class EWeaponMontageType : uint8
 	Fire      UMETA(DisplayName = "Fire"),
 	Reload    UMETA(DisplayName = "Reload"),
 	Equip     UMETA(DisplayName = "Equip")
+};
+
+// 무기 애님 노티파이가 무기에 넘기는 재생 정보 (노티파이에 직접 지정)
+USTRUCT(BlueprintType)
+struct FWeaponNotifyEffect
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TObjectPtr<USoundBase> Sound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TObjectPtr<UNiagaraSystem> NiagaraEffect;
+
+	// 무기 메시 소켓 (None이면 메시 루트)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	FName SocketName = NAME_None;
 };
 
 /**

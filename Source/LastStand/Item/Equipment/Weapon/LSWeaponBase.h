@@ -58,6 +58,10 @@ public:
 	// 무기 상황별 몽타주 재생 (오너 캐릭터 메시에서 재생). bReverse=true면 역재생
 	void PlayWeaponMontage(EWeaponMontageType MontageType, bool bReverse = false);
 
+	// 애님 노티파이 훅 (실행할 머신은 노티파이가 이미 걸러냄)
+	virtual void OnFireNotify(const FWeaponNotifyEffect& Effect);   // 발사: 데디 서버 제외 모든 머신
+	virtual void OnReloadNotify(const FWeaponNotifyEffect& Effect); // 재장전: 소유 로컬 클라만
+
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components",
@@ -81,6 +85,9 @@ protected:
 	void RemoveCrosshairWidget();   // 주입한 조준선 위젯 해제
 	void RemoveWeaponInfoWidget();  // 주입한 무기 정보 위젯 해제
 	void ResetAimState();           // 에임 타임라인 리셋 → 스프링암 기본 길이 복원
+
+	// 노티파이 공용: WeaponMesh 소켓에 사운드/나이아가라 부착 재생
+	void PlayNotifyEffect(const FWeaponNotifyEffect& Effect);
 
 	virtual void InitEquipment() override;
 

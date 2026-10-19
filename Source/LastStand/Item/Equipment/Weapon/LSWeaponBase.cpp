@@ -14,6 +14,8 @@
 #include "Animation/AnimInstance.h"
 #include "UI/LSUISubsystem.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
 
 
 ALSWeaponBase::ALSWeaponBase()
@@ -397,6 +399,43 @@ void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType, bool bReve
 		{
 			AnimInstance->Montage_Play(Montage, -1.0f, EMontagePlayReturnType::MontageLength, Montage->GetPlayLength());
 		}
+	}
+}
+
+void ALSWeaponBase::OnFireNotify(const FWeaponNotifyEffect& Effect)
+{
+	PlayNotifyEffect(Effect);
+}
+
+void ALSWeaponBase::OnReloadNotify(const FWeaponNotifyEffect& Effect)
+{
+	PlayNotifyEffect(Effect);
+}
+
+void ALSWeaponBase::PlayNotifyEffect(const FWeaponNotifyEffect& Effect)
+{
+	if (!WeaponMesh)
+	{
+		return;
+	}
+
+	// 사운드 — 무기 소켓에 부착 (이동 따라감)
+	if (Effect.Sound)
+	{
+		UGameplayStatics::SpawnSoundAttached(Effect.Sound, WeaponMesh, Effect.SocketName);
+	}
+
+	// 나이아가라 이펙트 — 무기 소켓에 부착
+	if (Effect.NiagaraEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			Effect.NiagaraEffect,
+			WeaponMesh,
+			Effect.SocketName,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true);
 	}
 }
 
