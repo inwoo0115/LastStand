@@ -36,3 +36,18 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Action_Initialization, "AI.Action.Initialization");
 	UE_DEFINE_GAMEPLAY_TAG(Action_PhaseChange, "AI.Action.PhaseChange");
 }
+
+namespace LSActionTags
+{
+	UE_DEFINE_GAMEPLAY_TAG(Action_Fire, "Action.Player.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Reload, "Action.Player.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Dash, "Action.Player.Dash");
+	UE_DEFINE_GAMEPLAY_TAG(Action_SwapWeapon, "Action.Player.SwapWeapon");
+}
+
+namespace LSStateTags
+{
+	UE_DEFINE_GAMEPLAY_TAG(State_Dashing, "State.Dashing");
+	UE_DEFINE_GAMEPLAY_TAG(State_Reloading, "State.Reloading");
+	UE_DEFINE_GAMEPLAY_TAG(State_Equipping, "State.Equipping");
+}

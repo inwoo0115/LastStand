@@ -5,6 +5,8 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/RootMotionSource.h"
 #include "Character/LSPlayerCharacter.h"
+#include "Character/Components/LSActionStateComponent.h"
+#include "Tags/LSGameplayTags.h"
 
 namespace
 {
@@ -193,11 +195,14 @@ void ULSCharacterMovementComponent::PerformDash()
 
 	LastDashTime = GetWorld()->GetTimeSeconds();
 
-	// 서버: 타 클라에 대시 몽타주 전파 (소유 클라는 입력 시 로컬 재생)
 	if (CharacterOwner->HasAuthority())
 	{
 		if (ALSPlayerCharacter* Player = Cast<ALSPlayerCharacter>(CharacterOwner))
 		{
+			if (ULSActionStateComponent* ActionState = Player->GetActionStateComponent())
+			{
+				ActionState->CancelStatesFor(LSActionTags::Action_Dash);
+			}
 			Player->MulticastRPCPlayDashMontage(GetDashDirectionType(Direction));
 		}
 	}

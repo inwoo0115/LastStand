@@ -7,6 +7,7 @@
 #include "Interface/LSInteractComponentInterface.h"
 #include "Interface/LSInventoryComponentInterface.h"
 #include "Interface/LSStatComponentInterface.h"
+#include "Interface/LSActionStateComponentInterface.h"
 #include "LSCharacterBase.generated.h"
 
 
@@ -18,7 +19,7 @@ enum class ECharacterControlType : uint8
 
 
 UCLASS()
-class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComponentInterface, public ILSInventoryComponentInterface, public ILSStatComponentInterface
+class LASTSTAND_API ALSCharacterBase : public ACharacter, public ILSInteractComponentInterface, public ILSInventoryComponentInterface, public ILSStatComponentInterface, public ILSActionStateComponentInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +34,8 @@ public:
 	virtual ULSStatComponent* GetStatComponent() override;
 
 	virtual void ApplyDamage(int32 Damage, AActor* DamageCauser) override;
+
+	virtual ULSActionStateComponent* GetActionStateComponent() override;
 
 	class USpringArmComponent* GetSpringArmComponent();
 
@@ -91,4 +94,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULSStatComponent> Stat;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSActionStateComponent> ActionState;
 };

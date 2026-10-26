@@ -14,6 +14,7 @@
 #include "Components/LSInteractionComponent.h"
 #include "Components/LSStatComponent.h"
 #include "Components/LSCharacterMovementComponent.h"
+#include "Components/LSActionStateComponent.h"
 #include "GameState/LSGameState.h"
 
 
@@ -50,6 +51,8 @@ ALSCharacterBase::ALSCharacterBase(const FObjectInitializer& ObjectInitializer)
 
 	// Stat
 	Stat = CreateDefaultSubobject<ULSStatComponent>(TEXT("Stat"));
+
+	ActionState = CreateDefaultSubobject<ULSActionStateComponent>(TEXT("ActionState"));
 }
 
 ULSCharacterMovementComponent* ALSCharacterBase::GetLSCharacterMovement() const
@@ -78,6 +81,11 @@ void ALSCharacterBase::ApplyDamage(int32 Damage, AActor* DamageCauser)
 	{
 		StatComp->ApplyDamage(Damage, DamageCauser);
 	}
+}
+
+ULSActionStateComponent* ALSCharacterBase::GetActionStateComponent()
+{
+	return ActionState;
 }
 
 USpringArmComponent* ALSCharacterBase::GetSpringArmComponent()

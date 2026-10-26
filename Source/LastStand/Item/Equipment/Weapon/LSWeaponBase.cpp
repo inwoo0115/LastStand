@@ -16,6 +16,8 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Interface/LSActionStateComponentInterface.h"
+#include "Character/Components/LSActionStateComponent.h"
 
 
 ALSWeaponBase::ALSWeaponBase()
@@ -400,6 +402,41 @@ void ALSWeaponBase::PlayWeaponMontage(EWeaponMontageType MontageType, bool bReve
 			AnimInstance->Montage_Play(Montage, -1.0f, EMontagePlayReturnType::MontageLength, Montage->GetPlayLength());
 		}
 	}
+}
+
+void ALSWeaponBase::StopWeaponMontage(EWeaponMontageType MontageType)
+{
+	if (!WeaponData.WeaponDataAsset)
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UAnimMontage>* Found = WeaponData.WeaponDataAsset->WeaponMontages.Find(MontageType);
+	if (!Found)
+	{
+		return;
+	}
+
+	UAnimMontage* Montage = Found->Get();
+	ACharacter* OwnerCh = Cast<ACharacter>(GetOwner());
+	if (!Montage || !OwnerCh)
+	{
+		return;
+	}
+
+	OwnerCh->StopAnimMontage(Montage);
+}
+
+bool ALSWeaponBase::CanOwnerPerform(const FGameplayTag& Action) const
+{
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor || !OwnerActor->Implements<ULSActionStateComponentInterface>())
+	{
+		return true;
+	}
+
+	ULSActionStateComponent* ActionState = Cast<ILSActionStateComponentInterface>(OwnerActor)->GetActionStateComponent();
+	return !ActionState || ActionState->CanPerformAction(Action);
 }
 
 void ALSWeaponBase::OnFireNotify(const FWeaponNotifyEffect& Effect)

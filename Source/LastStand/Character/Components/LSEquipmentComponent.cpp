@@ -16,6 +16,9 @@
 #include "UI/LSUIEventSubsystem.h"
 #include "Item/LSItemBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Interface/LSActionStateComponentInterface.h"
+#include "Character/Components/LSActionStateComponent.h"
+#include "Tags/LSGameplayTags.h"
 
 // Sets default values for this component's properties
 ULSEquipmentComponent::ULSEquipmentComponent()
@@ -163,10 +166,13 @@ void ULSEquipmentComponent::FocusEquipmentByType(EEquipmentType EquipType)
 		return;
 	}
 
-	// 재장전 중에는 무기 슬롯 전환 차단
-	if (FocusEquipment && FocusEquipment->IsReloading())
+	if (GetOwner()->Implements<ULSActionStateComponentInterface>())
 	{
-		return;
+		ULSActionStateComponent* ActionState = Cast<ILSActionStateComponentInterface>(GetOwner())->GetActionStateComponent();
+		if (ActionState && !ActionState->CanPerformAction(LSActionTags::Action_SwapWeapon))
+		{
+			return;
+		}
 	}
 
 	// 기존 장비 해제

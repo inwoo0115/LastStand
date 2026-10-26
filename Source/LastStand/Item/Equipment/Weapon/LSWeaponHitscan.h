@@ -26,6 +26,8 @@ public:
 
 	virtual void ReloadWeapon() override;
 
+	virtual void CancelReload() override;
+
 protected:
 	virtual void InitEquipment() override;
 

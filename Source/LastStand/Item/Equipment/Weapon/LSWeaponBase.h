@@ -49,6 +49,10 @@ public:
 	// 재장전 진행 중 여부. 기본 false, 재장전 개념이 있는 파생(히트스캔)에서 override
 	virtual bool IsReloading() const { return false; }
 
+	bool IsEquipping() const { return bIsEquipping; }
+
+	virtual void CancelReload() {}
+
 	void LinkWeaponAnimClassLayer(UClass* LayerClass);
 
 	void UnLinkWeaponAnimClassLayer();
@@ -57,6 +61,8 @@ public:
 
 	// 무기 상황별 몽타주 재생 (오너 캐릭터 메시에서 재생). bReverse=true면 역재생
 	void PlayWeaponMontage(EWeaponMontageType MontageType, bool bReverse = false);
+
+	void StopWeaponMontage(EWeaponMontageType MontageType);
 
 	// 애님 노티파이 훅 (실행할 머신은 노티파이가 이미 걸러냄)
 	virtual void OnFireNotify(const FWeaponNotifyEffect& Effect);   // 발사: 데디 서버 제외 모든 머신
@@ -90,6 +96,8 @@ protected:
 	void PlayNotifyEffect(const FWeaponNotifyEffect& Effect);
 
 	virtual void InitEquipment() override;
+
+	bool CanOwnerPerform(const struct FGameplayTag& Action) const;
 
 	UPROPERTY(Replicated)
 	FWeaponData WeaponData;

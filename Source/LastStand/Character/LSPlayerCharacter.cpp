@@ -8,6 +8,8 @@
 #include "Components/LSEquipmentComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimMontage.h"
+#include "Components/LSActionStateComponent.h"
+#include "Tags/LSGameplayTags.h"
 
 ALSPlayerCharacter::ALSPlayerCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -91,7 +93,7 @@ void ALSPlayerCharacter::Interact(const FInputActionValue& Value)
 void ALSPlayerCharacter::Dash()
 {
 	ULSCharacterMovementComponent* CMC = GetLSCharacterMovement();
-	if (!CMC || !CMC->CanDash())   // 지상/입력 없음/대시 중/쿨다운
+	if (!CMC || !CMC->CanDash() || !ActionState->CanPerformAction(LSActionTags::Action_Dash))
 	{
 		return;
 	}
@@ -102,6 +104,9 @@ void ALSPlayerCharacter::Dash()
 	{
 		return;
 	}
+
+	ActionState->CancelStatesFor(LSActionTags::Action_Dash);
+	Equipments->ReleaseEquipment();
 
 	PlayDashMontage(Direction);
 	CMC->RequestDash();
@@ -177,6 +182,11 @@ void ALSPlayerCharacter::Aim()
 
 void ALSPlayerCharacter::Attack()
 {
+	if (!ActionState->CanPerformAction(LSActionTags::Action_Fire))
+	{
+		return;
+	}
+
 	Equipments->LaunchEquipment();
 
 	if (!bIsAimActionActive)
@@ -209,6 +219,11 @@ void ALSPlayerCharacter::ServerRPCAim_Implementation(bool bNewAim)
 
 void ALSPlayerCharacter::Reload()
 {
+	if (!ActionState->CanPerformAction(LSActionTags::Action_Reload))
+	{
+		return;
+	}
+
 	Equipments->Reload();
 }
 

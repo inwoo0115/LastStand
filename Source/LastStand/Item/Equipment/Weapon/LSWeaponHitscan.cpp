@@ -21,12 +21,12 @@
 #include "Character/Components/LSEquipmentComponent.h"
 #include "Character/Components/LSInventoryComponent.h"
 #include "Engine/Engine.h"
+#include "Tags/LSGameplayTags.h"
 
 
 void ALSWeaponHitscan::LaunchWeapon()
 {
-	// 소유 클라이언트 입력에 의해 호출됨
-	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
+	if (!CanOwnerPerform(LSActionTags::Action_Fire) || CurrentAmmo == 0)
 	{
 		return;
 	}
@@ -115,8 +115,7 @@ void ALSWeaponHitscan::CleanupOnLocalClient()
 
 void ALSWeaponHitscan::ReloadWeapon()
 {
-	// 소유 클라이언트 입력에 의해 호출됨. 예비 탄약이 없으면 장전 불가
-	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
+	if (!CanOwnerPerform(LSActionTags::Action_Reload) || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
 	{
 		return;
 	}
@@ -132,8 +131,7 @@ void ALSWeaponHitscan::ReloadWeapon()
 
 void ALSWeaponHitscan::Fire()
 {
-	// 탄약 소진/장전 중/장착 중이면 연사 타이머 정지
-	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
+	if (!CanOwnerPerform(LSActionTags::Action_Fire) || CurrentAmmo == 0)
 	{
 		GetWorldTimerManager().ClearTimer(LaunchTimerHandle);
 		return;
@@ -176,7 +174,7 @@ void ALSWeaponHitscan::OnLocalFireReady()
 
 void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, const FVector& TraceEnd, AActor* HitActor)
 {
-	if (bIsEquipping || bIsReloading || CurrentAmmo == 0)
+	if (!CanOwnerPerform(LSActionTags::Action_Fire) || CurrentAmmo == 0)
 	{
 		return;
 	}
@@ -309,8 +307,7 @@ void ALSWeaponHitscan::PlayFireEffects(bool bHit, const FVector& ImpactPoint, co
 
 void ALSWeaponHitscan::ServerRPCReload_Implementation()
 {
-	// 서버 권위 가드: 예비 탄약이 없으면 장전 불가 (클라 예측과 desync 방지)
-	if (bIsEquipping || bIsReloading || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
+	if (!CanOwnerPerform(LSActionTags::Action_Reload) || CurrentAmmo == MaxAmmo || GetReserveAmmo() <= 0)
 	{
 		return;
 	}
@@ -321,6 +318,21 @@ void ALSWeaponHitscan::ServerRPCReload_Implementation()
 	MulticastRPCPlayMontage(EWeaponMontageType::Reload);
 
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &ALSWeaponHitscan::FinishReload, ReloadIntervalTime, false);
+}
+
+void ALSWeaponHitscan::CancelReload()
+{
+	if (HasAuthority())
+	{
+		if (!bIsReloading)
+		{
+			return;
+		}
+		GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
+		bIsReloading = false;
+	}
+
+	StopWeaponMontage(EWeaponMontageType::Reload);
 }
 
 void ALSWeaponHitscan::FinishReload()

@@ -40,3 +40,18 @@ namespace LSAITags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Initialization);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_PhaseChange);
 }
+
+namespace LSActionTags
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Reload);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_Dash);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Action_SwapWeapon);
+}
+
+namespace LSStateTags
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dashing);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Reloading);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Equipping);
+}
