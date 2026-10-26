@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/Components/LSCharacterMovementComponent.h"
@@ -8,7 +8,6 @@
 
 namespace
 {
-	// 대시 루트모션 소스 식별용 (진행 중 확인)
 	const FName DashRootMotionName(TEXT("LSDash"));
 }
 
@@ -63,7 +62,6 @@ void FSavedMove_LS::PrepMoveFor(ACharacter* C)
 {
 	Super::PrepMoveFor(C);
 
-	// 리플레이 시 move 당시 상태 복원
 	if (ULSCharacterMovementComponent* CMC = Cast<ULSCharacterMovementComponent>(C->GetCharacterMovement()))
 	{
 		CMC->bWantsToRun = bSavedWantsToRun;
@@ -171,18 +169,11 @@ void ULSCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float Del
 {
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 
-	if (!bWantsToDash)
-	{
-		return;
-	}
-	bWantsToDash = false;
-
-	// 리플레이(서버 보정 후 재시뮬)에서는 쿨다운 시각이 이미 갱신돼 있으므로 쿨다운 검사 생략
-	const bool bReplaying = CharacterOwner && CharacterOwner->bClientUpdating;
-	if (bReplaying ? (IsMovingOnGround() && !GetDashDirection().IsNearlyZero()) : CanDash())
+	if (bWantsToDash && !CharacterOwner->bClientUpdating && CanDash())
 	{
 		PerformDash();
 	}
+	bWantsToDash = false;
 }
 
 void ULSCharacterMovementComponent::PerformDash()
@@ -200,18 +191,14 @@ void ULSCharacterMovementComponent::PerformDash()
 	DashForce->FinishVelocityParams.ClampVelocity = MaxWalkSpeed;
 	ApplyRootMotionSource(DashForce);
 
-	// 리플레이가 아닐 때만 쿨다운/연출 처리
-	if (CharacterOwner && !CharacterOwner->bClientUpdating)
-	{
-		LastDashTime = GetWorld()->GetTimeSeconds();
+	LastDashTime = GetWorld()->GetTimeSeconds();
 
-		// 서버: 타 클라에 대시 몽타주 전파 (소유 클라는 입력 시 로컬 재생)
-		if (CharacterOwner->HasAuthority())
+	// 서버: 타 클라에 대시 몽타주 전파 (소유 클라는 입력 시 로컬 재생)
+	if (CharacterOwner->HasAuthority())
+	{
+		if (ALSPlayerCharacter* Player = Cast<ALSPlayerCharacter>(CharacterOwner))
 		{
-			if (ALSPlayerCharacter* Player = Cast<ALSPlayerCharacter>(CharacterOwner))
-			{
-				Player->MulticastRPCPlayDashMontage(GetDashDirectionType(Direction));
-			}
+			Player->MulticastRPCPlayDashMontage(GetDashDirectionType(Direction));
 		}
 	}
 }

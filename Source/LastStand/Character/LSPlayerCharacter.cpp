@@ -96,7 +96,6 @@ void ALSPlayerCharacter::Dash()
 		return;
 	}
 
-	// 해당 방향 대시 몽타주가 지정돼 있어야 대시 가능
 	const ELSDashDirection Direction = CMC->GetDashDirectionType(CMC->GetDashDirection());
 	const TSoftObjectPtr<UAnimMontage>* Found = DashMontages.Find(Direction);
 	if (!Found || Found->IsNull())
@@ -104,7 +103,6 @@ void ALSPlayerCharacter::Dash()
 		return;
 	}
 
-	// 반응성: 로컬 즉시 몽타주 → 다음 이동 틱에 CMC가 루트모션 적용(서버 재현)
 	PlayDashMontage(Direction);
 	CMC->RequestDash();
 }

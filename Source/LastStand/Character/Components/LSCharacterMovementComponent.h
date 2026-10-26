@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -16,11 +16,10 @@ enum class ELSDashDirection : uint8
 	Right     UMETA(DisplayName = "Right")
 };
 
-// 달리기/대시 플래그를 서버로 보내는 SavedMove (클라 예측 + 서버 재현)
 class FSavedMove_LS : public FSavedMove_Character
 {
 public:
-	typedef FSavedMove_Character Super;
+	using Super = FSavedMove_Character;
 
 	uint8 bSavedWantsToRun : 1;
 	uint8 bSavedWantsToDash : 1;
@@ -35,7 +34,7 @@ public:
 class FNetworkPredictionData_Client_LS : public FNetworkPredictionData_Client_Character
 {
 public:
-	typedef FNetworkPredictionData_Client_Character Super;
+	using Super = FNetworkPredictionData_Client_Character;
 
 	FNetworkPredictionData_Client_LS(const UCharacterMovementComponent& ClientMovement);
 
