@@ -61,14 +61,10 @@
 
 향후 작업의 진입점 빠른 조회용. 경로는 `Source/LastStand/` 기준(플러그인은 별도 명시). 파일명은 접두사 `LS` 생략 없이 표기.
 
-### WFC 절차적 맵 생성 — `Plugins/MapGenerator/Source/MapGenerator/`
-- **런타임 루프는 영역 생성(Stage A)까지만.** WFC(Stage B)는 코드/데이터로만 보존된 dormant — 컴파일·API 호출 가능하되 루프에서 제외, WFC 테이블은 지연 로드.
-- `MapGeneratorSubsystem.*`: `UWorldSubsystem`. **영역 생성만** (`MapGeneratorSubsystem.cpp`): `Initialize`는 `MapDataTable`만 로드 → `GenerateHeightGrid`(펄린 fBm) → `FindLocalMaxima`(극댓값 시드) → `BuildVoronoiRegions`(**JFA 보로노이**, 핑퐁 버퍼) → `MarkRegionBoundaries`(BFS 경계) → `QuantizeHeights`(계단화).
-- `MapGeneratorSubsystem_WFC.cpp` (dormant, 같은 클래스 멤버): `FindAsset`/`FindWFCData`(WFC 테이블 지연 로드) + `GenerateTileGrid`(오케스트레이터: `BuildTileSet` 소켓 FName→비트인덱스 인터닝 → `ComputeColumnLevels` 3D 볼륨화 → `RunWFC`).
-  - `RunWFC`: 소켓 비트마스크 교집합 인접, `Compatible[dir][tile]` 사전계산, 커스텀 `TArray<uint32>` 비트셋(익명 `WFCBits` ns), Observe(최소엔트로피+리저버샘플)→Collapse(최대 Weight)→Propagate(워크리스트), 모순 시 `MaxAttempts=20` 리시드 재시도, `FRandomStream`으로 결정성.
-- `MapGrid.h`(FMapGrid 높이/영역), `MapData.h`(FMapData 노이즈+영역 시각화 파라미터: CellSize/DebugMesh/RegionMaterial/RegionColorParam), `DataTableSettings.h`(UDeveloperSettings: MapDataTable + dormant MapAssetTable/MapWFCTable).
-- **WFC dormant 데이터/시각화**: `MapTileGrid.h`(FWFCTile + FMapTileGrid), `MapAssetData.h`(FMapAssetData 타일 행: 6면 소켓/Weight/Mesh), `MapWFCData.h`(FMapWFCData: WFCSeed/Empty·FloorSocket/CellSize/DebugMesh), `MapWFCVisualizer.*`(AMapWFCVisualizer, 타일별 HISM — 활성 레벨 미배치).
-- `MapGridVisualizer.*`(AMapGridVisualizer): **영역 시각화**. `GenerateHeightGrid` 결과를 영역 번호별 HISM으로 평면(Z=0) 배치, 영역별 MID 색 구분(경계 -2 어두운색). 높이는 데이터로만 유지.
+### 방 기반 절차적 던전 생성 — `Plugins/MapGenerator/Source/` (Runtime `MapGenerator` + Editor `MapGeneratorEditor`)
+- `MapGeneratorSubsystem.*`(`UWorldSubsystem`): `GenerateLayout` = Start 방 원점 배치 → `BuildChain`(백트래킹 DFS, 출구 문·후보 방 Fisher–Yates 셔플, 문 소비/복원) → `GrowSideRooms`(`SideRoomDepth` 패스). `GenerateAndStream`이 `ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr`로 방 인스턴스 스트리밍. `ComputeChildTransform`(입구↔출구 반대 방향 90° 회전+평행이동), `CanPlaceRoom`(world AABB 겹침, Epsilon 접촉 허용). `FRandomStream(Seed)` 결정성.
+- `MapData.h`(FMapData 행: `RoomLevel` soft UWorld, `ERoomType`, `EntranceDoor`/`ExitDoors`, `BoundsBoxes`), `MapGenerationData.h`(테이블·RoomCount·Seed·SideRoomDepth), `BoxVolume.h`/`DoorVolume.h`(방 레벨 마커), `MapGeneratorActor.*`(AMapGenerator, CallInEditor Generate/ClearRooms — **에디터 생성, 런타임 네트워크 동기화 없음**), `DataTableSettings.h`.
+- `MapGeneratorEditor.cpp`: DataTable 우클릭 메뉴로 방 레벨의 Box/Door 볼륨을 행으로 export(입구 정확히 1개 검증). UDeveloperSettings CallInEditor는 CDO라 동작하지 않아 우회.
 - 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
 
 ### 네트워크 전투 (랙 보상)
@@ -92,7 +88,7 @@
 
 ### 스캐폴드/미완 (건드릴 때 주의)
 - `Save/LSSaveSubsystem`·`LSSaveGame`: 빈 스텁. AI 행동트리: BP/데이터 애셋 기반(커스텀 C++ BT 노드 없음).
-- 보스 AI는 작업 중: README "멀티플레이 보스 AI" 섹션은 **기능 구현 완료 후에 갱신**(진행 중 변경은 README에 추가하지 않음).
+- 보스 AI: README에 완성된 구조로 소개함(2026-10 개편). 미완 항목(EQS 위치 선정 등)은 구현 완료 후 README에 추가.
 
 ### 포트폴리오 README
-- 루트 `README.md`은 **개발자 포트폴리오용**(한국어). WFC·리와인드·네트워킹·아키텍처 중심 서술 + WFC mermaid 다이어그램. 시스템 변경 시 README 해당 섹션도 함께 갱신 고려.
+- 루트 `README.md`은 **개발자 포트폴리오용**(한국어). 핵심 3개(네트워크 전투: 리와인드+CMC 예측 / StateTree 보스 AI / 방 기반 던전 생성) 중점 + 나머지 간략 + mermaid 다이어그램. 시스템 변경 시 README 해당 섹션도 함께 갱신 고려.
