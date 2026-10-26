@@ -42,7 +42,7 @@ protected:
 
 	void Dash();
 
-	// 방향별 대시 몽타주 재생 (캐릭터 메시)
+	// 방향별 대시 몽타주 재생
 	void PlayDashMontage(ELSDashDirection Direction);
 
 	void Jump();
