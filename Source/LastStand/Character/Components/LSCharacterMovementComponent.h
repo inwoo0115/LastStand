@@ -78,6 +78,9 @@ protected:
 
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 
+	// 리플레이가 SavedMove 값으로 플래그를 덮어쓰므로 이번 프레임 입력을 보존
+	virtual bool ClientUpdatePositionAfterServerUpdate() override;
+
 	void PerformDash();
 
 	// 달리기

@@ -112,6 +112,19 @@ void ULSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	bWantsToDash = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
 }
 
+bool ULSCharacterMovementComponent::ClientUpdatePositionAfterServerUpdate()
+{
+	// 리플레이 중 PrepMoveFor/UpdateFromCompressedFlags가 과거 move 값으로 덮어씀
+	const bool bRealWantsToRun = bWantsToRun;
+	const bool bRealWantsToDash = bWantsToDash;
+
+	const bool bResult = Super::ClientUpdatePositionAfterServerUpdate();
+
+	bWantsToRun = bRealWantsToRun;
+	bWantsToDash = bRealWantsToDash;
+	return bResult;
+}
+
 bool ULSCharacterMovementComponent::CanDash() const
 {
 	if (!IsMovingOnGround() || GetDashDirection().IsNearlyZero())
