@@ -22,7 +22,7 @@ struct FMapGenRoom
 	bool bExcludeFromSideRooms = false;   // 끝방은 사이드룸 확장에서 제외
 };
 
-// 방 기반 던전 생성/스트리밍 서브시스템. 생성 로직은 서버 권위에서만 호출한다.
+// 방 기반 던전 생성/스트리밍 서브시스템. 시드 기반 결정적 생성이라 서버/클라가 같은 시드로 각자 호출한다.
 UCLASS()
 class MAPGENERATOR_API UMapGeneratorSubsystem : public UWorldSubsystem
 {
@@ -34,11 +34,11 @@ public:
 	// MapData 테이블에서 행 조회 (RowName 기준)
 	const FMapData* FindMapData(FName RowName) const;
 
-	// 데이터 에셋 기반 방 배치 생성. 성공 시 Out에 배치 리스트를 채우고 true 반환.
-	bool GenerateLayout(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out) const;
+	// 데이터 에셋 기반 방 배치 생성 (Seed로 결정적). 성공 시 Out에 배치 리스트를 채우고 true 반환.
+	bool GenerateLayout(const UMapGenerationData* Params, int32 Seed, TArray<FPlacedRoom>& Out) const;
 
-	// 배치 계산 + 서브레벨 스트리밍 일괄 (에디터 액터 테스트 경로). 성공 시 Out에 배치 채움.
-	bool GenerateAndStream(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out);
+	// 배치 계산 + 서브레벨 스트리밍 일괄 (에디터 미리보기 / 런타임 공통). 성공 시 Out에 배치 채움.
+	bool GenerateAndStream(const UMapGenerationData* Params, int32 Seed, TArray<FPlacedRoom>& Out);
 
 	// 배치 리스트의 각 방 서브레벨을 로컬로 스트리밍 로드 (Table로 RoomLevel 조회)
 	void LoadRoomInstances(const TArray<FPlacedRoom>& Rooms, UDataTable* Table);

@@ -301,7 +301,7 @@ const FMapData* UMapGeneratorSubsystem::FindMapData(FName RowName) const
 	return MapDataTable->FindRow<FMapData>(RowName, TEXT("UMapGeneratorSubsystem::FindMapData"));
 }
 
-bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out) const
+bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, int32 Seed, TArray<FPlacedRoom>& Out) const
 {
 	Out.Reset();
 
@@ -349,7 +349,7 @@ bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TA
 		return false;
 	}
 
-	FRandomStream Stream(Params->Seed);
+	FRandomStream Stream(Seed);
 
 	// Start 방을 원점에 배치
 	const FName StartRow = StartRows[Stream.RandRange(0, StartRows.Num() - 1)];
@@ -392,7 +392,7 @@ bool UMapGeneratorSubsystem::GenerateLayout(const UMapGenerationData* Params, TA
 	return true;
 }
 
-bool UMapGeneratorSubsystem::GenerateAndStream(const UMapGenerationData* Params, TArray<FPlacedRoom>& Out)
+bool UMapGeneratorSubsystem::GenerateAndStream(const UMapGenerationData* Params, int32 Seed, TArray<FPlacedRoom>& Out)
 {
 	Out.Reset();
 
@@ -409,7 +409,7 @@ bool UMapGeneratorSubsystem::GenerateAndStream(const UMapGenerationData* Params,
 		return false;
 	}
 
-	if (!GenerateLayout(Params, Out))
+	if (!GenerateLayout(Params, Seed, Out))
 	{
 		return false;
 	}
@@ -427,8 +427,9 @@ void UMapGeneratorSubsystem::LoadRoomInstances(const TArray<FPlacedRoom>& Rooms,
 		return;
 	}
 
-	for (const FPlacedRoom& Room : Rooms)
+	for (int32 i = 0; i < Rooms.Num(); ++i)
 	{
+		const FPlacedRoom& Room = Rooms[i];
 		const FMapData* Data = FindRow(Table, Room.RowName);
 		if (!Data || Data->RoomLevel.IsNull())
 		{
@@ -436,12 +437,20 @@ void UMapGeneratorSubsystem::LoadRoomInstances(const TArray<FPlacedRoom>& Rooms,
 			continue;
 		}
 
+		// 게임 월드는 인스턴스 이름 고정: 기본 이름은 프로세스 전역 카운터라 서버/클라 간 달라질 수 있음
+		// → 스트리밍 레벨 가시성 동기화·방 내부 액터 넷 주소가 어긋나지 않도록 배치 인덱스 기반 짧은 이름 지정 (경로/PIE 접두사는 엔진이 처리)
+		// 에디터 미리보기는 재생성 시 제거 대기 중인 같은 이름과 충돌하므로 기본 이름 사용
+		const FString LevelName = World->IsGameWorld()
+			? FString::Printf(TEXT("%s_MapRoom_%d"), *Data->RoomLevel.GetAssetName(), i)
+			: FString();
+
 		bool bSuccess = false;
 		ULevelStreamingDynamic* Instance = ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(
 			World,
 			Data->RoomLevel,
 			Room.Transform,
-			bSuccess);
+			bSuccess,
+			LevelName);
 
 		if (bSuccess && Instance)
 		{
