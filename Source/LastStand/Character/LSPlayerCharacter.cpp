@@ -10,10 +10,12 @@
 #include "Animation/AnimMontage.h"
 #include "Components/LSActionStateComponent.h"
 #include "Tags/LSGameplayTags.h"
+#include "Components/LSRopeActionComponent.h"
 
 ALSPlayerCharacter::ALSPlayerCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	RopeActionComponent = CreateDefaultSubobject<ULSRopeActionComponent>(TEXT("RopeAction"));
 }
 
 void ALSPlayerCharacter::BeginPlay()
@@ -41,6 +43,7 @@ void ALSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::Reload);
 	EnhancedInputComponent->BindAction(SelectMainAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::SelectMainWeapon);
 	EnhancedInputComponent->BindAction(SelectSubAction, ETriggerEvent::Started, this, &ALSPlayerCharacter::SelectSubWeapon);
+	EnhancedInputComponent->BindAction(RopeActionInput, ETriggerEvent::Started, this, &ALSPlayerCharacter::RopeAction);
 
 }
 
@@ -235,6 +238,34 @@ void ALSPlayerCharacter::SelectMainWeapon(const FInputActionValue& Value)
 void ALSPlayerCharacter::SelectSubWeapon(const FInputActionValue& Value)
 {
 	ServerRPCFocusSubWeapon();
+}
+
+void ALSPlayerCharacter::RopeAction()
+{
+	if (!GetLSCharacterMovement()->IsSwinging() && !ActionState->CanPerformAction(LSActionTags::Action_Rope))
+	{
+		return;
+	}
+
+	RopeActionComponent->TryRopeAction();
+}
+
+void ALSPlayerCharacter::PlayRopeJumpMontage()
+{
+	if (UAnimMontage* Montage = RopeJumpMontage.LoadSynchronous())
+	{
+		PlayAnimMontage(Montage);
+	}
+}
+
+void ALSPlayerCharacter::MulticastRPCPlayRopeJumpMontage_Implementation()
+{
+	if (IsLocallyControlled())
+	{
+		return;
+	}
+
+	PlayRopeJumpMontage();
 }
 
 void ALSPlayerCharacter::ServerRPCFocusMainWeapon_Implementation()

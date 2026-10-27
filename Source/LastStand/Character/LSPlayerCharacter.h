@@ -31,6 +31,11 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCPlayDashMontage(ELSDashDirection Direction);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlayRopeJumpMontage();
+
+	void PlayRopeJumpMontage();
+
 protected:
 	void Move(const FInputActionValue& Value);
 
@@ -60,6 +65,8 @@ protected:
 	void SelectMainWeapon(const FInputActionValue& Value);
 
 	void SelectSubWeapon(const FInputActionValue& Value);
+
+	void RopeAction();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> JumpAction;
@@ -97,6 +104,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> SelectSubAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> RopeActionInput;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class ULSRopeActionComponent> RopeActionComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rope")
+	TSoftObjectPtr<class UAnimMontage> RopeJumpMontage;
 
 	// RPC
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

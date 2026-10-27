@@ -16,6 +16,13 @@ enum class ELSDashDirection : uint8
 	Right     UMETA(DisplayName = "Right")
 };
 
+UENUM(BlueprintType)
+enum class ELSCustomMovementMode : uint8
+{
+	None   UMETA(DisplayName = "None"),
+	Swing  UMETA(DisplayName = "Swing")
+};
+
 class FSavedMove_LS : public FSavedMove_Character
 {
 public:
@@ -23,6 +30,16 @@ public:
 
 	uint8 bSavedWantsToRun : 1;
 	uint8 bSavedWantsToDash : 1;
+	uint8 bSavedWantsToRopeJump : 1;
+
+	FVector SavedRopeJumpTarget = FVector::ZeroVector;
+	float SavedRopeJumpDuration = 0.0f;
+	float SavedRopeJumpArcHeight = 0.0f;
+
+	uint8 bSavedWantsToStartSwing : 1;
+	uint8 bSavedWantsToStopSwing : 1;
+	FVector SavedSwingRequestAnchor = FVector::ZeroVector;
+	FVector SavedSwingAnchor = FVector::ZeroVector;
 
 	virtual void Clear() override;
 	virtual uint8 GetCompressedFlags() const override;
@@ -41,7 +58,31 @@ public:
 	virtual FSavedMovePtr AllocateNewMove() override;
 };
 
-// 플레이어 무브먼트: 달리기(속도) + 대시(Root Motion Source)
+class FLSCharacterNetworkMoveData : public FCharacterNetworkMoveData
+{
+public:
+	using Super = FCharacterNetworkMoveData;
+
+	FVector_NetQuantize10 RopeJumpTarget;
+	float RopeJumpDuration = 0.0f;
+	float RopeJumpArcHeight = 0.0f;
+
+	bool bSwingRequestStart = false;
+	FVector_NetQuantize10 SwingRequestAnchor;
+
+	virtual void ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType) override;
+	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType) override;
+};
+
+class FLSCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
+{
+public:
+	FLSCharacterNetworkMoveDataContainer();
+
+	FLSCharacterNetworkMoveData MoveData[3];
+};
+
+
 UCLASS()
 class LASTSTAND_API ULSCharacterMovementComponent : public UCharacterMovementComponent
 {
@@ -50,6 +91,8 @@ class LASTSTAND_API ULSCharacterMovementComponent : public UCharacterMovementCom
 	friend class FSavedMove_LS;
 
 public:
+	ULSCharacterMovementComponent();
+
 	virtual float GetMaxSpeed() const override;
 
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
@@ -72,6 +115,22 @@ public:
 	// 대시 루트모션 진행 중 여부 (중복 대시 방지, 추후 입력 차단에 사용 가능)
 	bool IsDashing() const;
 
+	void RequestRopeJump(const FVector& Target);
+
+	bool CanRopeJump() const;
+
+	bool IsRoping() const;
+
+	void RequestStartSwing(const FVector& Anchor);
+
+	void RequestStopSwing() { bWantsToStopSwing = true; }
+
+	bool CanStartSwing() const;
+
+	bool IsSwinging() const;
+
+	const FVector& GetSwingAnchor() const { return SwingAnchor; }
+
 protected:
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 
@@ -81,6 +140,18 @@ protected:
 	virtual bool ClientUpdatePositionAfterServerUpdate() override;
 
 	void PerformDash();
+
+	void PerformRopeJump();
+
+	bool HasRootMotionSourceNamed(FName Name) const;
+
+	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
+
+	void PhysSwing(float deltaTime, int32 Iterations);
+
+	void StartSwing();
+
+	void StopSwing();
 
 	// 달리기
 	UPROPERTY(EditAnywhere, Category = "Run", meta = (ClampMin = "0.0"))
@@ -101,4 +172,52 @@ protected:
 
 	// 머신별 마지막 대시 시각 (쿨다운)
 	float LastDashTime = -1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "1.0"))
+	float RopeJumpSpeed = 1500.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.01"))
+	float RopeJumpMinDuration = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.01"))
+	float RopeJumpMaxDuration = 1.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.0"))
+	float RopeJumpBaseArcHeight = 150.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.0"))
+	float RopeJumpMaxArcHeight = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.0"))
+	float RopeJumpValidationTolerance = 100.0f;
+
+	bool bWantsToRopeJump = false;
+	FVector RopeJumpTarget = FVector::ZeroVector;
+	float RopeJumpDuration = 0.0f;
+	float RopeJumpArcHeight = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingInputAccelerationRatio = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingRopeLength = 800.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingTensionCoefficient = 20.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingDamping = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingMaxSpeed = 3000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Rope|Swing", meta = (ClampMin = "0.0"))
+	float SwingValidationTolerance = 100.0f;
+
+	bool bWantsToStartSwing = false;
+	bool bWantsToStopSwing = false;
+	FVector SwingRequestAnchor = FVector::ZeroVector;
+	FVector SwingAnchor = FVector::ZeroVector;
+
+	FLSCharacterNetworkMoveDataContainer LSMoveDataContainer;
 };

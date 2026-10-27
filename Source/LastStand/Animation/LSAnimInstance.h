@@ -35,6 +35,9 @@ public:
 	uint8 bIsFalling;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
+	uint8 bIsSwinging;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	FVector Axis;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")

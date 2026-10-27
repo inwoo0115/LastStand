@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/LSPlayerCharacter.h"
+#include "Character/Components/LSCharacterMovementComponent.h"
 
 ULSAnimInstance::ULSAnimInstance()
 {
@@ -31,6 +32,7 @@ void ULSAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 	{
 		Velocity = Owner->GetVelocity().Length();
 		bIsFalling = Movement->IsFalling();
+		bIsSwinging = Owner->GetLSCharacterMovement()->IsSwinging();
 		Axis = Owner->GetActorTransform().InverseTransformVector(Owner->GetVelocity().GetSafeNormal(0.0001));
 		bIsMontagePlaying = Montage_IsPlaying(nullptr);
 		bIsAim = Owner->GetIsAim();

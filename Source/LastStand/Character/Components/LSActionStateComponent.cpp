@@ -55,6 +55,14 @@ FGameplayTagContainer ULSActionStateComponent::GetActiveStates() const
 			{
 				States.AddTag(LSStateTags::State_Dashing);
 			}
+			if (CMC->IsRoping())
+			{
+				States.AddTag(LSStateTags::State_Roping);
+			}
+			if (CMC->IsSwinging())
+			{
+				States.AddTag(LSStateTags::State_Swinging);
+			}
 		}
 	}
 

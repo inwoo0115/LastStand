@@ -43,6 +43,7 @@ namespace LSActionTags
 	UE_DEFINE_GAMEPLAY_TAG(Action_Reload, "Action.Player.Reload");
 	UE_DEFINE_GAMEPLAY_TAG(Action_Dash, "Action.Player.Dash");
 	UE_DEFINE_GAMEPLAY_TAG(Action_SwapWeapon, "Action.Player.SwapWeapon");
+	UE_DEFINE_GAMEPLAY_TAG(Action_Rope, "Action.Player.Rope");
 }
 
 namespace LSStateTags
@@ -50,4 +51,6 @@ namespace LSStateTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Dashing, "State.Dashing");
 	UE_DEFINE_GAMEPLAY_TAG(State_Reloading, "State.Reloading");
 	UE_DEFINE_GAMEPLAY_TAG(State_Equipping, "State.Equipping");
+	UE_DEFINE_GAMEPLAY_TAG(State_Roping, "State.Roping");
+	UE_DEFINE_GAMEPLAY_TAG(State_Swinging, "State.Swinging");
 }
