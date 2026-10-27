@@ -144,6 +144,11 @@ flowchart LR
 - `FRandomStream(Seed)`을 사용해 같은 시드에서는 같은 결과가 나옵니다.
 - 결과는 `ULevelStreamingDynamic`으로 방마다 스트리밍합니다.
 
+### 네트워크 동기화
+
+- 생성이 결정적이므로 배치 결과 대신 **시드 하나만 복제**합니다. 서버가 `BeginPlay`에서 시드를 정하고(`bUseRandomSeed`면 판마다 랜덤), 서버와 모든 클라이언트가 같은 시드로 각자 생성하고 스트리밍합니다.
+- 방 인스턴스 이름을 배치 인덱스로 고정해(`<Room>_MapRoom_<i>`) 머신 간 스트리밍 레벨 이름을 맞춥니다. 기본 이름은 프로세스 전역 카운터라 머신마다 달라질 수 있습니다.
+
 ```cpp
 const float ChildYaw = YawOfDir(OppositeDir(PWorldDir)) - YawOfDir(CDoor.Direction);
 const FRotator Rot(0.f, ChildYaw, 0.f);

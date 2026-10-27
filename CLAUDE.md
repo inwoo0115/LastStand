@@ -63,7 +63,7 @@
 
 ### 방 기반 절차적 던전 생성 — `Plugins/MapGenerator/Source/` (Runtime `MapGenerator` + Editor `MapGeneratorEditor`)
 - `MapGeneratorSubsystem.*`(`UWorldSubsystem`): `GenerateLayout` = Start 방 원점 배치 → `BuildChain`(백트래킹 DFS, 출구 문·후보 방 Fisher–Yates 셔플, 문 소비/복원) → `GrowSideRooms`(`SideRoomDepth` 패스). `GenerateAndStream`이 `ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr`로 방 인스턴스 스트리밍. `ComputeChildTransform`(입구↔출구 반대 방향 90° 회전+평행이동), `CanPlaceRoom`(world AABB 겹침, Epsilon 접촉 허용). `FRandomStream(Seed)` 결정성.
-- `MapData.h`(FMapData 행: `RoomLevel` soft UWorld, `ERoomType`, `EntranceDoor`/`ExitDoors`, `BoundsBoxes`), `MapGenerationData.h`(테이블·RoomCount·Seed·SideRoomDepth), `BoxVolume.h`/`DoorVolume.h`(방 레벨 마커), `MapGeneratorActor.*`(AMapGenerator, CallInEditor Generate/ClearRooms — **에디터 생성, 런타임 네트워크 동기화 없음**), `DataTableSettings.h`.
+- `MapData.h`(FMapData 행: `RoomLevel` soft UWorld, `ERoomType`, `EntranceDoor`/`ExitDoors`, `BoundsBoxes`), `MapGenerationData.h`(테이블·RoomCount·Seed·SideRoomDepth), `BoxVolume.h`/`DoorVolume.h`(방 레벨 마커), `MapGeneratorActor.*`(AMapGenerator: **런타임**은 서버가 `BeginPlay`에서 `RuntimeSeed` 확정(`bUseRandomSeed` 또는 데이터 에셋 Seed)→`bSeedReady`(`OnRep_SeedReady`)로 복제→서버·모든 클라가 같은 시드로 `GenerateAndStream`. 게임 월드는 인스턴스 이름 `<Room>_MapRoom_<i>`로 고정해 머신 간 일치. CallInEditor Generate/ClearRooms는 트랜지언트 미리보기), `DataTableSettings.h`.
 - `MapGeneratorEditor.cpp`: DataTable 우클릭 메뉴로 방 레벨의 Box/Door 볼륨을 행으로 export(입구 정확히 1개 검증). UDeveloperSettings CallInEditor는 CDO라 동작하지 않아 우회.
 - 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
 
