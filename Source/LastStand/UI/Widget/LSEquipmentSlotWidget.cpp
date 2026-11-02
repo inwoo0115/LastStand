@@ -58,8 +58,6 @@ bool ULSEquipmentSlotWidget::NativeOnDragOver(const FGeometry& InGeometry, const
 
 void ULSEquipmentSlotWidget::RefreshSlot()
 {
-	UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget::RefreshSlot()"));
-
 	if (!Container || !EquipmentComp.IsValid())
 	{
 		return;
@@ -77,7 +75,6 @@ void ULSEquipmentSlotWidget::RefreshSlot()
 	{
 		if (EquipmentMap.Find(EquipmentType))
 		{
-			UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget: Create Equipment Entry Widget"));
 			ALSEquipmentBase* EB = Cast<ALSEquipmentBase>(EquipmentMap[EquipmentType]);
 			if (EB)
 			{
@@ -89,10 +86,6 @@ void ULSEquipmentSlotWidget::RefreshSlot()
 				}
 			}
 		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("ULSEquipmentSlotWidget: EquipmentMap is Empty"));
 	}
 
 	// 드래그 중인 위젯 취소

@@ -11,9 +11,6 @@ void ULSDamageLayerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UE_LOG(LogTemp, Log, TEXT("ULSDamageLayerWidget Construct"));
-
-
 	// 풀 사전 생성
 	if (DamageWidgetClass && DamageCanvas)
 	{
