@@ -28,6 +28,9 @@ public:
 	// BP에서 추가한 모든 부위 히트박스(ULSHitboxComponent)를 반환
 	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const override;
 
+	// 물리 에셋 버전 판정용 메쉬 (캐릭터 메쉬)
+	virtual class USkeletalMeshComponent* GetHitboxMesh() const override;
+
 	// StateTree 이벤트 전달 허브 반환
 	virtual class ULSAIEventHubComponent* GetAIEventHubComponent() override;
 

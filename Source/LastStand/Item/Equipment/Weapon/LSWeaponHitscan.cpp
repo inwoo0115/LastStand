@@ -14,6 +14,9 @@
 #include "Animation/AnimMontage.h"
 #include "Character/Components/LSHitboxComponent.h"
 #include "Character/Components/LSServerSideRewindComponent.h"
+#include "Character/Components/LSStatComponent.h"
+#include "Interface/LSHitboxInterface.h"
+#include "Interface/LSStatComponentInterface.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/LSUIEventSubsystem.h"
@@ -207,9 +210,17 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	{
 		if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerSideRewindComponent>())
 		{
-			if (ULSHitboxComponent* Hitbox = SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner())))
+			ULSHitboxComponent* ConfirmedHitbox = nullptr;
+			if (SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner()), ConfirmedHitbox))
 			{
-				Hitbox->ProcessServerHit(Damage, GetOwner());   // 데미지 주체: 무기 소유 폰
+				if (ConfirmedHitbox)
+				{
+					ConfirmedHitbox->ProcessServerHit(Damage, GetOwner());   // 부위 배율 적용. 데미지 주체: 무기 소유 폰
+				}
+				else if (HitActor->Implements<ULSStatComponentInterface>())
+				{
+					Cast<ILSStatComponentInterface>(HitActor)->ApplyDamage(Damage, GetOwner());   // 물리 에셋 판정: 배율 1.0
+				}
 			}
 		}
 	}
@@ -393,21 +404,35 @@ AActor* ALSWeaponHitscan::PlayWeaponLocalEvent(const FVector& Start, const FVect
 	// 애니메이션 몽타주 실행 (항상)
 	PlayWeaponMontage(EWeaponMontageType::Fire);
 
-	// 로컬 예측 트레이스: Hitscan 채널로 Enemy 프로파일 히트박스만 판정
+	// 로컬 예측 트레이스: Hitscan 채널로 Enemy 프로파일(히트박스 또는 물리 에셋 바디)만 판정
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	Params.AddIgnoredActor(GetOwner());
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, HitscanTraceChannel, Params);
 
-	// 피격 컴포넌트가 히트박스면 부위 배율 적용 후 owner StatComponent->CalculateDamage로 연결
+	// 히트박스면 부위 배율, 물리 에셋 바디면 배율 1.0으로 owner StatComponent->CalculateDamage에 연결
 	AActor* HitEnemy = nullptr;
 	if (bHit)
 	{
+		AActor* HitActor = Hit.GetActor();
 		if (ULSHitboxComponent* Hitbox = Cast<ULSHitboxComponent>(Hit.GetComponent()))
 		{
 			Hitbox->ProcessLocalHit(Damage);   // 무기 Damage(raw) 전달
 			HitEnemy = Hitbox->GetOwner();      // 서버 SSR 검증용 피격 적
+		}
+		else if (HitActor && HitActor->Implements<ULSHitboxInterface>()
+			&& Hit.GetComponent() == Cast<ILSHitboxInterface>(HitActor)->GetHitboxMesh())
+		{
+			// 물리 에셋 바디 명중 (bUsePhysicsAsset 적): 배율 1.0
+			if (HitActor->Implements<ULSStatComponentInterface>())
+			{
+				if (ULSStatComponent* Stat = Cast<ILSStatComponentInterface>(HitActor)->GetStatComponent())
+				{
+					Stat->CalculateDamage(Damage);
+				}
+			}
+			HitEnemy = HitActor;   // 서버 SSR 검증용 피격 적
 		}
 	}
 

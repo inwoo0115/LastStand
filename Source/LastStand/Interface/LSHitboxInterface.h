@@ -25,4 +25,7 @@ class LASTSTAND_API ILSHitboxInterface
 public:
 	// 이 액터가 보유한 모든 히트박스를 반환 — 실제 구현은 액터가 담당
 	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const = 0;
+
+	// 물리 에셋 버전(bUsePhysicsAsset)에서 바디로 판정할 스켈레탈 메쉬
+	virtual class USkeletalMeshComponent* GetHitboxMesh() const = 0;
 };

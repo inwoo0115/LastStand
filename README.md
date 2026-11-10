@@ -36,6 +36,7 @@ flowchart LR
 - 되감는 시간은 클라이언트가 보낸 값이 아니라 서버가 측정한 쏜 사람의 핑(RTT)을 사용하며, 최대 200ms로 제한합니다.
 - 해당 시점 앞뒤 스냅샷을 `Lerp`/`Slerp`로 보간하고, 레이를 박스 로컬 공간으로 옮겨 OBB 교차를 검사합니다.
 - 히트박스는 `ILSHitboxInterface`로 가져오기 때문에 플레이어와 적에 같은 코드를 사용합니다.
+- 부위 배율이 필요 없는 적은 `bUsePhysicsAsset`을 켜서 물리 에셋 바디로 판정할 수 있습니다. 판정할 때 바디를 과거 포즈로 옮겨 엔진 트레이스(`LineTraceComponent`)를 실행한 뒤 원래 포즈로 되돌립니다.
 - 데디 서버에서도 본 위치가 갱신되도록 `AlwaysTickPoseAndRefreshBones`를 사용합니다.
 
 ```cpp

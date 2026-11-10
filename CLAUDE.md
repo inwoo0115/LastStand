@@ -68,7 +68,7 @@
 - 게임 모듈 의존성: `LastStand.Build.cs`에 `MapGenerator` 등록.
 
 ### 네트워크 전투 (랙 보상)
-- `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,Shooter)` = 쏜 사람 `PlayerState` 서버측정 핑(RTT, 200ms 클램프)만큼 되감기 → 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집.
+- `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,Shooter)` = 쏜 사람 `PlayerState` 서버측정 핑(RTT, 200ms 클램프)만큼 되감기 → 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집. `bUsePhysicsAsset`(BP 설정)이면 물리 에셋 버전: 메쉬 충돌을 켜 바디 트랜스폼 기록 → `ConfirmBodyHit`에서 바디를 과거 포즈로 옮겨 `LineTraceComponent` 후 복원, 배율 1.0, 남은 히트박스 충돌은 끔. 디버그는 엔진 `show Collision`(각 머신 현재 포즈). `ConfirmHit`은 bool + `OutHitbox`(물리 에셋 버전은 nullptr).
 - `Character/Components/LSHitboxComponent.*`: `UBoxComponent` 파생, `ELSHitboxType`+`DamageMultiplier`(Head 2.0/WeakPoint 3.0/사지 0.7). 적 BP에서 추가해 메쉬 Parent Socket에 부착. `ProcessLocalHit`(예측) vs `ProcessServerHit`(권위).
 - `Item/Equipment/Weapon/LSWeaponHitscan.*`: 로컬 예측 트레이스 → `ServerRPCFire(Start,End,HitActor)`(클라 타임스탬프 없음) → 서버 연사가드(`Interval*0.9`)+리와인드 재검증+권위 데미지 → 멀티캐스트 연출(소유 클라 스킵). 커스텀 채널 `ECC_GameTraceChannel1`(Hitscan).
 
@@ -82,7 +82,7 @@
 
 ### 데이터 / 인터페이스 / UI
 - `Settings/LSGameDataSettings`(UDeveloperSettings, soft DataTable refs) → `DataTable/LSDataSubsystem`(`FindItem/FindWeapon/FindEnemy`) → 행 구조체 `LSItemData`/`LSWeaponData`/`LSEnemyData`(모두 FTableRowBase).
-- `Interface/`: `LSStatComponentInterface`(GetStatComponent+ApplyDamage), `LSHitboxInterface`(GetHitboxComponents), `LSInventoryComponentInterface`, `LSInteractComponentInterface`, `LSInteractableInterface`(Interact/GetItemName/GetInstanceID).
+- `Interface/`: `LSStatComponentInterface`(GetStatComponent+ApplyDamage), `LSHitboxInterface`(GetHitboxComponents+GetHitboxMesh), `LSInventoryComponentInterface`, `LSInteractComponentInterface`, `LSInteractableInterface`(Interact/GetItemName/GetInstanceID).
 - `UI/LSUISubsystem`(GameplayTag 레이어/슬롯, `PendingInjections` 지연 주입, 입력모드) + `UI/LSUIEventSubsystem`(이벤트 버스: Health/Ammo/Damage/Equipment/ReserveAmmo/InventoryInput). `UI/Widget/`(인벤/장비/스탯/상호작용), `UI/Operation/`(드래그드롭), 데미지넘버 오브젝트 풀링(`LSDamageLayerWidget`).
 - `Item/LSItemArray.h`: `FInventoryItemInfoArray`(FFastArraySerializer, WithNetDeltaSerializer).
 

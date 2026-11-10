@@ -6,6 +6,7 @@
 #include "Interface/LSHitboxInterface.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
 
@@ -53,6 +54,44 @@ void ULSServerSideRewindComponent::BeginPlay()
 
 	AActor* Owner = GetOwner();
 
+	// 판정 대상 설정: 클라 예측 트레이스도 판정 방식에 맞아야 하므로 충돌 설정은 모든 머신에서 수행
+	if (Owner && Owner->Implements<ULSHitboxInterface>())
+	{
+		ILSHitboxInterface* HitboxOwner = Cast<ILSHitboxInterface>(Owner);
+
+		TArray<ULSHitboxComponent*> Found;
+		HitboxOwner->GetHitboxComponents(Found);
+
+		if (bUsePhysicsAsset)
+		{
+			// 물리 에셋 버전: 남아 있는 히트박스는 트레이스를 가로채지 않도록 충돌을 끔
+			for (ULSHitboxComponent* Hitbox : Found)
+			{
+				if (Hitbox)
+				{
+					Hitbox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				}
+			}
+
+			// 메쉬 충돌을 켜 물리 에셋 바디 생성 (NoCollision이면 바디가 생성되지 않음)
+			USkeletalMeshComponent* Mesh = HitboxOwner->GetHitboxMesh();
+			if (Mesh && Mesh->GetPhysicsAsset())
+			{
+				Mesh->SetCollisionProfileName(BodyCollisionProfileName);
+				CachedMesh = Mesh;
+			}
+		}
+		else
+		{
+			// 히트박스 버전: 소유 pawn의 전체 히트박스 수집 (개수 가변)
+			CachedHitboxes.Reset();
+			for (ULSHitboxComponent* Hitbox : Found)
+			{
+				CachedHitboxes.Add(Hitbox);
+			}
+		}
+	}
+
 	// 히스토리는 서버에서만 의미가 있으므로 클라에서는 기록 안 함
 	if (!Owner || !Owner->HasAuthority())
 	{
@@ -60,17 +99,12 @@ void ULSServerSideRewindComponent::BeginPlay()
 		return;
 	}
 
-	// 소유 pawn의 전체 히트박스를 인터페이스로 수집 (개수 가변)
-	if (Owner->Implements<ULSHitboxInterface>())
+	// 판정 대상이 없으면 이 적은 맞지 않음
+	const bool bNoTarget = bUsePhysicsAsset ? (!CachedMesh || CachedMesh->Bodies.Num() == 0) : CachedHitboxes.Num() == 0;
+	if (bNoTarget)
 	{
-		TArray<ULSHitboxComponent*> Found;
-		Cast<ILSHitboxInterface>(Owner)->GetHitboxComponents(Found);
-
-		CachedHitboxes.Reset();
-		for (ULSHitboxComponent* Hitbox : Found)
-		{
-			CachedHitboxes.Add(Hitbox);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("SSR: %s has no %s for rewind"), *GetNameSafe(Owner),
+			bUsePhysicsAsset ? TEXT("physics bodies") : TEXT("hitboxes"));
 	}
 }
 
@@ -81,7 +115,8 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	UWorld* World = GetWorld();
-	if (!World || CachedHitboxes.Num() == 0)
+	const bool bNoTarget = bUsePhysicsAsset ? !CachedMesh : CachedHitboxes.Num() == 0;
+	if (!World || bNoTarget)
 	{
 		return;
 	}
@@ -94,23 +129,35 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	}
 	LastRecordTime = Now;
 
-	// 현재 시점의 전체 히트박스 스냅샷 기록
+	// 현재 시점의 판정 대상 스냅샷 기록
 	FServerSideRewindSnapshot Snapshot;
 	Snapshot.Time = Now;
-	for (ULSHitboxComponent* Hitbox : CachedHitboxes)
+	if (bUsePhysicsAsset)
 	{
-		if (!Hitbox)
+		// 물리 에셋 버전: 바디 월드 트랜스폼 (null 바디는 Identity로 인덱스 유지)
+		Snapshot.BodyTransforms.Reserve(CachedMesh->Bodies.Num());
+		for (const FBodyInstance* Body : CachedMesh->Bodies)
 		{
-			continue;
+			Snapshot.BodyTransforms.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
 		}
+	}
+	else
+	{
+		for (ULSHitboxComponent* Hitbox : CachedHitboxes)
+		{
+			if (!Hitbox)
+			{
+				continue;
+			}
 
-		FHitBoxSnapshot Box;
-		Box.Location = Hitbox->GetComponentLocation();
-		Box.Rotation = Hitbox->GetComponentRotation();
-		Box.BoxExtent = Hitbox->GetScaledBoxExtent();
+			FHitBoxSnapshot Box;
+			Box.Location = Hitbox->GetComponentLocation();
+			Box.Rotation = Hitbox->GetComponentRotation();
+			Box.BoxExtent = Hitbox->GetScaledBoxExtent();
 
-		// FName = 컴포넌트 인스턴스 이름 (리와인드 시 라이브 컴포넌트와 매칭할 안정적 키)
-		Snapshot.HitBoxSnapshots.Add(Hitbox->GetFName(), Box);
+			// FName = 컴포넌트 인스턴스 이름 (리와인드 시 라이브 컴포넌트와 매칭할 안정적 키)
+			Snapshot.HitBoxSnapshots.Add(Hitbox->GetFName(), Box);
+		}
 	}
 	History.Add(MoveTemp(Snapshot));
 
@@ -121,8 +168,8 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	}
 
 #if WITH_EDITOR
-	// 디버그(에디터 전용): 0.5초마다 현재 히트박스 위치를 멀티캐스트로 전 클라에 전송해 그림 (저장 주기와 별개)
-	if (bDrawDebugSnapshot && Now - LastDebugDrawTime >= DebugDrawInterval)
+	// 히트박스 버전 전용. 물리 에셋 버전은 엔진 show Collision으로 실제 바디 형상 확인
+	if (bDrawDebugSnapshot && !bUsePhysicsAsset && Now - LastDebugDrawTime >= DebugDrawInterval)
 	{
 		LastDebugDrawTime = Now;
 
@@ -166,19 +213,21 @@ void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const 
 }
 
 
-ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter) const
+bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter, ULSHitboxComponent*& OutHitbox) const
 {
+	OutHitbox = nullptr;
+
 	AActor* Owner = GetOwner();
 	UWorld* World = GetWorld();
 
 	// 판정은 서버에서만
 	if (!Owner || !Owner->HasAuthority() || !World)
 	{
-		return nullptr;
+		return false;
 	}
 	if (History.Num() == 0)
 	{
-		return nullptr;
+		return false;
 	}
 
 	const float Now = World->GetTimeSeconds();
@@ -230,10 +279,23 @@ ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& Trac
 		Alpha = (Span > SMALL_NUMBER) ? (QueryTime - Before->Time) / Span : 0.0f;
 	}
 
-	// Before의 각 히트박스를 같은 FName 키의 After 박스와 보간해 판정
-	for (const TPair<FName, FHitBoxSnapshot>& Pair : Before->HitBoxSnapshots)
+	// 판정 방식별 처리
+	if (bUsePhysicsAsset)
 	{
-		const FHitBoxSnapshot* BoxB = After->HitBoxSnapshots.Find(Pair.Key);
+		return CachedMesh && ConfirmBodyHit(*Before, *After, Alpha, TraceStart, TraceEnd);
+	}
+
+	OutHitbox = ConfirmHitboxHit(*Before, *After, Alpha, TraceStart, TraceEnd);
+	return OutHitbox != nullptr;
+}
+
+
+ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHitboxHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd) const
+{
+	// Before의 각 히트박스를 같은 FName 키의 After 박스와 보간해 판정
+	for (const TPair<FName, FHitBoxSnapshot>& Pair : Before.HitBoxSnapshots)
+	{
+		const FHitBoxSnapshot* BoxB = After.HitBoxSnapshots.Find(Pair.Key);
 		const FHitBoxSnapshot Box = (BoxB && Alpha > 0.0f)
 			? InterpolateBox(Pair.Value, *BoxB, Alpha)
 			: Pair.Value;   // 경계/동일 프레임 → 보간 없이 사용
@@ -254,3 +316,45 @@ ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHit(const FVector& Trac
 	return nullptr;
 }
 
+
+bool ULSServerSideRewindComponent::ConfirmBodyHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd) const
+{
+	const TArray<FBodyInstance*>& Bodies = CachedMesh->Bodies;
+	if (Before.BodyTransforms.Num() != Bodies.Num() || After.BodyTransforms.Num() != Bodies.Num())
+	{
+		return false;   // 스냅샷 이후 물리 상태가 재생성된 경우 (인덱스 짝 불일치)
+	}
+
+	// 1) 현재 포즈를 보관하고 바디를 쿼리 시점 포즈로 이동 (TeleportPhysics: 게임 스레드 위치 즉시 반영)
+	TArray<FTransform, TInlineAllocator<32>> CurrentTransforms;
+	CurrentTransforms.Reserve(Bodies.Num());
+	for (int32 i = 0; i < Bodies.Num(); ++i)
+	{
+		FBodyInstance* Body = Bodies[i];
+		CurrentTransforms.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
+		if (Body)
+		{
+			FTransform RewoundTM = Before.BodyTransforms[i];
+			if (Alpha > 0.0f)
+			{
+				RewoundTM.Blend(Before.BodyTransforms[i], After.BodyTransforms[i], Alpha);
+			}
+			Body->SetBodyTransform(RewoundTM, ETeleportType::TeleportPhysics);
+		}
+	}
+
+	// 2) 되돌린 포즈로 메쉬 바디만 트레이스 (가장 가까운 바디 명중)
+	FHitResult Hit;
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(LSRewindTrace), false);
+	const bool bHit = CachedMesh->LineTraceComponent(Hit, TraceStart, TraceEnd, Params);
+
+	// 3) 원래 포즈로 복원 (명중 여부와 무관하게 항상)
+	for (int32 i = 0; i < Bodies.Num(); ++i)
+	{
+		if (FBodyInstance* Body = Bodies[i])
+		{
+			Body->SetBodyTransform(CurrentTransforms[i], ETeleportType::TeleportPhysics);
+		}
+	}
+	return bHit;
+}

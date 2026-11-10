@@ -95,6 +95,11 @@ void ALSEnemyBase::GetHitboxComponents(TArray<ULSHitboxComponent*>& OutHitboxes)
 	GetComponents<ULSHitboxComponent>(OutHitboxes);
 }
 
+USkeletalMeshComponent* ALSEnemyBase::GetHitboxMesh() const
+{
+	return GetMesh();
+}
+
 // Called when the game starts or when spawned
 void ALSEnemyBase::BeginPlay()
 {
