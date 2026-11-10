@@ -38,7 +38,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	FVector Axis;
 
-	// AI 컨트롤 회전(Yaw) 기준 이동 방향 단위 벡터 (스트레이프 블렌드스페이스 입력)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	FVector ControlAxis;
 
