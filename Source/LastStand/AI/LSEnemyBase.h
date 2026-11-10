@@ -25,7 +25,7 @@ public:
 
 	virtual void ApplyDamage(int32 Damage, AActor* DamageCauser) override;
 
-	// 이 적이 보유한 모든 부위 히트박스를 반환
+	// BP에서 추가한 모든 부위 히트박스(ULSHitboxComponent)를 반환
 	virtual void GetHitboxComponents(TArray<class ULSHitboxComponent*>& OutHitboxes) const override;
 
 	// StateTree 이벤트 전달 허브 반환
@@ -105,28 +105,6 @@ protected:
 	// 체력바 위젯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> HealthBarWidget;
-
-	// --- 부위별 히트박스 (본 소켓 재부착·크기 조정은 BP에서 마무리) ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> HeadHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> TorsoHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> LeftArmHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> RightArmHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> LeftLegHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> RightLegHitbox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class ULSHitboxComponent> WeakPointHitbox;
 
 	// 비헤이비어 트리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))

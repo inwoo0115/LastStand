@@ -12,21 +12,6 @@ ULSHitboxComponent::ULSHitboxComponent()
 	SetGenerateOverlapEvents(false);
 }
 
-void ULSHitboxComponent::OnRegister()
-{
-	Super::OnRegister();
-
-	// KeepRelativeTransform → 디자이너가 설정한 상대 오프셋 보존.
-	AttachToOwnerMeshSocket();
-}
-
-void ULSHitboxComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	AttachToOwnerMeshSocket();
-}
-
 void ULSHitboxComponent::SetupHitbox(ELSHitboxType InType, float InMultiplier)
 {
 	HitboxType = InType;
@@ -61,21 +46,6 @@ void ULSHitboxComponent::ProcessServerHit(int32 RawDamage, AActor* DamageCauser)
 		if (ULSStatComponent* Stat = Cast<ILSStatComponentInterface>(Owner)->GetStatComponent())
 		{
 			Stat->ApplyDamage(FinalDamage, DamageCauser);
-		}
-	}
-}
-
-void ULSHitboxComponent::AttachToOwnerMeshSocket()
-{
-	AActor* Owner = GetOwner();
-	if (!Owner) { return; }
-
-	if (USkeletalMeshComponent* OwnerMesh = Owner->FindComponentByClass<USkeletalMeshComponent>())
-	{
-		// BP가 부모를 Capsule로 저장했더라도 강제로 스켈레탈 메시 소켓에 재부착
-		if (GetAttachParent() != OwnerMesh || GetAttachSocketName() != SocketName)
-		{
-			AttachToComponent(OwnerMesh, FAttachmentTransformRules::KeepRelativeTransform, SocketName);
 		}
 	}
 }

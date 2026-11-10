@@ -20,9 +20,8 @@ enum class ELSHitboxType : uint8
 };
 
 /**
- * 부위별 히트박스 컴포넌트.
- * 무기 트레이스(ECC_Visibility)에 맞는 박스 콜리전으로, 어느 부위를 맞았는지(HitboxType)와
- * 해당 부위의 데미지 배율(DamageMultiplier)을 보유한다. 실제 배율 적용은 무기 측에서 수행.
+ * 부위별 히트박스 컴포넌트. 적 BP에서 추가하고 메쉬의 Parent Socket에 부착해 사용한다.
+ * Hitscan 채널 트레이스에 맞는 박스 콜리전으로, 부위(HitboxType)와 데미지 배율(DamageMultiplier)을 보유한다.
  */
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class LASTSTAND_API ULSHitboxComponent : public UBoxComponent
@@ -31,12 +30,6 @@ class LASTSTAND_API ULSHitboxComponent : public UBoxComponent
 
 public:
 	ULSHitboxComponent();
-
-	// BP에서 소켓을 못 바꾸는 상속 컴포넌트 제약 우회: 부모 메시의 SocketName에 코드로 재부착
-	virtual void OnRegister() override;
-
-	// 런타임 스폰 시 OnRegister가 SocketName 적용 전에 실행될 수 있어, 프로퍼티 확정 후 재부착
-	virtual void BeginPlay() override;
 
 	ELSHitboxType GetHitboxType() const { return HitboxType; }
 	float GetDamageMultiplier() const { return DamageMultiplier; }
@@ -52,9 +45,6 @@ public:
 	void ProcessServerHit(int32 RawDamage, AActor* DamageCauser);
 
 protected:
-	// 소켓 부착
-	void AttachToOwnerMeshSocket();
-
 	// 이 히트박스가 대응하는 신체 부위
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
 	ELSHitboxType HitboxType = ELSHitboxType::Torso;
@@ -62,8 +52,4 @@ protected:
 	// 이 부위에 적중 시 곱해질 데미지 배율 (예: 머리/약점 고배율)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
 	float DamageMultiplier = 1.0f;
-
-	// 부착할 부모 메시의 소켓/본 이름. BP에서 편집(상속 컴포넌트의 어태치 트리 제약 우회용)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Hitbox, meta = (AllowPrivateAccess = "true"))
-	FName SocketName;
 };

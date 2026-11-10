@@ -55,26 +55,6 @@ ALSEnemyBase::ALSEnemyBase()
 	// World space: 3D 씬의 일부로 렌더 → 화면 최상단에 겹쳐 그려지지 않음
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
 
-	auto CreateHitbox = [this](const TCHAR* Name, ELSHitboxType Type, float Multiplier,
-		const FVector& RelLocation, const FVector& BoxExtent) -> ULSHitboxComponent*
-	{
-		ULSHitboxComponent* Hitbox = CreateDefaultSubobject<ULSHitboxComponent>(Name);
-		Hitbox->SetupAttachment(GetMesh());
-		Hitbox->SetupHitbox(Type, Multiplier);
-		Hitbox->SetRelativeLocation(RelLocation);
-		Hitbox->SetBoxExtent(BoxExtent);
-		return Hitbox;
-	};
-
-	// 소켓 부착 시 본에 정렬되도록 상대 위치는 0(본 원점) 기본. Extent만 대략값 — 정밀 배치는 BP에서
-	HeadHitbox     = CreateHitbox(TEXT("HeadHitbox"),     ELSHitboxType::Head,      2.0f, FVector::ZeroVector, FVector(12.0f, 12.0f, 12.0f));
-	TorsoHitbox    = CreateHitbox(TEXT("TorsoHitbox"),    ELSHitboxType::Torso,     1.0f, FVector::ZeroVector, FVector(20.0f, 16.0f, 35.0f));
-	LeftArmHitbox  = CreateHitbox(TEXT("LeftArmHitbox"),  ELSHitboxType::LeftArm,   0.7f, FVector::ZeroVector, FVector(10.0f, 8.0f, 30.0f));
-	RightArmHitbox = CreateHitbox(TEXT("RightArmHitbox"), ELSHitboxType::RightArm,  0.7f, FVector::ZeroVector, FVector(10.0f, 8.0f, 30.0f));
-	LeftLegHitbox  = CreateHitbox(TEXT("LeftLegHitbox"),  ELSHitboxType::LeftLeg,   0.7f, FVector::ZeroVector, FVector(10.0f, 10.0f, 40.0f));
-	RightLegHitbox = CreateHitbox(TEXT("RightLegHitbox"), ELSHitboxType::RightLeg,  0.7f, FVector::ZeroVector, FVector(10.0f, 10.0f, 40.0f));
-	WeakPointHitbox= CreateHitbox(TEXT("WeakPointHitbox"),ELSHitboxType::WeakPoint, 3.0f, FVector::ZeroVector, FVector(10.0f, 10.0f, 10.0f));
-
 	// AI: 스폰/배치 시 커스텀 AIController가 자동 possess → OnPossess에서 BT 실행
 	AIControllerClass = ALSAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -111,20 +91,8 @@ ULSAIActionComponent* ALSEnemyBase::GetAIActionComponent()
 
 void ALSEnemyBase::GetHitboxComponents(TArray<ULSHitboxComponent*>& OutHitboxes) const
 {
-	OutHitboxes.Reset();
-
-	const TArray<ULSHitboxComponent*> Hitboxes = {
-		HeadHitbox, TorsoHitbox, LeftArmHitbox, RightArmHitbox,
-		LeftLegHitbox, RightLegHitbox, WeakPointHitbox
-	};
-
-	for (ULSHitboxComponent* Hitbox : Hitboxes)
-	{
-		if (Hitbox)
-		{
-			OutHitboxes.Add(Hitbox);
-		}
-	}
+	// BP에서 추가한 히트박스를 모두 수집 (개수/부위는 적마다 자유)
+	GetComponents<ULSHitboxComponent>(OutHitboxes);
 }
 
 // Called when the game starts or when spawned

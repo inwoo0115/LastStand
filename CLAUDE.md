@@ -69,13 +69,13 @@
 
 ### 네트워크 전투 (랙 보상)
 - `Character/Components/LSServerSideRewindComponent.*`: 서버 전용 틱, 20ms 스냅샷 링버퍼(200ms 윈도우), `ConfirmHit(start,end,Shooter)` = 쏜 사람 `PlayerState` 서버측정 핑(RTT, 200ms 클램프)만큼 되감기 → 브래킷 스냅샷 보간(Lerp+Slerp)→세그먼트-OBB 판정. 히트박스는 `ILSHitboxInterface`로 제네릭 수집.
-- `Character/Components/LSHitboxComponent.*`: `UBoxComponent` 파생, `ELSHitboxType`+`DamageMultiplier`(Head 2.0/WeakPoint 3.0/사지 0.7), 소켓 재부착. `ProcessLocalHit`(예측) vs `ProcessServerHit`(권위).
+- `Character/Components/LSHitboxComponent.*`: `UBoxComponent` 파생, `ELSHitboxType`+`DamageMultiplier`(Head 2.0/WeakPoint 3.0/사지 0.7). 적 BP에서 추가해 메쉬 Parent Socket에 부착. `ProcessLocalHit`(예측) vs `ProcessServerHit`(권위).
 - `Item/Equipment/Weapon/LSWeaponHitscan.*`: 로컬 예측 트레이스 → `ServerRPCFire(Start,End,HitActor)`(클라 타임스탬프 없음) → 서버 연사가드(`Interval*0.9`)+리와인드 재검증+권위 데미지 → 멀티캐스트 연출(소유 클라 스킵). 커스텀 채널 `ECC_GameTraceChannel1`(Hitscan).
 
 ### 캐릭터 / 컴포넌트
 - `Character/LSCharacterBase.*`(ACharacter, Stat/Inventory/Interact 인터페이스 구현, 컨트롤 회전 리플리케이트), `LSPlayerCharacter.*`(Enhanced Input, `bIsAim` `COND_SkipOwner` 예측, 다수 ServerRPC).
 - `Character/Components/`: `LSStatComponent`(권위 HP, `OnRep_CurrentHealth`+이중 브로드캐스트), `LSEquipmentComponent`(리플리 장비맵+탄약캐시, `OnRepFocusEquipment` 애님레이어 링크), `LSInventoryComponent`(FastArray, `OnInventoryItemChanged` 델타), `LSInteractionComponent`.
-- `AI/LSEnemyBase.*`(ACharacter, 7개 소켓 히트박스+리와인드+월드 HP바 위젯, 서버 애님 강제 틱). AI 컨트롤러가 서버 전용이라 `CurrentControllerRotation`을 서버 Tick에서 복제. 자동 회전 끄고 액터 Yaw를 컨트롤 Yaw로 `RInterpTo`(`TurnInterpSpeed`) 지연 추적, 차이 ≥ `TurnThresholdAngle`(60°)이면 복제 bool `bTurnLeft`/`bTurnRight`(서버 계산).
+- `AI/LSEnemyBase.*`(ACharacter, BP에서 추가한 히트박스를 `GetComponents`로 자동 수집+리와인드+월드 HP바 위젯, 서버 애님 강제 틱). AI 컨트롤러가 서버 전용이라 `CurrentControllerRotation`을 서버 Tick에서 복제. 자동 회전 끄고 액터 Yaw를 컨트롤 Yaw로 `RInterpTo`(`TurnInterpSpeed`) 지연 추적, 차이 ≥ `TurnThresholdAngle`(60°)이면 복제 bool `bTurnLeft`/`bTurnRight`(서버 계산).
 - `AI/Components/LSAIEventHubComponent.*`: 적 폰 부착, **StateTree 이벤트 전달 통로 일원화**(서버 전용). 발신원은 `ILSAIEventHubInterface::GetAIEventHubComponent()->SendEvent(Tag, Payload)` (BP: `Send AI Event`). `AI.Event` 하위 태그만 허용(`LSAITags::Event_*`), 컨트롤러의 `UStateTreeAIComponent`를 지연 해석·캐시해 `SendStateTreeEvent`.
 - `AI/LSAIController.*`(StateTree 우선, 없으면 BehaviorTree 폴백. **몬스터별 서브트리**: `FEnemyData::SubtreeOverrides`(`AI.Subtree.*` 슬롯 → soft `UStateTree`)를 `ApplySubtreeOverrides`가 `SetStateTree`~`StartLogic` 사이에 `SetLinkedStateTreeOverrides`로 적용 — Base 트리의 Linked Asset 상태 Tag와 매칭. **테스트용** `Tick`에서 퍼셉션 타깃 `SetFocus`/`ClearFocus`), `AI/Components/LSAIPerceptionComponent`(서버 전용 캡슐 감지 + 데이터 드리븐 타깃 선정), `AI/StateTree/`(Combat Global Task).
 - `Animation/LSAnimInstance`(플레이어), `Animation/LSAIAnimInstance`(적: 컨트롤러 없으면 복제 컨트롤 회전 사용 → Yaw/Pitch 에임오프셋, `Axis`(액터 기준)·`ControlAxis`(컨트롤 Yaw 기준) 이동 방향, 턴 플래그).
