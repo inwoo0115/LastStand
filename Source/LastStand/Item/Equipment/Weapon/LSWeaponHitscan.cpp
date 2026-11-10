@@ -31,12 +31,23 @@ void ALSWeaponHitscan::LaunchWeapon()
 		return;
 	}
 
-	// 즉시 1발 발사 후 RapidFire일 경우 연속 발사
-	Fire();
-	if (bIsRapidFire)
+	if (!bIsRapidFire)
 	{
-		GetWorldTimerManager().SetTimer(LaunchTimerHandle, this, &ALSWeaponHitscan::Fire, LaunchIntervalTime, true);
+		Fire();
+		return;
 	}
+
+	// 연타 방지: 이전 발사의 쿨다운이 남아 있으면 남은 시간 뒤에 연사 시작
+	const float RemainingCooldown = GetWorldTimerManager().GetTimerRemaining(LocalFireTimerHandle);
+	if (RemainingCooldown > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(LaunchTimerHandle, this, &ALSWeaponHitscan::Fire, LaunchIntervalTime, true, RemainingCooldown);
+		return;
+	}
+
+	// 즉시 1발 발사 후 연속 발사
+	Fire();
+	GetWorldTimerManager().SetTimer(LaunchTimerHandle, this, &ALSWeaponHitscan::Fire, LaunchIntervalTime, true);
 }
 
 void ALSWeaponHitscan::ReleaseWeapon()
@@ -138,7 +149,8 @@ void ALSWeaponHitscan::Fire()
 	}
 
 	// 로컬 연사 가드: LaunchIntervalTime 동안 로컬 이펙트/몽타주 차단
-	if (!bLocalFireReady)
+	// (연사 무기는 LaunchWeapon과 LaunchTimerHandle이 페이싱하므로 제외)
+	if (!bIsRapidFire && !bLocalFireReady)
 	{
 		return;
 	}
@@ -159,12 +171,9 @@ void ALSWeaponHitscan::Fire()
 	// 서버에 발사 요청: 로컬 명중 정보 전달 → 서버 SSR 재검증 (리와인드 시각은 서버가 측정한 핑 기준)
 	ServerRPCFire(Start, End, LocalHit);
 
-	// 로컬 연사 가드 시작 (연사 무기는 LaunchTimerHandle이 페이싱하므로 제외)
-	if (!bIsRapidFire)
-	{
-		bLocalFireReady = false;
-		GetWorldTimerManager().SetTimer(LocalFireTimerHandle, this, &ALSWeaponHitscan::OnLocalFireReady, LaunchIntervalTime, false);
-	}
+	// 로컬 쿨다운 시작 (단발: 재발사 가드 / 연사: LaunchWeapon의 잔여 쿨다운 측정용)
+	bLocalFireReady = false;
+	GetWorldTimerManager().SetTimer(LocalFireTimerHandle, this, &ALSWeaponHitscan::OnLocalFireReady, LaunchIntervalTime, false);
 }
 
 void ALSWeaponHitscan::OnLocalFireReady()
