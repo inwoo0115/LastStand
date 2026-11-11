@@ -20,6 +20,7 @@ namespace LSAITags
 	UE_DEFINE_GAMEPLAY_TAG(Event_AdditionalAction, "AI.Event.AdditionalAction");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Death, "AI.Event.Death");
 	UE_DEFINE_GAMEPLAY_TAG(Event_PhaseChange, "AI.Event.PhaseChange");
+	UE_DEFINE_GAMEPLAY_TAG(Event_TargetChange, "AI.Event.TargetChange");
 
 	UE_DEFINE_GAMEPLAY_TAG(Subtree, "AI.Subtree");
 	UE_DEFINE_GAMEPLAY_TAG(Subtree_Idle, "AI.Subtree.Idle");

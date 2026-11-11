@@ -47,6 +47,9 @@ protected:
 	// 무감지 지속 판정 → bHasDetectedTarget 해제 + 캡슐 롤백 (서버 전용)
 	void UpdateAggroReset();
 
+	// owner의 AI 이벤트 허브로 이벤트 전송 (서버 전용)
+	void SendEventToHub(const FGameplayTag& EventTag) const;
+
 	// 감지 볼륨 크기 (에디터 조정)
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float DetectionRadius = 800.0f;
@@ -84,4 +87,7 @@ protected:
 
 	// 마지막 타겟 교체 시각 (GetWorld()->GetTimeSeconds())
 	float LastTargetChangeTime = 0.0f;
+
+	// 마지막으로 잡았던 유효 타깃 (TargetChange 판정용. 타깃이 비어도 유지)
+	TWeakObjectPtr<AActor> LastValidTarget;
 };

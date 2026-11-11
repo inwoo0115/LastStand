@@ -83,6 +83,7 @@ void ULSAIPerceptionComponent::StopPerception()
 
 	PerceivedActors.Reset();
 	TargetActor = nullptr;
+	LastValidTarget.Reset();
 }
 
 void ULSAIPerceptionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -171,18 +172,21 @@ void ULSAIPerceptionComponent::UpdateTarget()
 		if (TargetActor && Enemy && !Enemy->GetHasDetectedTarget())
 		{
 			Enemy->SetHasDetectedTarget(true);
-
-			// 첫 감지 → 감지 범위를 어그로 범위로 확장 (경계 들락날락 시 어그로 해제 방지)
 			SetCapsuleSize(AggroRadius, AggroHalfHeight);
 			EmptyStartTime = -1.0f;
 
-			if (Enemy->Implements<ULSAIEventHubInterface>())
-			{
-				if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Enemy)->GetAIEventHubComponent())
-				{
-					EventHub->SendEvent(LSAITags::Event_Initialization);
-				}
-			}
+			SendEventToHub(LSAITags::Event_Initialization);
+		}
+		else if (TargetActor && TargetActor != LastValidTarget.Get())
+		{
+			// 최초 감지가 아닌 타깃 교체 (빈 상태를 거쳐도 이전 타깃과 다르면 포함)
+			SendEventToHub(LSAITags::Event_TargetChange);
+		}
+
+		// 다음 비교용 마지막 유효 타깃 (빈 상태로 바뀔 때는 유지)
+		if (TargetActor)
+		{
+			LastValidTarget = TargetActor;
 		}
 	}
 }
@@ -220,12 +224,18 @@ void ULSAIPerceptionComponent::UpdateAggroReset()
 		EmptyStartTime = -1.0f;
 
 		// StateTree를 Idle로 복귀
-		if (Enemy->Implements<ULSAIEventHubInterface>())
+		SendEventToHub(LSAITags::Event_Idle);
+	}
+}
+
+void ULSAIPerceptionComponent::SendEventToHub(const FGameplayTag& EventTag) const
+{
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->Implements<ULSAIEventHubInterface>())
+	{
+		if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Owner)->GetAIEventHubComponent())
 		{
-			if (ULSAIEventHubComponent* EventHub = Cast<ILSAIEventHubInterface>(Enemy)->GetAIEventHubComponent())
-			{
-				EventHub->SendEvent(LSAITags::Event_Idle);
-			}
+			EventHub->SendEvent(EventTag);
 		}
 	}
 }
