@@ -30,8 +30,8 @@ bool ULSAIActionBase::CanActivate(AActor* InTarget) const
 		return false;
 	}
 
-	// 쿨다운
-	if (World->GetTimeSeconds() - LastEndTime < Cooldown)
+	// 쿨다운 (없으면 시간 비교 생략 — 같은 프레임 재시작 허용)
+	if (Cooldown > 0.0f && World->GetTimeSeconds() - LastEndTime < Cooldown)
 	{
 		return false;
 	}

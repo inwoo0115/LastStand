@@ -118,6 +118,6 @@ protected:
 
 	bool bIsActive = false;
 
-	// 마지막 종료 시각 (쿨다운 기준)
-	float LastEndTime = -UE_BIG_NUMBER;
+	// 마지막 종료 시각 (쿨다운 기준) — 월드 시간(double)과 같은 타입으로 저장해 정밀도 손실 방지
+	double LastEndTime = -UE_BIG_NUMBER;
 };
