@@ -30,7 +30,8 @@ public:
 	void InitializeActionsByEnemyData(FName EnemyName);
 
 	// 쿨다운·사거리·실행 중 여부 검사
-	bool CanRunAction(FGameplayTag ActionTag, AActor* Target) const;
+	// bIgnoreCurrentAction: 실행 중인 액션을 무시 (곧 취소될 상황에서의 사전 검사용)
+	bool CanRunAction(FGameplayTag ActionTag, AActor* Target, bool bIgnoreCurrentAction = false) const;
 
 	// 행동 실행. 실행 불가/시작 실패 시 false
 	bool StartAction(FGameplayTag ActionTag, AActor* Target);

@@ -26,12 +26,13 @@ public:
 	void InitializeAction(ULSAIActionComponent* InOwnerComp, FGameplayTag InActionTag, int32 InDefaultDamage);
 
 	// 쿨다운·사거리 검사 (StateTree 조건에서 사용)
-	virtual bool CanActivate(AActor* InTarget) const;
+	// bIgnoreActive: 곧 취소될 실행 중 인스턴스에 대한 사전 검사면 true
+	virtual bool CanActivate(AActor* InTarget, bool bIgnoreActive = false) const;
 
 	// 실행 시작. 실패 시 false (활성 상태로 남지 않음)
 	bool Activate(AActor* InTarget);
 
-	// 외부 중단 (StateTree 상태 이탈 등) — 실패로 종료
+	// 외부 중단 (StateTree 상태 이탈 등) — 실패로 종료, 쿨다운 미적용
 	void Cancel();
 
 	// 활성 중 매 틱 (컴포넌트 틱에서 호출, 서버)
@@ -52,7 +53,8 @@ protected:
 	virtual void OnEnd(bool bSucceeded) {}
 
 	// 종료 처리 + 컴포넌트에 통지. bStopMontage면 재생 중인 몽타주를 모든 머신에서 정지
-	void FinishAction(bool bSucceeded, bool bStopMontage = false);
+	// bCancelled: 외부 취소(상태 이탈 등)면 true — 쿨다운을 시작하지 않음
+	void FinishAction(bool bSucceeded, bool bStopMontage = false, bool bCancelled = false);
 
 	// 몽타주 로드 → 모든 머신 재생 → 서버 종료 델리게이트 바인딩. 실패 시 false
 	bool StartMontage();

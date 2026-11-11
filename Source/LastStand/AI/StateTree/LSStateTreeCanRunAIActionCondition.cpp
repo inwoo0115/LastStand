@@ -10,7 +10,7 @@ bool FLSStateTreeCanRunAIActionCondition::TestCondition(FStateTreeExecutionConte
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 
 	const ULSAIActionComponent* ActionComp = ULSAIActionComponent::FindActionComponent(Cast<AActor>(Context.GetOwner()));
-	const bool bCanRun = ActionComp && ActionComp->CanRunAction(InstanceData.ActionTag, InstanceData.TargetActor);
+	const bool bCanRun = ActionComp && ActionComp->CanRunAction(InstanceData.ActionTag, InstanceData.TargetActor, InstanceData.bIgnoreCurrentAction);
 
 	return bCanRun ^ bInvert;
 }

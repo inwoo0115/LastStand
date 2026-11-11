@@ -21,11 +21,11 @@ void ULSAIActionBase::InitializeAction(ULSAIActionComponent* InOwnerComp, FGamep
 	DefaultDamage = InDefaultDamage;
 }
 
-bool ULSAIActionBase::CanActivate(AActor* InTarget) const
+bool ULSAIActionBase::CanActivate(AActor* InTarget, bool bIgnoreActive) const
 {
 	const UWorld* World = GetWorld();
 	const AActor* Owner = OwnerComp ? OwnerComp->GetOwner() : nullptr;
-	if (bIsActive || !World || !Owner)
+	if ((bIsActive && !bIgnoreActive) || !World || !Owner)
 	{
 		return false;
 	}
@@ -71,7 +71,8 @@ bool ULSAIActionBase::Activate(AActor* InTarget)
 
 void ULSAIActionBase::Cancel()
 {
-	FinishAction(false, true);
+	// 취소는 쿨다운 미적용
+	FinishAction(false, true, true);
 }
 
 bool ULSAIActionBase::OnActivate()
@@ -110,7 +111,7 @@ bool ULSAIActionBase::StartMontage()
 	return true;
 }
 
-void ULSAIActionBase::FinishAction(bool bSucceeded, bool bStopMontage)
+void ULSAIActionBase::FinishAction(bool bSucceeded, bool bStopMontage, bool bCancelled)
 {
 	if (!bIsActive)
 	{
@@ -120,9 +121,13 @@ void ULSAIActionBase::FinishAction(bool bSucceeded, bool bStopMontage)
 	// 몽타주 정지 시 발생하는 종료 콜백 재진입 방지를 위해 먼저 비활성화
 	bIsActive = false;
 
-	if (const UWorld* World = GetWorld())
+	// 정상/실패 종료만 쿨다운 시작 (취소는 미적용)
+	if (!bCancelled)
 	{
-		LastEndTime = World->GetTimeSeconds();
+		if (const UWorld* World = GetWorld())
+		{
+			LastEndTime = World->GetTimeSeconds();
+		}
 	}
 
 	if (bStopMontage && LoadedMontage && OwnerComp)

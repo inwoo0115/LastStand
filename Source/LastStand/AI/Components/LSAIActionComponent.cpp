@@ -63,15 +63,22 @@ void ULSAIActionComponent::InitializeActionsByEnemyData(FName EnemyName)
 	}
 }
 
-bool ULSAIActionComponent::CanRunAction(FGameplayTag ActionTag, AActor* Target) const
+bool ULSAIActionComponent::CanRunAction(FGameplayTag ActionTag, AActor* Target, bool bIgnoreCurrentAction) const
 {
-	if (CurrentAction)
+	if (CurrentAction && !bIgnoreCurrentAction)
 	{
 		return false;
 	}
 
 	const TObjectPtr<ULSAIActionBase>* Action = Actions.Find(ActionTag);
-	return Action && *Action && (*Action)->CanActivate(Target);
+	if (!Action || !*Action)
+	{
+		return false;
+	}
+
+	// 무시 모드에서 대상이 현재 액션 자신이면(같은 상태 재진입) 곧 취소되므로 활성 상태도 무시
+	const bool bIgnoreActive = bIgnoreCurrentAction && *Action == CurrentAction;
+	return (*Action)->CanActivate(Target, bIgnoreActive);
 }
 
 bool ULSAIActionComponent::StartAction(FGameplayTag ActionTag, AActor* Target)
