@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -51,7 +51,7 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// 시작점/방향만으로 판정 (서버 재검증에서도 같은 입력으로 호출 가능). 유효 타깃이면 true
+	// 시작점/방향만으로 판정 유효 타깃이면 true
 	bool FindRopeTarget(const FVector& Start, const FVector& Direction, FLSRopeTarget& OutTarget) const;
 
 	const FLSRopeTarget& GetCurrentTarget() const { return CurrentTarget; }

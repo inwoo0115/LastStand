@@ -143,6 +143,12 @@ protected:
 
 	void PerformRopeJump();
 
+	// 서버: 자기 시점으로 착지점을 찾아 RopeJumpTarget/ArcHeight를 확정. 서버에서도 착지 타깃이 없으면 false
+	bool ResolveServerRopeJumpTarget();
+
+	// 시작/목표 기준 포물선 높이 (상한 클램프 — 클라/서버 공용)
+	float CalcRopeJumpArcHeight(const FVector& Start, const FVector& Target) const;
+
 	bool HasRootMotionSourceNamed(FName Name) const;
 
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
@@ -187,9 +193,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.0"))
 	float RopeJumpMaxArcHeight = 1000.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Rope", meta = (ClampMin = "0.0"))
-	float RopeJumpValidationTolerance = 100.0f;
 
 	bool bWantsToRopeJump = false;
 	FVector RopeJumpTarget = FVector::ZeroVector;

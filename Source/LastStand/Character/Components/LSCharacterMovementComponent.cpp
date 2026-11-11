@@ -262,7 +262,13 @@ void ULSCharacterMovementComponent::RequestRopeJump(const FVector& Target)
 		FMath::RoundToFloat(Target.Y * 10.0f) / 10.0f,
 		FMath::RoundToFloat(Target.Z * 10.0f) / 10.0f);
 	RopeJumpDuration = FMath::Clamp(FVector::Dist(Start, RopeJumpTarget) / RopeJumpSpeed, RopeJumpMinDuration, RopeJumpMaxDuration);
-	RopeJumpArcHeight = RopeJumpBaseArcHeight + FMath::Max(RopeJumpTarget.Z - Start.Z, 0.0f) * 0.5f;
+	RopeJumpArcHeight = CalcRopeJumpArcHeight(Start, RopeJumpTarget);
+}
+
+float ULSCharacterMovementComponent::CalcRopeJumpArcHeight(const FVector& Start, const FVector& Target) const
+{
+	// 궤적은 Lerp + 포물선이라 상한으로 잘라도 목표에 도달
+	return FMath::Min(RopeJumpBaseArcHeight + FMath::Max(Target.Z - Start.Z, 0.0f) * 0.5f, RopeJumpMaxArcHeight);
 }
 
 bool ULSCharacterMovementComponent::CanRopeJump() const
@@ -277,23 +283,27 @@ bool ULSCharacterMovementComponent::CanRopeJump() const
 		return true;
 	}
 
-	if (RopeJumpDuration < RopeJumpMinDuration || RopeJumpDuration > RopeJumpMaxDuration
-		|| RopeJumpArcHeight < 0.0f || RopeJumpArcHeight > RopeJumpMaxArcHeight)
-	{
-		return false;
-	}
+	// 조작된 값 방어 (Duration은 클라 값을 그대로 써야 루트모션 소스가 매칭됨)
+	return RopeJumpDuration >= RopeJumpMinDuration && RopeJumpDuration <= RopeJumpMaxDuration;
+}
 
+bool ULSCharacterMovementComponent::ResolveServerRopeJumpTarget()
+{
 	const ULSRopeActionComponent* Rope = CharacterOwner->FindComponentByClass<ULSRopeActionComponent>();
-	if (!Rope)
+	FLSRopeTarget ServerTarget;
+	if (!Rope
+		|| !Rope->FindRopeTarget(CharacterOwner->GetPawnViewLocation(), CharacterOwner->GetControlRotation().Vector(), ServerTarget)
+		|| ServerTarget.Type != ELSRopeTargetType::Landing)
 	{
+		// 서버에서도 착지 타깃이 없음 → 거부 (이 경우만 출발점 보정)
+		UE_LOG(LogTemp, Verbose, TEXT("[RopeJump] Server found no landing target, rejected"));
 		return false;
 	}
 
-	FLSRopeTarget ServerTarget;
-	const bool bFound = Rope->FindRopeTarget(CharacterOwner->GetPawnViewLocation(), CharacterOwner->GetControlRotation().Vector(), ServerTarget);
-	return bFound
-		&& ServerTarget.Type == ELSRopeTargetType::Landing
-		&& FVector::Dist(ServerTarget.LandingLocation, RopeJumpTarget) <= RopeJumpValidationTolerance;
+	// 클라 착지점과 달라도 거부하지 않고 서버 착지점 채택 → 클라 루트모션이 보정으로 수렴
+	RopeJumpTarget = ServerTarget.LandingLocation;
+	RopeJumpArcHeight = CalcRopeJumpArcHeight(UpdatedComponent->GetComponentLocation(), RopeJumpTarget);
+	return true;
 }
 
 bool ULSCharacterMovementComponent::IsRoping() const
@@ -359,7 +369,11 @@ void ULSCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float Del
 
 	if (bWantsToRopeJump && !CharacterOwner->bClientUpdating && CanRopeJump())
 	{
-		PerformRopeJump();
+		// 서버는 자기 시점 착지점으로 확정 후 수행, 소유 클라는 예측 수행
+		if (!CharacterOwner->HasAuthority() || ResolveServerRopeJumpTarget())
+		{
+			PerformRopeJump();
+		}
 	}
 	bWantsToRopeJump = false;
 

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/Components/RootMotion/LSRootMotionSource.h"
@@ -23,27 +23,37 @@ FRootMotionSource* FLSRootMotionSource_ParabolicMoveTo::Clone() const
 
 bool FLSRootMotionSource_ParabolicMoveTo::Matches(const FRootMotionSource* Other) const
 {
-	if (!FRootMotionSource::Matches(Other))
-	{
-		return false;
-	}
-
-	// 베이스에서 ScriptStruct 일치 확인 → 안전한 캐스트
-	// StartLocation은 머신별 현재 위치라 비교에서 제외 (Target/ArcHeight는 클라가 확정해 전송한 같은 값)
-	const FLSRootMotionSource_ParabolicMoveTo* OtherCast = static_cast<const FLSRootMotionSource_ParabolicMoveTo*>(Other);
-	return FVector::PointsAreNear(TargetLocation, OtherCast->TargetLocation, 0.1f) &&
-		FMath::IsNearlyEqual(ArcHeight, OtherCast->ArcHeight, 0.1f);
+	return FRootMotionSource::Matches(Other);
 }
 
 bool FLSRootMotionSource_ParabolicMoveTo::MatchesAndHasSameState(const FRootMotionSource* Other) const
 {
-	// 시간 외 고유 상태 없음
-	return FRootMotionSource::MatchesAndHasSameState(Other);
+	if (!FRootMotionSource::MatchesAndHasSameState(Other))
+	{
+		return false;
+	}
+
+	// 궤적(서버 확정값)이 다르면 다른 상태 → 클라가 재시뮬레이션하며 UpdateStateFrom으로 서버 궤적을 받음
+	// 허용 오차 1cm: 직렬화 오차는 같은 상태로 취급
+	const FLSRootMotionSource_ParabolicMoveTo* OtherCast = static_cast<const FLSRootMotionSource_ParabolicMoveTo*>(Other);
+	return FVector::PointsAreNear(StartLocation, OtherCast->StartLocation, 1.0f)
+		&& FVector::PointsAreNear(TargetLocation, OtherCast->TargetLocation, 1.0f)
+		&& FMath::IsNearlyEqual(ArcHeight, OtherCast->ArcHeight, 1.0f);
 }
 
 bool FLSRootMotionSource_ParabolicMoveTo::UpdateStateFrom(const FRootMotionSource* SourceToTakeStateFrom, bool bMarkForSimulatedCatchup)
 {
-	return FRootMotionSource::UpdateStateFrom(SourceToTakeStateFrom, bMarkForSimulatedCatchup);
+	if (!FRootMotionSource::UpdateStateFrom(SourceToTakeStateFrom, bMarkForSimulatedCatchup))
+	{
+		return false;
+	}
+
+	// 서버가 확정한 궤적으로 교체 → 남은 구간이 서버 착지점으로 수렴 (베이스에서 ScriptStruct 일치 확인됨)
+	const FLSRootMotionSource_ParabolicMoveTo* Other = static_cast<const FLSRootMotionSource_ParabolicMoveTo*>(SourceToTakeStateFrom);
+	StartLocation = Other->StartLocation;
+	TargetLocation = Other->TargetLocation;
+	ArcHeight = Other->ArcHeight;
+	return true;
 }
 
 void FLSRootMotionSource_ParabolicMoveTo::PrepareRootMotion(float SimulationTime, float MovementTickTime, const ACharacter& Character, const UCharacterMovementComponent& MoveComponent)
