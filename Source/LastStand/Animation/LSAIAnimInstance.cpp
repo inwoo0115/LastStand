@@ -57,6 +57,12 @@ void ULSAIAnimInstance::NativeUpdateAnimation(float DeltaSceonds)
 		const FRotator ControlYaw(0.0f, ControlRotation.Yaw, 0.0f);
 		ControlAxis = ControlYaw.UnrotateVector(Owner->GetVelocity().GetSafeNormal(0.0001));
 
+		// 컨트롤 Yaw 대비 이동 방향 각도 — 정지 중에는 직전 값 유지(정지 전환 시 방향 튐 방지)
+		if (Velocity > 1.0f)
+		{
+			ControlMoveDirection = FMath::RadiansToDegrees(FMath::Atan2(ControlAxis.Y, ControlAxis.X));
+		}
+
 		// 캐릭터 트랜스폼(액터) 기준 상대 회전 = 조준 회전 - 액터 회전
 		const FRotator RefRotation = Owner->GetActorRotation();
 		const FRotator DeltaRotation = (ControlRotation - RefRotation).GetNormalized();
