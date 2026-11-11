@@ -6,7 +6,7 @@
 
 주요 구현
 
-- [네트워크 전투](#1-네트워크-전투): 클라이언트 예측, 서버사이드 리와인드, CMC 이동 예측
+- [네트워크 전투](#1-네트워크-전투): 클라이언트 예측, 서버사이드 리와인드, CMC 이동 예측(달리기·대시·로프 액션)
 - [보스 AI](#2-보스-ai): StateTree와 DataTable 기반의 서버 전용 AI
 - [절차적 던전 생성](#3-절차적-던전-생성): 방 서브레벨을 문 단위로 연결하는 플러그인
 
@@ -51,40 +51,74 @@ if (SegmentIntersectsBox(Box, TraceStart, TraceEnd)) { /* 히트박스 반환 */
 
 ### 이동 예측
 
-- `UCharacterMovementComponent`를 상속해 달리기와 대시를 별도 RPC 없이 CMC 예측 흐름 안에서 처리합니다.
-- `FSavedMove_LS`에 달리기/대시 입력을 저장하고 `FLAG_Custom_0/1` 압축 플래그로 서버에 보냅니다. 서버는 `UpdateFromCompressedFlags`로 값을 복원합니다.
+- `UCharacterMovementComponent`를 상속해 달리기, 대시, 로프 액션을 별도 RPC 없이 CMC 예측 흐름 안에서 처리합니다.
+- `FSavedMove_LS`에 입력을 저장하고 `FLAG_Custom_0~3` 압축 플래그(달리기/대시/로프 점프/스윙)로 서버에 보냅니다. 목표 위치나 앵커처럼 플래그에 담기지 않는 값은 커스텀 `FCharacterNetworkMoveData`로 move와 함께 보냅니다.
 - 대시는 `FRootMotionSource_ConstantForce`를 사용해 서버 보정과 리플레이에 포함됩니다.
-- 대시 요청이 있는 move는 `CanCombineWith`에서 합치지 않습니다.
+- 요청이 있는 move는 `CanCombineWith`에서 합치지 않습니다.
 - 리플레이 중에 현재 프레임 입력이 과거 값으로 덮이지 않도록 `ClientUpdatePositionAfterServerUpdate` 전후로 입력을 보존합니다.
 
-관련 코드: [LSWeaponHitscan.h](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.h) · [.cpp](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.cpp), [LSServerSideRewindComponent.h](Source/LastStand/Character/Components/LSServerSideRewindComponent.h) · [.cpp](Source/LastStand/Character/Components/LSServerSideRewindComponent.cpp), [LSHitboxComponent.h](Source/LastStand/Character/Components/LSHitboxComponent.h) · [.cpp](Source/LastStand/Character/Components/LSHitboxComponent.cpp), [LSCharacterMovementComponent.h](Source/LastStand/Character/Components/LSCharacterMovementComponent.h) · [.cpp](Source/LastStand/Character/Components/LSCharacterMovementComponent.cpp)
+### 로프 액션
+
+- 소유 클라이언트가 매 틱 시선 방향으로 구체 스윕을 해서 타깃을 판정합니다. 바닥에 맞으면 그 지점, 벽에 맞으면 모서리 위를 아래로 탐색해 착지 후보를 찾고, 캡슐이 설 공간이 있으면 **착지 점프**, 없고 앵커가 충분히 높으면 **스윙**으로 분기합니다.
+- 착지 점프는 커스텀 루트모션 소스 `FLSRootMotionSource_ParabolicMoveTo`(직선 보간 + 포물선)로 이동합니다. 매 틱 "이번 틱이 끝날 때 있어야 할 위치"로 속도를 계산하므로 오차가 스스로 보정됩니다.
+- 서버는 클라이언트가 보낸 착지점을 그대로 믿거나 거부하지 않고, 자기 시점에서 다시 찾은 착지점으로 점프를 확정합니다. 조준의 미세한 차이 때문에 거부되어 출발점으로 되돌아가던 문제를 없앴습니다.
+- 클라이언트 궤적은 서버 보정 한 번으로 서버 궤적에 맞춥니다. `Matches`(같은 점프인지 식별)는 목표를 비교하지 않고, `MatchesAndHasSameState`(상태 비교)는 시작·목표·높이를 비교하도록 나눴습니다. 목표가 다르면 상태 불일치로 재시뮬레이션이 일어나고, `UpdateStateFrom`이 서버 궤적을 복사합니다.
+- 스윙은 커스텀 무브먼트 모드(`PhysSwing`)입니다. 중력, 방향키 가속, 로프 길이를 넘은 만큼의 장력, 로프 방향 성분만의 감쇠를 더하고, `SafeMoveUpdatedComponent`로 이동하며 벽에 막히면 미끄러집니다.
+
+```cpp
+// 일부 생략
+bool FLSRootMotionSource_ParabolicMoveTo::MatchesAndHasSameState(const FRootMotionSource* Other) const
+{
+    // 궤적이 다르면 다른 상태 → 클라가 재시뮬레이션하며 서버 궤적을 받음
+    const auto* OtherCast = static_cast<const FLSRootMotionSource_ParabolicMoveTo*>(Other);
+    return FRootMotionSource::MatchesAndHasSameState(Other)
+        && FVector::PointsAreNear(TargetLocation, OtherCast->TargetLocation, 1.0f)
+        && FMath::IsNearlyEqual(ArcHeight, OtherCast->ArcHeight, 1.0f);
+}
+```
+
+관련 코드: [LSWeaponHitscan.h](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.h) · [.cpp](Source/LastStand/Item/Equipment/Weapon/LSWeaponHitscan.cpp), [LSServerSideRewindComponent.h](Source/LastStand/Character/Components/LSServerSideRewindComponent.h) · [.cpp](Source/LastStand/Character/Components/LSServerSideRewindComponent.cpp), [LSHitboxComponent.h](Source/LastStand/Character/Components/LSHitboxComponent.h) · [.cpp](Source/LastStand/Character/Components/LSHitboxComponent.cpp), [LSCharacterMovementComponent.h](Source/LastStand/Character/Components/LSCharacterMovementComponent.h) · [.cpp](Source/LastStand/Character/Components/LSCharacterMovementComponent.cpp), [LSRopeActionComponent.h](Source/LastStand/Character/Components/LSRopeActionComponent.h) · [.cpp](Source/LastStand/Character/Components/LSRopeActionComponent.cpp), [LSRootMotionSource.h](Source/LastStand/Character/Components/RootMotion/LSRootMotionSource.h) · [.cpp](Source/LastStand/Character/Components/RootMotion/LSRootMotionSource.cpp)
 
 ---
 
 ## 2. 보스 AI
 
-여러 플레이어가 함께 상대하는 보스입니다. 판단은 서버에서만 하고, 몬스터마다 다른 행동, 서브트리, 타깃 규칙, 페이즈는 `FEnemyData` 행에서 설정합니다.
+여러 플레이어가 함께 상대하는 보스입니다. 세 가지 원칙으로 설계했습니다.
+
+- **판단은 서버에서만** 하고, 클라이언트에는 판단 결과만 복제합니다.
+- **몬스터마다 다른 점은 데이터로** 정합니다. 서브트리, 액션, 타깃 규칙, 페이즈를 `FEnemyData` 행에서 설정합니다.
+- **행동 로직은 재사용 단위로** 나눕니다. StateTree는 언제 무엇을 할지만 정하고, 실제 동작은 액션 객체가 맡습니다.
 
 <!-- 보스 교전 GIF -->
 
 ```mermaid
 flowchart LR
-    D[FEnemyData] --> C[AI 컴포넌트]
-    C --> E[EventHub]
-    E --> S[StateTree]
-    S --> C
+    D[FEnemyData] -->|서브트리·액션·타깃 규칙·페이즈| P
+    subgraph P[적 폰 - 서버]
+        S[Perception / Stat] -->|AI.Event| H[EventHub]
+        A[ActionComponent]
+    end
+    H --> T[StateTree<br/>Base + Linked Subtree]
+    T -->|Task / Condition| A
+    A -->|Multicast| V[클라 연출]
+    P -->|복제 값| N[클라 애님 인스턴스]
 ```
 
-### 이벤트 허브
+### 계층과 책임
 
-- 퍼셉션, 체력, 사망에서 발생한 이벤트를 `ULSAIEventHubComponent::SendEvent`로 StateTree에 전달합니다. `AI.Event` 하위 태그만 허용합니다.
-- possess가 `BeginPlay`보다 늦을 수 있어 StateTree 컴포넌트는 처음 사용할 때 찾아서 캐시합니다.
+- **입력 계층** (Perception, Stat, 페이즈): 게임 상태 변화를 감지해 `AI.Event` 태그 이벤트로만 알립니다. StateTree의 존재를 알지 못합니다.
+- **이벤트 허브** (`ULSAIEventHubComponent`): StateTree로 가는 유일한 통로입니다. 태그 검증과 StateTree 컴포넌트 탐색을 한곳에서 처리하므로, 발신하는 쪽은 AI 컨트롤러나 possess 시점에 의존하지 않습니다.
+- **판단 계층** (StateTree): 상태 전이만 담당합니다. Global Task가 타깃과 페이즈를 출력해 바인딩 소스로 제공하고, Task와 Condition은 아래 계층을 호출하는 얇은 어댑터입니다.
+- **실행 계층** (`ULSAIActionComponent` + `ULSAIActionBase`): 액션은 UObject 다형성으로 구성합니다. 활성화, 틱, 종료, 취소와 쿨다운·사거리 같은 공통 생명주기는 베이스가 처리하고, 파생 클래스(근접 스윕, 히트스캔, 미사일, 넉백, 몽타주)는 훅만 구현합니다. 파라미터는 BP 서브클래스 기본값으로 정하고, `FEnemyData::Actions`(태그와 클래스 매핑)를 읽어 적마다 인스턴스를 만듭니다.
 
-### 액션
+### 액션 생명주기 규칙
 
-- `ULSAIActionBase`(UObject)가 쿨다운, 사거리, 몽타주 재생을 처리합니다. 파생 클래스로 MeleeSweep(노티파이 구간 동안 소켓 스윕), Hitscan(원뿔 범위 산탄), PlayMontage가 있습니다.
-- 파라미터는 BP 서브클래스 기본값으로 정하고, `FEnemyData::Actions`(태그와 클래스 매핑)를 읽어 적마다 인스턴스를 만듭니다.
-- StateTree에서는 `LS Run AI Action` Task와 `LS Can Run AI Action` Condition으로 사용합니다. 액션이 끝나면 `MakeWeakExecutionContext`로 Task를 완료하고, 상태를 벗어나면 실행 중인 액션을 취소합니다.
+StateTree와 액션 사이의 약속입니다.
+
+- 한 번에 하나의 액션만 실행합니다. 상태 전이가 곧 액션 교체입니다.
+- **완료**: 액션이 끝나면 `MakeWeakExecutionContext`로 Task를 완료합니다.
+- **중단**: 상태를 벗어나면 Task가 실행 중인 액션을 취소합니다. 취소는 쿨다운을 시작하지 않고, 정상 종료와 실패 종료만 쿨다운을 시작합니다.
+- **사전 검사**: `LS Can Run AI Action` Condition으로 전이 전에 실행 가능 여부를 확인합니다. 전이하면 현재 액션이 취소되는 경우에는 `bIgnoreCurrentAction`으로 대상 액션만 검사합니다.
 
 ```cpp
 // 일부 생략
@@ -108,20 +142,25 @@ InstanceData.FinishedHandle = InstanceData.ActionComp->OnActionFinished.AddLambd
 - 서버에서만 동작하는 캡슐로 플레이어를 감지합니다.
 - 선정 방식은 `Closest`, `TopDamage`, `Random`, `RandomLocked` 중 데이터로 고릅니다. `TopDamage`는 `ULSStatComponent`에 기록된 공격자별 누적 데미지를 사용합니다.
 - `TargetChangeDelay` 동안은 타깃을 유지하고, 타깃이 사라지거나 범위를 벗어나면 바로 다시 선정합니다.
-- 처음 감지하면 감지 범위를 넓히고, 일정 시간 아무도 없으면 범위를 되돌린 뒤 `Idle` 이벤트를 보냅니다.
+- 처음 감지하면 `Initialization`, 타깃이 바뀌면 `TargetChange` 이벤트를 보냅니다. 처음 감지할 때 감지 범위를 넓히고, 일정 시간 아무도 없으면 범위를 되돌린 뒤 `Idle` 이벤트를 보냅니다.
 
 ### 페이즈
 
 - 체력 비율 임계치를 내림차순으로 정렬해 두고, 한 번에 여러 임계치를 넘으면 가장 낮은 것만 발동합니다.
 - 현재 페이즈는 `CurrentPhase`로 복제하고 `FLSPhaseChangePayload`와 함께 이벤트로 보냅니다.
 
-### 동기화
+### 서버 판단과 클라이언트 표현의 분리
 
-- AI 컨트롤러는 서버에만 있으므로 컨트롤 회전을 서버 Tick에서 복제하고, 클라이언트 애님 인스턴스가 이 값으로 에임 오프셋을 계산합니다.
+- AI 컨트롤러는 서버에만 있으므로, 판단 결과(컨트롤 회전, 턴 플래그, 페이즈, 원거리 공격 중 여부)만 복제하고 클라이언트 애님 인스턴스가 이를 해석합니다.
+- 애님 인스턴스는 복제된 컨트롤 회전으로 에임 오프셋을 계산하고, 컨트롤 방향 기준 이동 각도로 타깃을 바라보며 옆으로 걷는 스트레이프를 표현합니다.
 - 몸 방향은 `RInterpTo`로 컨트롤 방향을 따라가고, 차이가 60도 이상이면 서버가 턴 플래그를 설정합니다. 몽타주 재생 중에는 회전하지 않습니다.
 - 액션 몽타주와 디버그 표시는 `NetMulticast`로 전달합니다.
 
-관련 코드: [LSAIEventHubComponent.cpp](Source/LastStand/AI/Components/LSAIEventHubComponent.cpp), [LSAIActionComponent.cpp](Source/LastStand/AI/Components/LSAIActionComponent.cpp), [LSAIActionBase.h](Source/LastStand/AI/Action/LSAIActionBase.h), [LSAIAction_MeleeSweep.cpp](Source/LastStand/AI/Action/LSAIAction_MeleeSweep.cpp), [LSAIAction_Hitscan.cpp](Source/LastStand/AI/Action/LSAIAction_Hitscan.cpp), [LSStateTreeRunAIActionTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeRunAIActionTask.cpp), [LSAIController.cpp](Source/LastStand/AI/LSAIController.cpp), [LSAIPerceptionComponent.cpp](Source/LastStand/AI/Components/LSAIPerceptionComponent.cpp), [LSEnemyBase.cpp](Source/LastStand/AI/LSEnemyBase.cpp), [LSEnemyData.h](Source/LastStand/DataTable/LSEnemyData.h)
+관련 코드
+- 이벤트: [LSAIEventHubComponent.cpp](Source/LastStand/AI/Components/LSAIEventHubComponent.cpp), [LSAIPerceptionComponent.cpp](Source/LastStand/AI/Components/LSAIPerceptionComponent.cpp)
+- 판단: [LSStateTreeCombatGlobalTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.cpp), [LSStateTreeRunAIActionTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeRunAIActionTask.cpp), [LSStateTreeCanRunAIActionCondition.cpp](Source/LastStand/AI/StateTree/LSStateTreeCanRunAIActionCondition.cpp), [LSAIController.cpp](Source/LastStand/AI/LSAIController.cpp)
+- 실행: [LSAIActionComponent.cpp](Source/LastStand/AI/Components/LSAIActionComponent.cpp), [LSAIActionBase.h](Source/LastStand/AI/Action/LSAIActionBase.h) · [.cpp](Source/LastStand/AI/Action/LSAIActionBase.cpp)
+- 데이터·표현: [LSEnemyData.h](Source/LastStand/DataTable/LSEnemyData.h), [LSEnemyBase.cpp](Source/LastStand/AI/LSEnemyBase.cpp), [LSAIAnimInstance.cpp](Source/LastStand/Animation/LSAIAnimInstance.cpp)
 
 ---
 
@@ -182,7 +221,8 @@ return FTransform(Rot.Quaternion(), T);
 |---|---|---|
 | `ReplicatedUsing` | 상태 전파와 클라이언트 후처리 | `CurrentHealth`, `CurrentAmmo` |
 | `COND_SkipOwner` | 소유 클라이언트가 예측한 값은 다시 받지 않음 | `bIsAim` |
-| SavedMove 플래그 | 이동 상태를 CMC 예측에 포함 | 달리기, 대시 |
+| SavedMove 플래그 | 이동 상태를 CMC 예측에 포함 | 달리기, 대시, 로프 점프, 스윙 |
+| 커스텀 Root Motion Source | 서버가 확정한 궤적을 보정으로 클라이언트에 동기화 | `FLSRootMotionSource_ParabolicMoveTo` |
 | `Reliable` Server RPC | 상태 전환 | `ServerRPCAim`, `ServerRPCReload` |
 | `Unreliable` Multicast | 반복 연출 | `MulticastRPCPlayFireEffects` |
 | 서버 계산 후 복제 | AI 판단 결과를 클라이언트 애님에 전달 | `CurrentControllerRotation`, `CurrentPhase` |
@@ -195,11 +235,13 @@ LastStand/
 ├─ Source/LastStand/
 │  ├─ Character/            플레이어, 베이스 캐릭터
 │  │  └─ Components/        Stat, Equipment, Inventory, Interaction, Hitbox,
-│  │                        ServerSideRewind, CharacterMovement, ActionState
+│  │     │                  ServerSideRewind, CharacterMovement, ActionState, RopeAction
+│  │     └─ RootMotion/     커스텀 루트모션 소스
 │  ├─ AI/                   EnemyBase, AIController
-│  │  ├─ Action/            ActionBase, MeleeSweep, Hitscan, PlayMontage
+│  │  ├─ Action/            ActionBase, MeleeSweep, Hitscan, SpawnMissile, Knockback, PlayMontage
 │  │  ├─ Components/        EventHub, Action, Perception
-│  │  └─ StateTree/         Task, Condition
+│  │  └─ StateTree/         Global Task, Task, Condition
+│  ├─ Projectile/           유도 미사일
 │  ├─ Item/Equipment/Weapon/  무기
 │  ├─ UI/                   UI 서브시스템, 위젯
 │  ├─ Animation/            애님 인스턴스, 노티파이
