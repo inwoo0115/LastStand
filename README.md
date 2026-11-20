@@ -9,6 +9,7 @@
 - [네트워크 전투](#1-네트워크-전투): 클라이언트 예측, 서버사이드 리와인드, CMC 이동 예측(달리기·대시·로프 액션)
 - [보스 AI](#2-보스-ai): StateTree와 DataTable 기반의 서버 전용 AI
 - [절차적 던전 생성](#3-절차적-던전-생성): 방 서브레벨을 문 단위로 연결하는 플러그인
+- [UI 시스템](#4-ui-시스템): GameplayTag 레이어/슬롯, 이벤트 버스, 드래그 앤 드롭 인벤토리
 
 기술 스택: UE5, C++, Dedicated Server, StateTree, Enhanced Input, GameplayTags, Niagara, UMG
 
@@ -149,6 +150,13 @@ InstanceData.FinishedHandle = InstanceData.ActionComp->OnActionFinished.AddLambd
 - 체력 비율 임계치를 내림차순으로 정렬해 두고, 한 번에 여러 임계치를 넘으면 가장 낮은 것만 발동합니다.
 - 현재 페이즈는 `CurrentPhase`로 복제하고 `FLSPhaseChangePayload`와 함께 이벤트로 보냅니다.
 
+### 보조 Task와 EQS
+
+- `LS Random Interval Event`: 상태가 켜져 있는 동안 최소~최대 사이의 랜덤 간격으로 이벤트 허브에 이벤트를 보냅니다. 일정 시간마다 패턴을 바꾸는 전이에 씁니다.
+- `LS Set Move Speed`: 상태에 머무는 동안만 최대 이동 속도를 바꾸고, 나갈 때 원래 값으로 되돌립니다.
+- `LS Jump To Location`: 지정 위치까지 `LaunchCharacter`로 포물선 점프하고 착지하면 완료합니다. 서버에서만 실행하고 궤적은 CMC 복제로 클라이언트에 전달됩니다.
+- EQS 컨텍스트 `LS Target`: 퍼셉션 컴포넌트가 고른 현재 타깃을 쿼리 기준점으로 넘깁니다. 점프 위치나 주변 이동 위치를 고를 때 씁니다.
+
 ### 서버 판단과 클라이언트 표현의 분리
 
 - AI 컨트롤러는 서버에만 있으므로, 판단 결과(컨트롤 회전, 턴 플래그, 페이즈, 원거리 공격 중 여부)만 복제하고 클라이언트 애님 인스턴스가 이를 해석합니다.
@@ -158,7 +166,7 @@ InstanceData.FinishedHandle = InstanceData.ActionComp->OnActionFinished.AddLambd
 
 관련 코드
 - 이벤트: [LSAIEventHubComponent.cpp](Source/LastStand/AI/Components/LSAIEventHubComponent.cpp), [LSAIPerceptionComponent.cpp](Source/LastStand/AI/Components/LSAIPerceptionComponent.cpp)
-- 판단: [LSStateTreeCombatGlobalTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.cpp), [LSStateTreeRunAIActionTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeRunAIActionTask.cpp), [LSStateTreeCanRunAIActionCondition.cpp](Source/LastStand/AI/StateTree/LSStateTreeCanRunAIActionCondition.cpp), [LSAIController.cpp](Source/LastStand/AI/LSAIController.cpp)
+- 판단: [LSStateTreeCombatGlobalTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeCombatGlobalTask.cpp), [LSStateTreeRunAIActionTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeRunAIActionTask.cpp), [LSStateTreeCanRunAIActionCondition.cpp](Source/LastStand/AI/StateTree/LSStateTreeCanRunAIActionCondition.cpp), [LSStateTreeRandomEventTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeRandomEventTask.cpp), [LSStateTreeSetMoveSpeedTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeSetMoveSpeedTask.cpp), [LSStateTreeJumpToLocationTask.cpp](Source/LastStand/AI/StateTree/LSStateTreeJumpToLocationTask.cpp), [LSEnvQueryContext_Target.cpp](Source/LastStand/AI/EQS/LSEnvQueryContext_Target.cpp), [LSAIController.cpp](Source/LastStand/AI/LSAIController.cpp)
 - 실행: [LSAIActionComponent.cpp](Source/LastStand/AI/Components/LSAIActionComponent.cpp), [LSAIActionBase.h](Source/LastStand/AI/Action/LSAIActionBase.h) · [.cpp](Source/LastStand/AI/Action/LSAIActionBase.cpp)
 - 데이터·표현: [LSEnemyData.h](Source/LastStand/DataTable/LSEnemyData.h), [LSEnemyBase.cpp](Source/LastStand/AI/LSEnemyBase.cpp), [LSAIAnimInstance.cpp](Source/LastStand/Animation/LSAIAnimInstance.cpp)
 
@@ -205,12 +213,85 @@ return FTransform(Rot.Quaternion(), T);
 
 ---
 
+## 4. UI 시스템
+
+게임플레이 코드가 위젯 클래스를 직접 참조하지 않도록 만든 UI 구조입니다. 컴포넌트와 액터는 GameplayTag로 위치를 지정하거나 이벤트를 보내기만 하고, 위젯 생성과 입력 모드 전환은 UI 서브시스템이 맡습니다.
+
+<!-- UI GIF -->
+
+```mermaid
+flowchart LR
+    PC[PlayerController] -->|루트 레이아웃 생성| U[ULSUISubsystem]
+    GM[GameModeInfo] -->|레이어에 위젯 추가| U
+    W[무기 / 상호작용] -->|슬롯에 위젯 주입| U
+    C[Stat / Equipment / Weapon] -->|Broadcast| E[ULSUIEventSubsystem]
+    E -->|구독| H[HUD 위젯]
+```
+
+### 레이어와 입력 모드
+
+- 로컬 플레이어 컨트롤러가 루트 레이아웃을 만들면, 루트 레이아웃이 Game / Menu / Modal 레이어를 `UI.Game`, `UI.Menu`, `UI.Modal` 태그로 서브시스템에 등록합니다.
+- 레이어마다 올릴 위젯은 게임 모드 데이터 에셋(`ULSGameModeInfoData`)에 소프트 클래스로 적어 둡니다. 게임 스테이트의 `ULSGameModeInfoComponent`가 이 데이터를 복제받은 뒤 클라이언트에서 위젯을 만듭니다.
+- 레이어는 열린 위젯의 스택을 관리합니다. 위젯을 열면 스택 맨 위로 올리고, 닫았을 때 스택이 비면 레이어도 꺼집니다.
+- 레이어가 켜지거나 꺼질 때마다 Menu → Modal → Game 순으로 켜진 레이어를 찾아, 그 레이어에 설정된 입력 모드(Game / GameAndUI / UIOnly)를 적용하고 맨 위 위젯에 포커스를 줍니다. 메뉴를 닫으면 별도 처리 없이 게임 입력으로 돌아옵니다.
+- 인벤토리 키는 컨트롤러가 이벤트 버스로 알리기만 하고, 인벤토리 위젯이 그 이벤트를 받아 스스로 열고 닫습니다.
+- 데디 서버에서는 `ShouldCreateSubsystem`에서 UI 서브시스템을 만들지 않습니다.
+
+### 슬롯 주입
+
+- 조준선, 무기 정보, 주변 아이템 목록처럼 HUD 안에서 내용이 바뀌는 자리는 `ULSSlotWidget`에 `UI.Slot.*` 태그를 붙여 두고, 바깥에서 위젯 클래스만 넘겨 채웁니다.
+- 무기는 장착할 때 `FWeaponData`에 지정된 조준선·무기 정보 위젯을 넣고, 해제할 때 받아 둔 `FSlotHandle`로 뺍니다. 무기를 추가해도 HUD 블루프린트는 고치지 않습니다.
+- 슬롯이 아직 만들어지지 않았을 때 들어온 요청은 `PendingInjections`에 두었다가 슬롯이 등록될 때 채웁니다. 폰과 HUD 중 어느 쪽이 먼저 생성되든 결과가 같습니다.
+
+```cpp
+void ULSUISubsystem::RegisterSlot(FGameplayTag SlotTag, ULSSlotWidget* SlotWidget)
+{
+    SlotWidgetMap.FindOrAdd(SlotTag).Add(SlotWidget);
+
+    // 슬롯보다 먼저 들어온 주입 요청 처리
+    if (TArray<FSlotEntry>* Pending = PendingInjections.Find(SlotTag))
+    {
+        for (const FSlotEntry& Entry : *Pending)
+        {
+            SlotWidget->AddWidget(Entry.WidgetClass, Entry.HandleId);
+        }
+        PendingInjections.Remove(SlotTag);
+    }
+}
+```
+
+### 이벤트 버스
+
+- `ULSUIEventSubsystem`은 체력, 탄약, 예비 탄약, 장비 변경, 포커스 무기 변경, 데미지, 인벤토리 입력 델리게이트만 갖고 있습니다. 컴포넌트는 브로드캐스트만 하고, 위젯은 `NativeConstruct`에서 구독하고 `NativeDestruct`에서 해제합니다.
+- 체력 이벤트는 `OnRep_CurrentHealth`에서 보내되, 로컬에서 조종하는 플레이어 폰일 때만 보냅니다. 적이나 다른 플레이어의 체력이 내 HUD에 반영되지 않게 하려는 것입니다.
+- 예비 탄약처럼 포커스 무기에 따라 의미가 바뀌는 값은 이벤트에 값을 싣지 않고 "바뀌었다"는 신호만 보냅니다. 위젯이 신호를 받으면 장비 컴포넌트에서 직접 다시 읽습니다. 위젯이 복제보다 늦게 만들어지는 경우를 위해 `NativeConstruct`에서도 한 번 읽습니다.
+
+### 월드 체력바와 데미지 넘버
+
+- 적 체력바는 위젯 컴포넌트 안에 있어서 위젯이 자기 폰을 찾기 어렵습니다. 그래서 적이 `GetUserWidgetObject()`로 위젯을 꺼내 스탯 컴포넌트를 넘겨 줍니다. 체력이 가득 차 있을 때는 숨기고, 피해를 입은 뒤부터 보입니다.
+- 데미지 넘버는 정해진 개수만큼 미리 만들어 두고 재사용합니다. 쉬고 있는 위젯이 없으면 순서대로 돌아가며 가장 먼저 쓴 것부터 다시 씁니다.
+
+### 인벤토리와 드래그 앤 드롭
+
+- 인벤토리, 주변 아이템 목록, 장비칸 사이의 이동은 `UDragDropOperation`을 상속한 아이템/장비 오퍼레이션 두 가지로 처리합니다. 놓은 칸과 오퍼레이션 종류로 줍기·버리기·장착·해제를 구분해 서버 RPC만 보냅니다.
+- UI는 결과를 직접 고치지 않습니다. 복제된 인벤토리(`FFastArraySerializer`)나 후보 목록이 바뀌면 그 델리게이트를 받아 목록을 다시 그립니다.
+- 목록을 다시 그리면 드래그 중이던 엔트리 위젯이 사라지므로, 진행 중인 드래그는 취소합니다.
+- 우클릭은 드래그와 같은 동작을 바로 실행합니다. 인벤토리에서는 장착, 주변 목록에서는 줍기입니다.
+
+이 외에 컨트롤 회전의 Yaw로 눈금 띠를 옮기는 나침반 바, 장비 4칸을 보여 주고 포커스 무기가 아닌 칸은 흐리게 처리하는 장비 HUD가 있습니다.
+
+관련 코드
+- 구조: [LSUISubsystem.h](Source/LastStand/UI/LSUISubsystem.h) · [.cpp](Source/LastStand/UI/LSUISubsystem.cpp), [LSLayerWidget.cpp](Source/LastStand/UI/LSLayerWidget.cpp), [LSSlotWidget.cpp](Source/LastStand/UI/LSSlotWidget.cpp), [LSWidgetBase.cpp](Source/LastStand/UI/LSWidgetBase.cpp), [LSGameModeInfoComponent.cpp](Source/LastStand/GameState/Components/LSGameModeInfoComponent.cpp)
+- 이벤트: [LSUIEventSubsystem.h](Source/LastStand/UI/LSUIEventSubsystem.h), [LSPlayerFocusEquipmentWidget.cpp](Source/LastStand/UI/Widget/LSPlayerFocusEquipmentWidget.cpp)
+- 위젯: [LSDamageLayerWidget.cpp](Source/LastStand/UI/Widget/LSDamageLayerWidget.cpp), [LSEnemyStatWidget.cpp](Source/LastStand/UI/Widget/LSEnemyStatWidget.cpp), [LSInventorySlotWidget.cpp](Source/LastStand/UI/Widget/LSInventorySlotWidget.cpp), [LSInventoryEntryWidget.cpp](Source/LastStand/UI/Widget/LSInventoryEntryWidget.cpp), [LSCompassBarWidget.cpp](Source/LastStand/UI/Widget/LSCompassBarWidget.cpp)
+
+---
+
 ## 기타 구현
 
 - 액션 상태: 대시, 장전, 장착 상태를 GameplayTag로 모으고 `ActionRules`로 입력 차단과 취소를 설정합니다. ([LSActionStateComponent.cpp](Source/LastStand/Character/Components/LSActionStateComponent.cpp))
 - 인벤토리/장비: `FFastArraySerializer` 기반 인벤토리, 배열로 복제한 뒤 클라이언트에서 다시 구성하는 장비 맵, 무기 해제 시 탄약 반환. ([LSInventoryComponent.cpp](Source/LastStand/Character/Components/LSInventoryComponent.cpp), [LSEquipmentComponent.cpp](Source/LastStand/Character/Components/LSEquipmentComponent.cpp))
 - 무기 연출: 무기별 애님 레이어 링크, `FTimeline` 조준 줌, 몽타주 타입별 재생, 발사/장전 노티파이의 사운드와 Niagara. ([LSWeaponBase.cpp](Source/LastStand/Item/Equipment/Weapon/LSWeaponBase.cpp))
-- UI: GameplayTag 기반 레이어/슬롯 관리와 지연 주입, 이벤트 버스, 데미지 넘버 오브젝트 풀링. ([LSUISubsystem.cpp](Source/LastStand/UI/LSUISubsystem.cpp), [LSUIEventSubsystem.h](Source/LastStand/UI/LSUIEventSubsystem.h))
 - 데이터: `UDeveloperSettings`, `ULSDataSubsystem`, DataTable 순으로 조회하고 에셋은 소프트 레퍼런스로 사용 시점에 로드합니다. ([LSDataSubsystem.h](Source/LastStand/DataTable/LSDataSubsystem.h))
 - 인터페이스: Stat, Hitbox, Inventory, Interact, Interactable, ActionState, AIEventHub, AIAction 인터페이스로 플레이어와 적을 같은 방식으로 다룹니다. ([Interface](Source/LastStand/Interface))
 - 테스트: 패키지 빌드한 데디 서버와 클라이언트 실행 스크립트(`RunServer.ps1`, `RunClient.ps1`).
@@ -240,10 +321,11 @@ LastStand/
 │  ├─ AI/                   EnemyBase, AIController
 │  │  ├─ Action/            ActionBase, MeleeSweep, Hitscan, SpawnMissile, Knockback, PlayMontage
 │  │  ├─ Components/        EventHub, Action, Perception
-│  │  └─ StateTree/         Global Task, Task, Condition
+│  │  ├─ EQS/               타깃 컨텍스트
+│  │  └─ StateTree/         Global Task, Task(액션 실행·랜덤 이벤트·이동 속도·점프), Condition
 │  ├─ Projectile/           유도 미사일
 │  ├─ Item/Equipment/Weapon/  무기
-│  ├─ UI/                   UI 서브시스템, 위젯
+│  ├─ UI/                   UI 서브시스템, 레이어/슬롯, 위젯, 드래그 오퍼레이션
 │  ├─ Animation/            애님 인스턴스, 노티파이
 │  ├─ DataTable/ Data/ Settings/
 │  ├─ Interface/ Tags/
