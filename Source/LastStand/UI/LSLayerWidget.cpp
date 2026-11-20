@@ -25,8 +25,6 @@ UUserWidget* ULSLayerWidget::PushWidget(TSubclassOf<UUserWidget> WidgetClass)
         OLSlot->SetVerticalAlignment(VAlign_Fill);
     }
 
-    //WidgetStack.Add(NewWidget);
-
     NewWidget->SetLayerWidget(this);
 
     return NewWidget;
@@ -39,13 +37,15 @@ void ULSLayerWidget::PopWidget(UUserWidget* Widget)
         return;
     }
     WidgetContainer->RemoveChild(Widget);
-    //WidgetStack.Remove(Widget);
+
+    // 열린 채로 제거되는 위젯이 스택에 남지 않도록
+    WidgetStack.RemoveSingle(Widget);
 }
 
 bool ULSLayerWidget::ContainsWidget(UUserWidget* Widget) const
 {
-    return WidgetStack.Contains(Widget);
-
+    // 열림 여부와 무관하게 이 레이어 Overlay에 붙어 있는 위젯인지
+    return WidgetContainer && WidgetContainer->HasChild(Widget);
 }
 
 void ULSLayerWidget::ActivateLayer()
