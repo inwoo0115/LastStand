@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Item/Equipment/Weapon/LSWeaponBase.h"
+#include "Character/Components/LSServerSideRewindComponent.h"
 #include "LSWeaponHitscan.generated.h"
 
 class UNiagaraSystem;
@@ -75,6 +76,10 @@ protected:
 	// Multicast RPC (서버 → 전 머신, 총구→착탄점 디버그 라인)
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCDrawFireLine(const FVector& EndPoint, bool bHit);
+
+	// Client RPC (서버 → 쏜 클라, SSR 판정 결과 디버그 표시). 적 컴포넌트는 서버 소유라 쏜 사람 소유인 무기로 전달
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCDrawRewindDebug(ULSServerSideRewindComponent* SSR, const FRewindDebugInfo& Info);
 
 	// 서버 → 전 머신 전파. 소유(로컬 조종) 클라는 이미 로컬 재생했으므로 스킵
 	UFUNCTION(NetMulticast, Unreliable)

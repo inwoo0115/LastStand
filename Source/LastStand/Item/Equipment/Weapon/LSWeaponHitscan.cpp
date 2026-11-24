@@ -171,6 +171,18 @@ void ALSWeaponHitscan::Fire()
 	// 반응성: 소유 클라에서 즉시 로컬 실행 (몽타주 + 예측 히트 데미지 UI). 로컬 명중 적 반환
 	AActor* LocalHit = PlayWeaponLocalEvent(Start, End);
 
+	// SSR 판정 디버그: 발사 순간 로컬에서 보이는 판정 형상(파랑). 서버 되감은 형상과 겹쳐 비교
+	if (LocalHit)
+	{
+		if (const ULSServerSideRewindComponent* SSR = LocalHit->GetComponentByClass<ULSServerSideRewindComponent>())
+		{
+			if (SSR->IsDebugConfirmEnabled())
+			{
+				SSR->DrawLocalDebug();
+			}
+		}
+	}
+
 	// 서버에 발사 요청: 로컬 명중 정보 전달 → 서버 SSR 재검증 (리와인드 시각은 서버가 측정한 핑 기준)
 	ServerRPCFire(Start, End, LocalHit);
 
@@ -210,8 +222,12 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 	{
 		if (ULSServerSideRewindComponent* SSR = HitActor->GetComponentByClass<ULSServerSideRewindComponent>())
 		{
+			// 판정 디버그가 켜진 경우에만 되감은 형상 수집
+			FRewindDebugInfo DebugInfo;
+			FRewindDebugInfo* DebugPtr = SSR->IsDebugConfirmEnabled() ? &DebugInfo : nullptr;
+
 			ULSHitboxComponent* ConfirmedHitbox = nullptr;
-			if (SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner()), ConfirmedHitbox))
+			if (SSR->ConfirmHit(TraceStart, TraceEnd, Cast<APawn>(GetOwner()), ConfirmedHitbox, DebugPtr))
 			{
 				if (ConfirmedHitbox)
 				{
@@ -220,6 +236,17 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 				else if (HitActor->Implements<ULSStatComponentInterface>())
 				{
 					Cast<ILSStatComponentInterface>(HitActor)->ApplyDamage(Damage, GetOwner());   // 물리 에셋 판정: 배율 1.0
+				}
+			}
+
+			if (DebugPtr)
+			{
+				SSR->DrawConfirmDebug(DebugInfo);   // 리슨 서버 화면 (데디는 내부 스킵)
+
+				const APawn* OwnerPawn = Cast<APawn>(GetOwner());
+				if (OwnerPawn && !OwnerPawn->IsLocallyControlled())
+				{
+					ClientRPCDrawRewindDebug(SSR, DebugInfo);   // 원격 쏜 클라. 호스트 본인은 위에서 이미 그림
 				}
 			}
 		}
@@ -238,6 +265,14 @@ void ALSWeaponHitscan::ServerRPCFire_Implementation(const FVector& TraceStart, c
 
 	// 발사 이펙트 전파 (소유 클라 제외 나머지 머신)
 	MulticastRPCPlayFireEffects(bHit, Hit.ImpactPoint, bHit ? Hit.ImpactNormal : FVector::ZeroVector);
+}
+
+void ALSWeaponHitscan::ClientRPCDrawRewindDebug_Implementation(ULSServerSideRewindComponent* SSR, const FRewindDebugInfo& Info)
+{
+	if (SSR)
+	{
+		SSR->DrawConfirmDebug(Info);
+	}
 }
 
 void ALSWeaponHitscan::MulticastRPCDrawFireLine_Implementation(const FVector& EndPoint, bool bHit)

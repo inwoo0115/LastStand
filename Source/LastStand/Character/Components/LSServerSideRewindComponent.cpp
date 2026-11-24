@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "PhysicsEngine/BodyInstance.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
 
@@ -32,6 +33,25 @@ namespace
 		Out.BoxExtent = FMath::Lerp(A.BoxExtent, B.BoxExtent, Alpha);
 		return Out;
 	}
+
+#if ENABLE_DRAW_DEBUG
+	// 디버그 형상 하나를 종류별로 그림
+	static void DrawRewindShape(const UWorld* World, const FRewindDebugShape& Shape, const FColor& Color, float Duration)
+	{
+		switch (Shape.Type)
+		{
+		case ELSRewindDebugShapeType::Box:
+			DrawDebugBox(World, Shape.Location, Shape.Extent, Shape.Rotation, Color, false, Duration, 0, 0.5f);
+			break;
+		case ELSRewindDebugShapeType::Sphere:
+			DrawDebugSphere(World, Shape.Location, Shape.Extent.X, 12, Color, false, Duration, 0, 0.5f);
+			break;
+		case ELSRewindDebugShapeType::Capsule:
+			DrawDebugCapsule(World, Shape.Location, Shape.Extent.Z, Shape.Extent.X, Shape.Rotation, Color, false, Duration, 0, 0.5f);
+			break;
+		}
+	}
+#endif
 }
 
 
@@ -130,36 +150,7 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	LastRecordTime = Now;
 
 	// 현재 시점의 판정 대상 스냅샷 기록
-	FServerSideRewindSnapshot Snapshot;
-	Snapshot.Time = Now;
-	if (bUsePhysicsAsset)
-	{
-		// 물리 에셋 버전: 바디 월드 트랜스폼 (null 바디는 Identity로 인덱스 유지)
-		Snapshot.BodyTransforms.Reserve(CachedMesh->Bodies.Num());
-		for (const FBodyInstance* Body : CachedMesh->Bodies)
-		{
-			Snapshot.BodyTransforms.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
-		}
-	}
-	else
-	{
-		for (ULSHitboxComponent* Hitbox : CachedHitboxes)
-		{
-			if (!Hitbox)
-			{
-				continue;
-			}
-
-			FHitBoxSnapshot Box;
-			Box.Location = Hitbox->GetComponentLocation();
-			Box.Rotation = Hitbox->GetComponentRotation();
-			Box.BoxExtent = Hitbox->GetScaledBoxExtent();
-
-			// FName = 컴포넌트 인스턴스 이름 (리와인드 시 라이브 컴포넌트와 매칭할 안정적 키)
-			Snapshot.HitBoxSnapshots.Add(Hitbox->GetFName(), Box);
-		}
-	}
-	History.Add(MoveTemp(Snapshot));
+	History.Add(MakeSnapshot(Now));
 
 	// End(200ms)보다 오래된 스냅샷을 front에서 제거 (큐 FIFO 만료)
 	while (History.Num() > 0 && (Now - History[0].Time) > HistoryEndOffset)
@@ -194,6 +185,46 @@ void ULSServerSideRewindComponent::TickComponent(float DeltaTime, ELevelTick Tic
 }
 
 
+FServerSideRewindSnapshot ULSServerSideRewindComponent::MakeSnapshot(float Time) const
+{
+	FServerSideRewindSnapshot Snapshot;
+	Snapshot.Time = Time;
+	if (bUsePhysicsAsset)
+	{
+		if (!CachedMesh)
+		{
+			return Snapshot;
+		}
+
+		// 물리 에셋 버전: 바디 월드 트랜스폼 (null 바디는 Identity로 인덱스 유지)
+		Snapshot.BodyTransforms.Reserve(CachedMesh->Bodies.Num());
+		for (const FBodyInstance* Body : CachedMesh->Bodies)
+		{
+			Snapshot.BodyTransforms.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
+		}
+	}
+	else
+	{
+		for (ULSHitboxComponent* Hitbox : CachedHitboxes)
+		{
+			if (!Hitbox)
+			{
+				continue;
+			}
+
+			FHitBoxSnapshot Box;
+			Box.Location = Hitbox->GetComponentLocation();
+			Box.Rotation = Hitbox->GetComponentRotation();
+			Box.BoxExtent = Hitbox->GetScaledBoxExtent();
+
+			// FName = 컴포넌트 인스턴스 이름 (리와인드 시 라이브 컴포넌트와 매칭할 안정적 키)
+			Snapshot.HitBoxSnapshots.Add(Hitbox->GetFName(), Box);
+		}
+	}
+	return Snapshot;
+}
+
+
 void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const TArray<FHitBoxSnapshot>& Boxes)
 {
 	// 에디터 전용 — 선언은 RPC 테이블 일치를 위해 모든 빌드에 유지하고 본문만 제외
@@ -213,7 +244,7 @@ void ULSServerSideRewindComponent::MulticastDrawDebugBoxes_Implementation(const 
 }
 
 
-bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter, ULSHitboxComponent*& OutHitbox) const
+bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const FVector& TraceEnd, const APawn* Shooter, ULSHitboxComponent*& OutHitbox, FRewindDebugInfo* OutDebug) const
 {
 	OutHitbox = nullptr;
 
@@ -244,7 +275,8 @@ bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const F
 	}
 
 	// 클라 화면의 적은 RTT/2 과거 + 발사 RPC 도착까지 RTT/2 → 총 RTT만큼 되돌림. 200ms 상한
-	const float QueryTime = Now - FMath::Clamp(RewindTime, 0.0f, HistoryEndOffset);
+	const float ClampedRewindTime = FMath::Clamp(RewindTime, 0.0f, HistoryEndOffset);
+	const float QueryTime = Now - ClampedRewindTime;
 
 	// QueryTime을 감싸는 두 스냅샷을 찾는다 (History는 Time 오름차순, [0]=가장 오래됨)
 	int32 AfterIdx = INDEX_NONE;
@@ -279,19 +311,46 @@ bool ULSServerSideRewindComponent::ConfirmHit(const FVector& TraceStart, const F
 		Alpha = (Span > SMALL_NUMBER) ? (QueryTime - Before->Time) / Span : 0.0f;
 	}
 
+	TArray<FRewindDebugShape>* DebugShapes = OutDebug ? &OutDebug->Shapes : nullptr;
+
 	// 판정 방식별 처리
+	bool bHit = false;
 	if (bUsePhysicsAsset)
 	{
-		return CachedMesh && ConfirmBodyHit(*Before, *After, Alpha, TraceStart, TraceEnd);
+		bHit = CachedMesh && ConfirmBodyHit(*Before, *After, Alpha, TraceStart, TraceEnd, DebugShapes);
+	}
+	else
+	{
+		OutHitbox = ConfirmHitboxHit(*Before, *After, Alpha, TraceStart, TraceEnd, DebugShapes);
+		bHit = OutHitbox != nullptr;
 	}
 
-	OutHitbox = ConfirmHitboxHit(*Before, *After, Alpha, TraceStart, TraceEnd);
-	return OutHitbox != nullptr;
+	if (OutDebug)
+	{
+		OutDebug->TraceStart = TraceStart;
+		OutDebug->TraceEnd = TraceEnd;
+		OutDebug->RewindTime = ClampedRewindTime;
+		OutDebug->bHit = bHit;
+
+		// 디버그 전용: 같은 트레이스를 서버 현재 포즈(리와인드 0ms)로 판정해 비교 (실제 판정 결과와 무관)
+		if (bDrawDebugNoRewind)
+		{
+			const FServerSideRewindSnapshot Current = MakeSnapshot(Now);
+			OutDebug->bHasNoRewind = true;
+			OutDebug->bNoRewindHit = bUsePhysicsAsset
+				? (CachedMesh && ConfirmBodyHit(Current, Current, 0.0f, TraceStart, TraceEnd, &OutDebug->NoRewindShapes))
+				: (ConfirmHitboxHit(Current, Current, 0.0f, TraceStart, TraceEnd, &OutDebug->NoRewindShapes) != nullptr);
+		}
+	}
+	return bHit;
 }
 
 
-ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHitboxHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd) const
+ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHitboxHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd, TArray<FRewindDebugShape>* OutShapes) const
 {
+	ULSHitboxComponent* HitHitbox = nullptr;
+	bool bFoundIntersection = false;
+
 	// Before의 각 히트박스를 같은 FName 키의 After 박스와 보간해 판정
 	for (const TPair<FName, FHitBoxSnapshot>& Pair : Before.HitBoxSnapshots)
 	{
@@ -300,24 +359,38 @@ ULSHitboxComponent* ULSServerSideRewindComponent::ConfirmHitboxHit(const FServer
 			? InterpolateBox(Pair.Value, *BoxB, Alpha)
 			: Pair.Value;   // 경계/동일 프레임 → 보간 없이 사용
 
-		if (SegmentIntersectsBox(Box, TraceStart, TraceEnd))
+		// 첫 교차 박스만 명중으로 인정 (기존 판정과 동일)
+		const bool bThisHit = !bFoundIntersection && SegmentIntersectsBox(Box, TraceStart, TraceEnd);
+		if (bThisHit)
 		{
-			// 교차한 스냅샷의 FName에 해당하는 라이브 히트박스를 반환
+			bFoundIntersection = true;
+
+			// 교차한 스냅샷의 FName에 해당하는 라이브 히트박스
 			for (ULSHitboxComponent* Hitbox : CachedHitboxes)
 			{
 				if (Hitbox && Hitbox->GetFName() == Pair.Key)
 				{
-					return Hitbox;
+					HitHitbox = Hitbox;
+					break;
 				}
 			}
-			return nullptr;
+		}
+
+		if (OutShapes)
+		{
+			// 디버그: 나머지 박스도 모두 수집
+			OutShapes->Add(MakeBoxShape(Box, bThisHit));
+		}
+		else if (bFoundIntersection)
+		{
+			break;
 		}
 	}
-	return nullptr;
+	return HitHitbox;
 }
 
 
-bool ULSServerSideRewindComponent::ConfirmBodyHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd) const
+bool ULSServerSideRewindComponent::ConfirmBodyHit(const FServerSideRewindSnapshot& Before, const FServerSideRewindSnapshot& After, float Alpha, const FVector& TraceStart, const FVector& TraceEnd, TArray<FRewindDebugShape>* OutShapes) const
 {
 	const TArray<FBodyInstance*>& Bodies = CachedMesh->Bodies;
 	if (Before.BodyTransforms.Num() != Bodies.Num() || After.BodyTransforms.Num() != Bodies.Num())
@@ -328,18 +401,31 @@ bool ULSServerSideRewindComponent::ConfirmBodyHit(const FServerSideRewindSnapsho
 	// 1) 현재 포즈를 보관하고 바디를 쿼리 시점 포즈로 이동 (TeleportPhysics: 게임 스레드 위치 즉시 반영)
 	TArray<FTransform, TInlineAllocator<32>> CurrentTransforms;
 	CurrentTransforms.Reserve(Bodies.Num());
+
+	// 디버그용 되감은 포즈 (인덱스 1:1)
+	TArray<FTransform> RewoundTransforms;
+	if (OutShapes)
+	{
+		RewoundTransforms.Reserve(Bodies.Num());
+	}
+
 	for (int32 i = 0; i < Bodies.Num(); ++i)
 	{
 		FBodyInstance* Body = Bodies[i];
 		CurrentTransforms.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
+
+		FTransform RewoundTM = Before.BodyTransforms[i];
+		if (Alpha > 0.0f)
+		{
+			RewoundTM.Blend(Before.BodyTransforms[i], After.BodyTransforms[i], Alpha);
+		}
 		if (Body)
 		{
-			FTransform RewoundTM = Before.BodyTransforms[i];
-			if (Alpha > 0.0f)
-			{
-				RewoundTM.Blend(Before.BodyTransforms[i], After.BodyTransforms[i], Alpha);
-			}
 			Body->SetBodyTransform(RewoundTM, ETeleportType::TeleportPhysics);
+		}
+		if (OutShapes)
+		{
+			RewoundTransforms.Add(RewoundTM);
 		}
 	}
 
@@ -356,5 +442,175 @@ bool ULSServerSideRewindComponent::ConfirmBodyHit(const FServerSideRewindSnapsho
 			Body->SetBodyTransform(CurrentTransforms[i], ETeleportType::TeleportPhysics);
 		}
 	}
+
+	// 디버그: 되감은 포즈의 바디 형상 수집 (Hit.Item = 명중 바디 인덱스)
+	if (OutShapes)
+	{
+		AppendBodyShapes(RewoundTransforms, bHit ? Hit.Item : INDEX_NONE, *OutShapes);
+	}
 	return bHit;
+}
+
+
+void ULSServerSideRewindComponent::AppendBodyShapes(const TArray<FTransform>& BodyTMs, int32 HitBodyIndex, TArray<FRewindDebugShape>& OutShapes) const
+{
+	if (!CachedMesh)
+	{
+		return;
+	}
+
+	const TArray<FBodyInstance*>& Bodies = CachedMesh->Bodies;
+	for (int32 i = 0; i < Bodies.Num() && i < BodyTMs.Num(); ++i)
+	{
+		const FBodyInstance* Body = Bodies[i];
+		const UBodySetup* Setup = Body ? Body->GetBodySetup() : nullptr;
+		if (!Setup)
+		{
+			continue;
+		}
+
+		const FTransform& BodyTM = BodyTMs[i];
+		const FVector Scale = BodyTM.GetScale3D();
+		const float MinScale = Scale.GetAbsMin();   // 비균일 스케일은 근사
+		const bool bHit = (i == HitBodyIndex);
+
+		for (const FKSphereElem& Elem : Setup->AggGeom.SphereElems)
+		{
+			FRewindDebugShape Shape;
+			Shape.Type = ELSRewindDebugShapeType::Sphere;
+			Shape.bHit = bHit;
+			Shape.Location = BodyTM.TransformPosition(Elem.Center);
+			Shape.Extent = FVector(Elem.Radius * MinScale);
+			OutShapes.Add(Shape);
+		}
+
+		for (const FKBoxElem& Elem : Setup->AggGeom.BoxElems)
+		{
+			FRewindDebugShape Shape;
+			Shape.Type = ELSRewindDebugShapeType::Box;
+			Shape.bHit = bHit;
+			const FTransform ElemTM = Elem.GetTransform() * BodyTM;
+			Shape.Location = ElemTM.GetLocation();
+			Shape.Rotation = ElemTM.GetRotation();
+			Shape.Extent = FVector(Elem.X, Elem.Y, Elem.Z) * 0.5f * Scale.GetAbs();
+			OutShapes.Add(Shape);
+		}
+
+		for (const FKSphylElem& Elem : Setup->AggGeom.SphylElems)
+		{
+			FRewindDebugShape Shape;
+			Shape.Type = ELSRewindDebugShapeType::Capsule;
+			Shape.bHit = bHit;
+			const FTransform ElemTM = Elem.GetTransform() * BodyTM;
+			Shape.Location = ElemTM.GetLocation();
+			Shape.Rotation = ElemTM.GetRotation();
+			const float Radius = Elem.Radius * MinScale;
+			Shape.Extent = FVector(Radius, 0.0f, Elem.Length * 0.5f * MinScale + Radius);
+			OutShapes.Add(Shape);
+		}
+		// Convex/Tapered 캡슐은 미지원
+	}
+}
+
+
+FRewindDebugShape ULSServerSideRewindComponent::MakeBoxShape(const FHitBoxSnapshot& Box, bool bHit)
+{
+	FRewindDebugShape Shape;
+	Shape.Type = ELSRewindDebugShapeType::Box;
+	Shape.Location = Box.Location;
+	Shape.Rotation = Box.Rotation.Quaternion();
+	Shape.Extent = Box.BoxExtent;
+	Shape.bHit = bHit;
+	return Shape;
+}
+
+
+void ULSServerSideRewindComponent::DrawConfirmDebug(const FRewindDebugInfo& Info) const
+{
+#if ENABLE_DRAW_DEBUG
+	UWorld* World = GetWorld();
+	if (!World || GetNetMode() == NM_DedicatedServer)
+	{
+		return;   // 렌더 없는 데디 서버는 스킵
+	}
+
+	// 서버가 되감은 형상: 명중 부위 빨강, 나머지 노랑
+	for (const FRewindDebugShape& Shape : Info.Shapes)
+	{
+		DrawRewindShape(World, Shape, Shape.bHit ? FColor::Red : FColor::Yellow, DebugConfirmDuration);
+	}
+
+	// 리와인드 미적용(서버 현재 포즈): 명중 부위 주황, 나머지 마젠타
+	for (const FRewindDebugShape& Shape : Info.NoRewindShapes)
+	{
+		DrawRewindShape(World, Shape, Shape.bHit ? FColor::Orange : FColor::Magenta, DebugConfirmDuration);
+	}
+
+	const FColor ResultColor = Info.bHit ? FColor::Red : FColor::White;
+	DrawDebugLine(World, Info.TraceStart, Info.TraceEnd, ResultColor, false, DebugConfirmDuration, 0, 0.5f);
+
+	if (const AActor* Owner = GetOwner())
+	{
+		FString Text = FString::Printf(TEXT("Rewind %.0fms %s"), Info.RewindTime * 1000.0f, Info.bHit ? TEXT("Hit") : TEXT("Miss"));
+		if (Info.bHasNoRewind)
+		{
+			Text += FString::Printf(TEXT(" | NoRewind %s"), Info.bNoRewindHit ? TEXT("Hit") : TEXT("Miss"));
+		}
+
+		DrawDebugString(World, Owner->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f),
+			Text, nullptr, ResultColor, DebugConfirmDuration);
+	}
+#endif
+}
+
+
+void ULSServerSideRewindComponent::DrawLocalDebug() const
+{
+#if ENABLE_DRAW_DEBUG
+	UWorld* World = GetWorld();
+	if (!World || GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	// 이 머신에서 현재 보이는 판정 형상 (CachedHitboxes/CachedMesh는 BeginPlay에서 모든 머신에 설정됨)
+	TArray<FRewindDebugShape> Shapes;
+	if (bUsePhysicsAsset)
+	{
+		if (!CachedMesh)
+		{
+			return;
+		}
+
+		TArray<FTransform> BodyTMs;
+		BodyTMs.Reserve(CachedMesh->Bodies.Num());
+		for (const FBodyInstance* Body : CachedMesh->Bodies)
+		{
+			BodyTMs.Add(Body ? Body->GetUnrealWorldTransform() : FTransform::Identity);
+		}
+		AppendBodyShapes(BodyTMs, INDEX_NONE, Shapes);
+	}
+	else
+	{
+		for (const ULSHitboxComponent* Hitbox : CachedHitboxes)
+		{
+			if (!Hitbox)
+			{
+				continue;
+			}
+
+			FHitBoxSnapshot Box;
+			Box.Location  = Hitbox->GetComponentLocation();
+			Box.Rotation  = Hitbox->GetComponentRotation();
+			Box.BoxExtent = Hitbox->GetScaledBoxExtent();
+			Shapes.Add(MakeBoxShape(Box, false));
+		}
+	}
+
+	// 클라 로컬(예측) 형상: 파랑
+	for (const FRewindDebugShape& Shape : Shapes)
+	{
+		DrawRewindShape(World, Shape, FColor::Blue, DebugConfirmDuration);
+	}
+#endif
 }
